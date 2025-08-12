@@ -37,17 +37,33 @@ AI 기반 코딩 학습 피드백을 제공하는 LMS(Learning Management System
 ### 4.1. 백엔드 서버 실행
 
 1. **환경 변수 설정**
-   프로젝트 최상위 경로에 `backend/.env` 파일이 자동으로 설정되어 있습니다. PostgreSQL 연결 정보가 포함되어 있습니다.
-
-2. **의존성 설치**
-   ```bash
-   pip install -r backend/requirements.txt
+   - 기본값으로 동작합니다. 필요 시 `backend/.env`에 아래 예시로 설정하세요.
+   ```env
+   DATABASE_URL=postgresql://lms_user:1234@localhost:15432/lms_mvp_db
+   JWT_SECRET=dev_secret_change_me
+   JWT_EXPIRES_IN_MIN=15
+   REFRESH_EXPIRES_IN_DAYS=14
+   OPENROUTER_API_KEY=
    ```
 
-3. **백엔드 서버 시작**
+2. **의존성 설치 (venv 권장)**
    ```bash
    cd backend
-   python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   python -m venv venv
+   ./venv/Scripts/pip install -r requirements_new.txt  # Windows
+   # 또는: source venv/bin/activate && pip install -r requirements_new.txt
+   ```
+
+3. **시드 스크립트 실행(최초 1회)**
+   ```bash
+   ./venv/Scripts/python -m scripts.seed_taxonomy
+   ./venv/Scripts/python -m scripts.seed_teacher
+   ./venv/Scripts.python -m scripts.seed_admin
+   ```
+
+4. **백엔드 서버 시작**
+   ```bash
+   ./venv/Scripts/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
    ```
    서버가 정상적으로 실행되면 `http://localhost:8000` 에서 API가 활성화됩니다.### 4.2. 프론트엔드 클라이언트 실행
 
@@ -63,7 +79,7 @@ AI 기반 코딩 학습 피드백을 제공하는 LMS(Learning Management System
     ```bash
     npm run dev
     ```
-    서버가 시작되면 브라우저에서 `http://localhost:5173` (또는 터미널에 표시되는 다른 포트 번호)으로 접속하여 애플리케이션을 확인할 수 있습니다.
+    서버가 시작되면 브라우저에서 `http://localhost:5173` (또는 `5174`)로 접속합니다.
 
 ## 5. 참고 사항
 
@@ -84,10 +100,12 @@ AI 기반 코딩 학습 피드백을 제공하는 LMS(Learning Management System
   - 건너뛰기 버튼으로 문제 스킵 후 나중에 돌아올 수 있음
   - 퀴즈 완료 시 자동으로 최근 활동에 기록
 
-- **라우팅**: 프론트엔드에는 기본적인 페이지 라우팅이 설정되어 있습니다.
-  - `/`: 대시보드 페이지
-  - `/quiz`: 퀴즈 페이지 (난이도별 문제 설정 가능)
-  - `/results`: 결과 페이지
+- **라우팅(핵심)**
+  - `/`: 학생 대시보드
+  - `/quiz`: 퀴즈(보호 라우트)
+  - `/results/:submission_id`: 결과(보호 + 사전 권한 점검)
+  - `/admin/questions`: 출제 관리(교사/관리자)
+  - `/teacher/dashboard`: 교사용 대시보드(교사/관리자)
 
 ## 6. 데이터베이스 관리
 
@@ -113,4 +131,24 @@ docker exec -it lms_mvp_db_container psql -U lms_user -d lms_mvp_db
 - **사용자**: lms_user
 - **비밀번호**: 1234
 
+
+## 7. 인증/보안 요약
+
+- 세션: httpOnly 쿠키(`access_token`, `refresh_token`), Remember me ON 시 refresh 30일 유지
+- CSRF: 더블 서브밋 쿠키(`csrf_token`) + 헤더(`x-csrf-token`)
+  - 프론트에서 POST/PUT/DELETE 시 자동 첨부됨
+- 결과 접근 제어: `/api/v1/results/secure/{submission_id}`로 소유자/권한 확인 후 결과 조회
+- CORS: `http://localhost:5173`, `http://localhost:5174`, `http://127.0.0.1:5173/5174` 허용, credentials 허용
+
+## 8. 관리자/교사용 기능
+
+- 출제 관리 UI: `/admin/questions`
+  - 등록/목록/검색(q)/페이징/토픽 드롭다운(택소노미)/간단 수정/삭제
+- 교사용 대시보드: `/teacher/dashboard`
+  - 주제별 문제 수/정답률, 최근 제출 10건
+
+## 9. 테스트 계정
+
+- 교사: `test@test.com` / `test`
+- 관리자: `admin@admin.com` / `admin`
 

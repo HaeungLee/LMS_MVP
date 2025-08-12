@@ -1,3 +1,73 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor/IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env*.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.tox/
+.coverage
+.coverage.*
+.cache/
+pytest_cache/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+backend/venv/
+
+# Node / Vite / Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+.cache/
+.parcel-cache/
+.eslintcache
+.turbo/
+
+# Coverage
+coverage/
+frontend/coverage/
+backend/coverage/
+
+# SQLite (if any)
+*.sqlite
+*.sqlite3
+
+# Misc
+.python-version
+.tool-versions
 # Dependencies
 /node_modules
 
