@@ -1,0 +1,304 @@
+{
+  "questions": [
+    {
+      "id": 1,
+      "subject": "python_basics",
+      "topic": "딕셔너리",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "my_dict = {'name': 'Alice', 'age': 25}\nprint(my_dict.____('name'))",
+      "answer": "get",
+      "difficulty": "easy",
+      "rubric": "딕셔너리의 .get() 메소드를 정확히 사용했는지 평가. 대소문자를 구분함."
+    },
+    {
+      "id": 2,
+      "subject": "python_basics",
+      "topic": "리스트",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "numbers = [1, 2, 3, 4, 5]\nnumbers.____()  # 마지막 요소 제거",
+      "answer": "pop",
+      "difficulty": "easy",
+      "rubric": "리스트의 pop() 메소드를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 3,
+      "subject": "python_basics",
+      "topic": "집합(Set)",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "set1 = {1, 2, 3}\nset2 = {2, 3, 4}\nresult = set1 ____ set2  # 교집합",
+      "answer": "&",
+      "difficulty": "medium",
+      "rubric": "집합의 교집합 연산자 &를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 4,
+      "subject": "python_basics",
+      "topic": "문자열",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "text = '  Hello World  '\nclean_text = text.____()  # 앞뒤 공백 제거",
+      "answer": "strip",
+      "difficulty": "easy",
+      "rubric": "문자열의 strip() 메소드를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 5,
+      "subject": "python_basics",
+      "topic": "반복문",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "for i in ______(5):\n    print(i)  # 0, 1, 2, 3, 4 출력",
+      "answer": "range",
+      "difficulty": "easy",
+      "rubric": "range() 함수를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 6,
+      "subject": "python_basics",
+      "topic": "리스트",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "numbers = [1, 2, 3, 4, 5]\nsquares = [x**2 for x in numbers if x ____ 2 == 0]  # 짝수의 제곱",
+      "answer": "%",
+      "difficulty": "medium",
+      "rubric": "나머지 연산자 %를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 7,
+      "subject": "python_basics",
+      "topic": "딕셔너리",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "student = {'name': 'Bob'}\nstudent['age'] = 20\nprint(student.____())  # 모든 키 출력",
+      "answer": "keys",
+      "difficulty": "easy",
+      "rubric": "딕셔너리의 keys() 메소드를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 8,
+      "subject": "python_basics",
+      "topic": "집합(Set)",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "fruits = ['apple', 'banana', 'apple', 'orange']\nunique_fruits = ______(fruits)  # 중복 제거",
+      "answer": "set",
+      "difficulty": "easy",
+      "rubric": "set() 함수를 사용하여 중복을 제거했는지 평가."
+    },
+    {
+      "id": 9,
+      "subject": "python_basics",
+      "topic": "문자열",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "sentence = 'Hello World'\nwords = sentence.____(' ')  # 공백으로 분리",
+      "answer": "split",
+      "difficulty": "easy",
+      "rubric": "문자열의 split() 메소드를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 10,
+      "subject": "python_basics",
+      "topic": "함수",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "____ add_numbers(a, b):\n    return a + b\n\nresult = add_numbers(3, 5)",
+      "answer": "def",
+      "difficulty": "easy",
+      "rubric": "함수 정의 키워드 def를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 11,
+      "subject": "python_basics",
+      "topic": "리스트 컴프리헨션",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "data = [1, 2, 3, 4, 5]\nresult = [x * 2 ____ x in data ____ x > 3]  # 3보다 큰 수들을 2배",
+      "answer": "for if",
+      "difficulty": "medium",
+      "rubric": "리스트 컴프리헨션의 for if 구문을 정확히 사용했는지 평가."
+    },
+    {
+      "id": 12,
+      "subject": "python_basics",
+      "topic": "예외처리",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "try:\n    result = 10 / 0\n______ ZeroDivisionError:\n    print('0으로 나눌 수 없습니다')",
+      "answer": "except",
+      "difficulty": "medium",
+      "rubric": "예외 처리의 except 키워드를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 13,
+      "subject": "python_basics",
+      "topic": "클래스",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "class Person:\n    def ______(self, name):\n        self.name = name",
+      "answer": "__init__",
+      "difficulty": "medium",
+      "rubric": "클래스 생성자 __init__ 메소드를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 14,
+      "subject": "python_basics",
+      "topic": "데코레이터",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "def my_decorator(func):\n    def wrapper():\n        print('Before')\n        func()\n        print('After')\n    return wrapper\n\n______\ndef say_hello():\n    print('Hello!')",
+      "answer": "@my_decorator",
+      "difficulty": "hard",
+      "rubric": "데코레이터 사용법 @를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 15,
+      "subject": "python_basics",
+      "topic": "제너레이터",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "def fibonacci():\n    a, b = 0, 1\n    while True:\n        ______ a\n        a, b = b, a + b",
+      "answer": "yield",
+      "difficulty": "hard",
+      "rubric": "제너레이터의 yield 키워드를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 16,
+      "subject": "python_basics",
+      "topic": "튜플",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "coordinates = (3, 4)\nx, y = ______  # 튜플 언패킹",
+      "answer": "coordinates",
+      "difficulty": "easy",
+      "rubric": "튜플 언패킹을 정확히 사용했는지 평가."
+    },
+    {
+      "id": 17,
+      "subject": "python_basics",
+      "topic": "람다함수",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "numbers = [1, 2, 3, 4, 5]\neven_numbers = list(filter(______ x: x % 2 == 0, numbers))",
+      "answer": "lambda",
+      "difficulty": "medium",
+      "rubric": "람다 함수 lambda 키워드를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 18,
+      "subject": "python_basics",
+      "topic": "enumerate",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "fruits = ['apple', 'banana', 'orange']\nfor index, fruit in ______(fruits):\n    print(f'{index}: {fruit}')",
+      "answer": "enumerate",
+      "difficulty": "easy",
+      "rubric": "enumerate 함수를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 19,
+      "subject": "python_basics",
+      "topic": "변수",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "name = 'Python'\nage = 30\nprint(f'언어: ______, 나이: ______')",
+      "answer": "{name}, {age}",
+      "difficulty": "easy",
+      "rubric": "f-string 문법을 정확히 사용했는지 평가."
+    },
+    {
+      "id": 20,
+      "subject": "python_basics",
+      "topic": "조건문",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "score = 85\n____ score >= 90:\n    print('A등급')\n____ score >= 80:\n    print('B등급')",
+      "answer": "if elif",
+      "difficulty": "easy",
+      "rubric": "if-elif 조건문을 정확히 사용했는지 평가."
+    },
+    {
+      "id": 21,
+      "subject": "python_basics",
+      "topic": "리스트",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "fruits = []\nfruits.______('apple')\nfruits.______('banana')\nprint(fruits)  # ['apple', 'banana']",
+      "answer": "append",
+      "difficulty": "easy",
+      "rubric": "리스트의 append() 메소드를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 22,
+      "subject": "python_basics",
+      "topic": "문자열",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "text = 'hello'\nprint(text.______())  # HELLO",
+      "answer": "upper",
+      "difficulty": "easy",
+      "rubric": "문자열의 upper() 메소드를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 23,
+      "subject": "python_basics",
+      "topic": "반복문",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "count = 0\n______ count < 5:\n    print(count)\n    count += 1",
+      "answer": "while",
+      "difficulty": "easy",
+      "rubric": "while 반복문을 정확히 사용했는지 평가."
+    },
+    {
+      "id": 24,
+      "subject": "python_basics",
+      "topic": "타입변환",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "number_str = '123'\nnumber_int = ______(number_str)\nprint(type(number_int))  # <class 'int'>",
+      "answer": "int",
+      "difficulty": "easy",
+      "rubric": "int() 타입 변환 함수를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 25,
+      "subject": "python_basics",
+      "topic": "길이",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "my_list = [1, 2, 3, 4, 5]\nprint(______(my_list))  # 5",
+      "answer": "len",
+      "difficulty": "easy",
+      "rubric": "len() 함수를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 26,
+      "subject": "python_basics",
+      "topic": "딕셔너리",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "student = {}\nstudent['name'] = 'Alice'\nstudent______'age'______ = 20\nprint(student)",
+      "answer": "[ ]",
+      "difficulty": "easy",
+      "rubric": "딕셔너리에 키-값 쌍을 추가하는 대괄호 표기법을 정확히 사용했는지 평가."
+    },
+    {
+      "id": 27,
+      "subject": "python_basics",
+      "topic": "입력",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "name = ______('이름을 입력하세요: ')\nprint(f'안녕하세요, {name}님!')",
+      "answer": "input",
+      "difficulty": "easy",
+      "rubric": "input() 함수를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 28,
+      "subject": "python_basics",
+      "topic": "논리연산",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "a = True\nb = False\nresult = a ______ b  # True",
+      "answer": "or",
+      "difficulty": "easy",
+      "rubric": "논리 연산자 or를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 29,
+      "subject": "python_basics",
+      "topic": "비교연산",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "x = 10\ny = 20\nprint(x ______ y)  # True (x가 y보다 작다)",
+      "answer": "<",
+      "difficulty": "easy",
+      "rubric": "비교 연산자 <를 정확히 사용했는지 평가."
+    },
+    {
+      "id": 30,
+      "subject": "python_basics",
+      "topic": "문자열포매팅",
+      "question_type": "fill_in_the_blank",
+      "code_snippet": "name = 'Python'\nversion = 3.9\nprint('언어: ______, 버전: ______'.format(name, version))",
+      "answer": "{} {}",
+      "difficulty": "easy",
+      "rubric": "문자열 format() 메소드의 {} 플레이스홀더를 정확히 사용했는지 평가."
+    }
+  ]
+}

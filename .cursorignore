@@ -1,0 +1,35 @@
+# Large and generated directories
+backend/venv/**
+**/__pycache__/**
+**/site-packages/**
+node_modules/**
+dist/**
+build/**
+frontend/.vite/**
+.next/**
+.turbo/**
+.cache/**
+
+# Transient files
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/*.so
+**/*.log
+**/*.tmp
+**/*.bak
+
+# Local databases
+**/*.sqlite
+**/*.sqlite3
+**/*.db
+
+# Editor/OS files
+.DS_Store
+Thumbs.db
+.idea/**
+.vscode/**
+.pytest_cache/**
+.mypy_cache/**
+coverage/**
+

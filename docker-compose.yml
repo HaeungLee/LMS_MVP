@@ -1,0 +1,43 @@
+# PostgreSQL Docker Compose 설정 파일
+# 다른 프로젝트와의 충돌을 피하기 위해 고유한 서비스 이름과 포트를 사용합니다.
+
+services:
+  # LMS MVP 프로젝트를 위한 PostgreSQL 데이터베이스 서비스
+  lms-mvp-postgres:
+    image: postgres:17-alpine  # 최신 PostgreSQL 17 버전 사용 (경량화된 alpine 이미지)
+    container_name: lms_mvp_db_container # 다른 컨테이너와 겹치지 않는 고유한 이름
+    environment:
+      POSTGRES_USER: lms_user # 데이터베이스 사용자 이름
+      POSTGRES_PASSWORD: 1234 # !!중요!! 실제 운영 환경에서는 더 강력한 비밀번호로 변경하세요.
+      POSTGRES_DB: lms_mvp_db # 생성할 데이터베이스 이름
+      # PostgreSQL 설정 최적화
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      # 호스트 포트:컨테이너 포트. 기본 포트(5432) 대신 15432 포트를 사용합니다.
+      - "15432:5432"
+    volumes:
+      # 데이터베이스 데이터를 영구적으로 저장하기 위한 볼륨 설정
+      - lms_mvp_postgres_data:/var/lib/postgresql/data
+      # 초기화 스크립트 볼륨 (선택적)
+      - ./backend/init_scripts:/docker-entrypoint-initdb.d
+    restart: unless-stopped # 컨테이너가 비정상적으로 종료되면 자동으로 재시작
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lms_user -d lms_mvp_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # 성능 최적화를 위한 명령어 추가
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c max_connections=100
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c work_mem=4MB
+
+volumes:
+  # 위에서 정의한 볼륨을 명시적으로 선언합니다.
+  lms_mvp_postgres_data:
+
+#docker-compose up -d
