@@ -1,19 +1,37 @@
 from typing import Dict, Any
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy import func, case
 
 from app.core.database import SessionLocal
-from app.core.security import require_role
-from app.models.orm import Question, Submission, SubmissionItem
+from app.core.security import require_role, get_current_user
+from app.models.orm import Question, Submission, SubmissionItem, Group, GroupMember, TeacherGroup, User
 
 
 router = APIRouter()
 
 
 @router.get("/teacher/dashboard/stats")
-async def get_teacher_dashboard_stats(subject: str | None = Query(default=None), _=Depends(require_role(["teacher", "admin"])) ) -> Dict[str, Any]:
+async def get_teacher_dashboard_stats(
+    subject: str | None = Query(default=None),
+    group_id: int | None = Query(default=None),
+    user: User = Depends(get_current_user),
+    _=Depends(require_role(["teacher", "admin"]))
+) -> Dict[str, Any]:
     db = SessionLocal()
     try:
+        # optional group filter: ensure ownership
+        user_ids_in_group: list[int] | None = None
+        if group_id is not None:
+            g = (
+                db.query(Group)
+                .join(TeacherGroup, TeacherGroup.group_id == Group.id)
+                .filter(Group.id == group_id, TeacherGroup.teacher_user_id == user.id)
+                .first()
+            )
+            if not g:
+                raise HTTPException(status_code=404, detail="group not found")
+            user_ids_in_group = [row.user_id for row in db.query(GroupMember).filter(GroupMember.group_id == group_id).all()]
+
         # 주제별 문제 수
         topic_counts: Dict[str, int] = {}
         topic_q = db.query(Question.topic, func.count(Question.id))
@@ -35,6 +53,11 @@ async def get_teacher_dashboard_stats(subject: str | None = Query(default=None),
         subs_q = db.query(Submission)
         if subject:
             subs_q = subs_q.filter(Submission.subject == subject)
+        if user_ids_in_group is not None:
+            if not user_ids_in_group:
+                recent_submissions = []
+            else:
+                subs_q = subs_q.filter(Submission.user_id.in_(user_ids_in_group))
         for s in subs_q.order_by(Submission.submitted_at.desc()).limit(10).all():
             percentage = 0
             try:
@@ -58,6 +81,11 @@ async def get_teacher_dashboard_stats(subject: str | None = Query(default=None),
         ).join(Submission, Submission.id == SubmissionItem.submission_id)
         if subject:
             acc_q = acc_q.filter(Submission.subject == subject)
+        if user_ids_in_group is not None:
+            if not user_ids_in_group:
+                acc_rows = []
+            else:
+                acc_q = acc_q.filter(Submission.user_id.in_(user_ids_in_group))
         for row in acc_q.group_by(SubmissionItem.topic).all():
             total = int(row.total or 0)
             correct = int(row.correct or 0)

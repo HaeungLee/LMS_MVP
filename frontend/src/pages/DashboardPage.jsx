@@ -16,6 +16,8 @@ const DashboardPage = () => {
     setError 
   } = useDashboardStore();
   const [subject, setSubject] = React.useState('python_basics');
+  // 차트 모드 상태는 모든 렌더에서 동일 순서로 훅이 호출되도록 최상단에 선언
+  const [chartMode, setChartMode] = React.useState('bar'); // 'bar' | 'donut'
   
   // 퀴즈 스토어에서 최근 활동 가져오기
   const { recentActivities } = useQuizStore();
@@ -113,6 +115,9 @@ const DashboardPage = () => {
 
   const { progress, topics, recent_activity, total_questions, topic_accuracy, learning } = dashboardData;
   const coveragePct = learning ? Math.round((learning.coverage.value || 0) * 100) : 0;
+  const avgSessionMin = learning?.avgSessionMin ?? null;
+  const recentScores = learning?.recentScores ?? [];
+  const strengthBuckets = learning?.strengthBuckets ?? null;
   const weaknesses = learning?.weaknesses || [];
   const username = (progress && progress.username) ? progress.username : '학습자';
 
@@ -213,20 +218,64 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {/* 주제별 문제 현황: 교사용으로 이관 → 학생 메인 비노출 */}
-
-        {/* 토픽별 진행도(시도수 대비) 또는 이해도(정답률) */}
-        {learning && learning.topic_progress && (
-          <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '24px', marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>토픽별 진행도(시도수)</h2>
-            <ChartAdapter
-              type="bar"
-              data={learning.topic_progress.map(t => ({ label: t.title, value: t.attempts }))}
-              height={300}
-              options={{ horizontal: true, tickMaxChars: 8, barWidth: 14 }}
-            />
+        {/* 개인화 KPI + 최근 성과(또는 도넛) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+          {/* KPI 카드 */}
+          <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '24px', minHeight: 220 }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>나의 학습 지표</h2>
+            <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+              {/* 간단 링 게이지 */}
+              <div style={{ position:'relative', width:120, height:120 }}>
+                <svg width="120" height="120">
+                  <circle cx="60" cy="60" r="54" stroke="#e5e7eb" strokeWidth="12" fill="none" />
+                  <circle cx="60" cy="60" r="54" stroke="#3b82f6" strokeWidth="12" fill="none" strokeDasharray={`${Math.max(0, Math.min(100, coveragePct)) * 3.39} ${339 - Math.max(0, Math.min(100, coveragePct)) * 3.39}`} strokeLinecap="round" transform="rotate(-90 60 60)" />
+                </svg>
+                <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:600 }}>{coveragePct}%</div>
+              </div>
+              {/* KPI 배지 */}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, flex:1 }}>
+                <div style={{ background:'#f3f4f6', borderRadius:6, padding:'8px 10px' }}>
+                  <div style={{ fontSize:12, color:'#6b7280' }}>연속 출석</div>
+                  <div style={{ fontSize:18, fontWeight:600 }}>{learning?.streak ?? 0}일</div>
+                </div>
+                <div style={{ background:'#f3f4f6', borderRadius:6, padding:'8px 10px' }}>
+                  <div style={{ fontSize:12, color:'#6b7280' }}>최근 7일 시도</div>
+                  <div style={{ fontSize:18, fontWeight:600 }}>{learning?.recent7dAttempts ?? 0}회</div>
+                </div>
+                <div style={{ background:'#f3f4f6', borderRadius:6, padding:'8px 10px' }}>
+                  <div style={{ fontSize:12, color:'#6b7280' }}>평균 학습시간</div>
+                  <div style={{ fontSize:18, fontWeight:600 }}>{avgSessionMin !== null ? `${avgSessionMin}분` : '-'} </div>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+
+          {/* 성과 카드 */}
+          <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '24px', minHeight: 220 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: '8px' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '600' }}>최근 성과</h2>
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={()=>setChartMode('bar')} style={{ padding:'6px 10px', borderRadius:6, border:'1px solid #d1d5db', background: chartMode==='bar' ? '#e5e7eb' : '#fff' }}>막대</button>
+                <button onClick={()=>setChartMode('donut')} style={{ padding:'6px 10px', borderRadius:6, border:'1px solid #d1d5db', background: chartMode==='donut' ? '#e5e7eb' : '#fff' }}>도넛</button>
+              </div>
+            </div>
+            {chartMode === 'bar' ? (
+              <ChartAdapter
+                type="bar"
+                data={(recentScores || []).map(s => ({ label: (s.date ? new Date(s.date).toLocaleDateString('ko-KR') : '-'), value: s.score_pct }))}
+                height={220}
+                options={{ horizontal: true, tickMaxChars: 6, barWidth: 14 }}
+              />
+            ) : (
+              <ChartAdapter
+                type="donut"
+                data={strengthBuckets || {}}
+                height={220}
+                options={{}}
+              />
+            )}
+          </div>
+        </div>
 
         {/* 최근 활동 */}
         <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '24px' }}>

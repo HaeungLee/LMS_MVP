@@ -125,6 +125,8 @@ def login(body: LoginDto, response: Response, db: Session = Depends(get_db)) -> 
     # refresh는 remember에 따라 만료일 지정
     max_age = refresh_days * 24 * 60 * 60
     response.set_cookie("refresh_token", refresh, httponly=True, samesite="lax", max_age=max_age)
+    # CSRF 토큰 발급 (더블 서브밋 쿠키)
+    response.set_cookie("csrf_token", generate_csrf_token(), httponly=False, samesite="lax")
     return resp
 
 

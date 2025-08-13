@@ -18,7 +18,24 @@ async function fetchWithTimeout(resource, options = {}) {
         }
       }
     } catch {}
-    const res = await fetch(resource, { ...rest, headers, signal: controller.signal });
+    const res = await fetch(resource, { ...rest, headers, signal: controller.signal, credentials: rest.credentials });
+    if (res.status !== 401) return res;
+    // 401 처리: auth 엔드포인트가 아니고, refresh 쿠키가 있으면 1회 자동 갱신 후 재시도
+    const isAuthPath = typeof resource === 'string' && (/\/auth\//.test(resource));
+    if (!isAuthPath) {
+      try {
+        const hasRes = await fetch(`${API_BASE_URL}/auth/has-refresh`, { credentials: 'include' });
+        if (hasRes.ok) {
+          const { has } = await hasRes.json();
+          if (has) {
+            const r = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST', credentials: 'include' });
+            if (r.ok) {
+              return await fetch(resource, { ...rest, headers, signal: controller.signal, credentials: rest.credentials });
+            }
+          }
+        }
+      } catch {}
+    }
     return res;
   } finally {
     clearTimeout(id);
@@ -53,12 +70,13 @@ export const getQuestions = async (subject = 'python_basics', options = {}) => {
 };
 
 export const submitAnswers = async (submission) => {
-  const response = await fetch(`${API_BASE_URL}/submit`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/submit`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     credentials: 'include',
+    timeoutMs: 15000,
     body: JSON.stringify(submission),
   });
   if (!response.ok) {
@@ -69,12 +87,14 @@ export const submitAnswers = async (submission) => {
 
 export const getFeedback = async (questionId, userAnswer) => {
   try {
-    // 피드백 요청
-    const requestResponse = await fetch(`${API_BASE_URL}/feedback`, {
+    // 피드백 요청 (CSRF 자동 부착 + 쿠키 포함)
+    const requestResponse = await fetchWithTimeout(`${API_BASE_URL}/feedback`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
+      timeoutMs: 15000,
       body: JSON.stringify({ question_id: questionId, user_answer: userAnswer }),
     });
     
@@ -91,7 +111,7 @@ export const getFeedback = async (questionId, userAnswer) => {
     while (attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
       
-      const statusResponse = await fetch(`${API_BASE_URL}/feedback/${cache_key}`);
+      const statusResponse = await fetchWithTimeout(`${API_BASE_URL}/feedback/${cache_key}`, { timeoutMs: 10000 });
       if (!statusResponse.ok) {
         throw new Error('Failed to check feedback status');
       }
@@ -174,11 +194,12 @@ export const logout = async () => {
 };
 
 // Admin/Teacher: Questions CRUD
-export const adminListQuestions = async ({ subject, topic, q, limit = 50, offset = 0 } = {}) => {
+export const adminListQuestions = async ({ subject, topic, q, sort_by, limit = 50, offset = 0 } = {}) => {
   const params = new URLSearchParams();
   if (subject) params.set('subject', subject);
   if (topic) params.set('topic', topic);
   if (q) params.set('q', q);
+  if (sort_by) params.set('sort_by', sort_by);
   params.set('limit', String(limit));
   params.set('offset', String(offset));
   const res = await fetchWithTimeout(`${API_BASE_URL}/admin/questions?${params.toString()}`, {
@@ -186,6 +207,13 @@ export const adminListQuestions = async ({ subject, topic, q, limit = 50, offset
     credentials: 'include',
   });
   if (!res.ok) throw new Error('list questions failed');
+  return res.json();
+};
+
+// 학생 인사이트(오늘의 인사이트)
+export const getStudentInsights = async (subject = 'python_basics') => {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/student/insights?subject=${encodeURIComponent(subject)}`, { timeoutMs: 8000 });
+  if (!res.ok) throw new Error('Failed to fetch insights');
   return res.json();
 };
 
@@ -224,9 +252,26 @@ export const adminDeleteQuestion = async (qid) => {
 };
 
 // Teacher dashboard
-export const getTeacherDashboardStats = async (subject) => {
-  const url = subject ? `${API_BASE_URL}/teacher/dashboard/stats?subject=${encodeURIComponent(subject)}` : `${API_BASE_URL}/teacher/dashboard/stats`;
+export const getTeacherDashboardStats = async (subject, groupId) => {
+  const params = new URLSearchParams();
+  if (subject) params.set('subject', subject);
+  if (groupId) params.set('group_id', String(groupId));
+  const url = `${API_BASE_URL}/teacher/dashboard/stats?${params.toString()}`;
   const res = await fetchWithTimeout(url, { credentials: 'include', timeoutMs: 10000 });
   if (!res.ok) throw new Error('Failed to fetch teacher dashboard stats');
+  return res.json();
+};
+
+export const adminImportQuestions = async (file, { dry_run = false } = {}) => {
+  const form = new FormData();
+  form.append('file', file);
+  const url = `${API_BASE_URL}/admin/questions/import?dry_run=${dry_run ? 'true' : 'false'}`;
+  const res = await fetchWithTimeout(url, {
+    method: 'POST',
+    body: form,
+    credentials: 'include',
+    timeoutMs: 30000,
+  });
+  if (!res.ok) throw new Error('import questions failed');
   return res.json();
 };

@@ -34,6 +34,15 @@ class Settings(BaseSettings):
     postgres_password: str = os.getenv("POSTGRES_PASSWORD", "1234")
     postgres_db: str = os.getenv("POSTGRES_DB", "lms_mvp_db")
     
+    # LLM/Feedback settings
+    llm_provider: str = os.getenv("LLM_PROVIDER", "openrouter")
+    openrouter_model: str = os.getenv("OPENROUTER_MODEL", "google/gemma-3-27b")
+    llm_timeout_ms: int = int(os.getenv("LLM_TIMEOUT_MS", "10000"))
+    llm_max_retries: int = int(os.getenv("LLM_MAX_RETRIES", "2"))
+    llm_enabled: bool = os.getenv("LLM_ENABLED", "true").lower() in ("1", "true", "yes")
+    llm_cache_ttl_seconds: int = int(os.getenv("LLM_CACHE_TTL_SECONDS", "600"))
+    llm_max_rpm: int = int(os.getenv("LLM_MAX_RPM", "120"))
+
     class Config:
         env_file = ".env"
         extra = "ignore"  # 추가 필드 허용

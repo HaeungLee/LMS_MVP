@@ -82,6 +82,22 @@ function ResultsPage() {
   const { total_score, max_score, results: questionResults, topic_analysis, summary, recommendations, submitted_at } = results;
   const percentage = Math.round((total_score / max_score) * 100);
 
+  // 약점 토픽(정답률 오름차순 상위 3)
+  const sortedWeakTopics = Object.entries(topic_analysis || {})
+    .sort((a, b) => (a[1]?.percentage ?? 0) - (b[1]?.percentage ?? 0))
+    .slice(0, 3)
+    .map(([topic, stats]) => ({ topic, percentage: stats.percentage, correct: stats.correct, total: stats.total }));
+
+  const getExplanation = (r) => {
+    if (r.score === 1) {
+      return '정답이에요! 개념을 잘 이해하고 있습니다.';
+    }
+    if (r.score === 0.5) {
+      return '거의 맞았습니다. 핵심 키워드가 일부 부족했어요.';
+    }
+    return `오답입니다. '${r.topic}'의 기본 개념을 복습해보세요.`;
+  };
+
   // 시간 표시는 Phase 1에서 DB 집계 도입 시 반영
 
   const containerStyle = {
@@ -206,6 +222,24 @@ function ResultsPage() {
         </div>
       </div>
 
+      {/* 약점 기반 추천 */}
+      {sortedWeakTopics.length > 0 && (
+        <div style={sectionStyle}>
+          <h2 style={sectionTitleStyle}>🎯 약점 기반 추천</h2>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:12 }}>
+            {sortedWeakTopics.map((w, idx) => (
+              <div key={idx} style={{ padding:12, border:'1px solid #e5e7eb', borderRadius:6 }}>
+                <div style={{ fontWeight:600 }}>{w.topic}</div>
+                <div style={{ fontSize:12, color:'#6b7280' }}>{w.correct}/{w.total} 정답 · {w.percentage}%</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop:12 }}>
+            <button onClick={()=>navigate('/quiz')} style={{ ...buttonStyle }}>약점 보완 퀴즈 시작</button>
+          </div>
+        </div>
+      )}
+
       {/* 문제별 상세 결과 */}
       <div style={sectionStyle}>
         <h2 style={sectionTitleStyle}>📝 문제별 결과</h2>
@@ -219,6 +253,7 @@ function ResultsPage() {
                 <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #e5e7eb' }}>정답</th>
                 <th style={{ padding: '12px', textAlign: 'center', borderBottom: '2px solid #e5e7eb' }}>결과</th>
                 <th style={{ padding: '12px', textAlign: 'center', borderBottom: '2px solid #e5e7eb' }}>AI 피드백</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #e5e7eb' }}>간단 해설</th>
               </tr>
             </thead>
             <tbody>
@@ -271,6 +306,9 @@ function ResultsPage() {
                       ) : (
                         <span style={{ color: '#10b981', fontSize: '14px' }}>완벽!</span>
                       )}
+                    </td>
+                    <td style={{ padding: '12px', color:'#374151' }}>
+                      {getExplanation(result)}
                     </td>
                   </tr>
                 );

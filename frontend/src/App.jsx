@@ -69,6 +69,13 @@ function Navigation() {
               퀴즈
             </Link>
           </li>
+          {(user && (user.role === 'teacher' || user.role === 'admin')) && (
+            <li>
+              <Link to="/teacher/dashboard" style={getLinkStyle('/teacher/dashboard')}>
+                교사용 대시보드
+              </Link>
+            </li>
+          )}
           {/* 결과 페이지는 제출 후 라우팅으로만 접근 */}
         </ul>
         <div>

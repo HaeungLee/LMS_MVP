@@ -2,6 +2,10 @@ import os
 import asyncio
 from typing import Dict, List
 import json
+from app.core.config import settings
+from app.services.llm_providers import get_llm_provider
+from app.services.llm_cache import feedback_cache, make_feedback_cache_key
+from rapidfuzz import fuzz
 
 class ScoringService:
     def __init__(self):
@@ -51,7 +55,7 @@ class ScoringService:
         return bool(sa) and sa == sb
 
     def score_answer(self, question: Dict, user_answer: str) -> float:
-        """답안 채점 (0, 0.5, 1점 시스템) - v1 정교화: 공백/대소문/동의어/토큰 무순서"""
+        """답안 채점 (0, 0.5, 1점 시스템) - v1.5: 정규화/동의어/토큰무순서 + 토큰 유사도"""
         ua = self._normalize(user_answer)
         ca = self._normalize(question["answer"])
 
@@ -59,10 +63,20 @@ class ScoringService:
         if ua == ca or self._unordered_token_match(ua, ca):
             return 1.0
 
-        # 부분 정답: 빈칸형/키워드 포함
+        # 부분 정답: 빈칸형/키워드 포함 + 유사도 임계치
         if question.get("question_type") in {"fill_in_the_blank", "short_answer"}:
             if ca in ua:
                 return 0.5
+            # 의미적으로 근접(간단): 토큰 기반 유사도(부분 비율)
+            try:
+                ratio = max(
+                    fuzz.partial_ratio(ua, ca),
+                    fuzz.token_set_ratio(ua, ca)
+                )
+                if ratio >= 80:
+                    return 0.5
+            except Exception:
+                pass
 
         return 0.0
     
@@ -92,7 +106,7 @@ class ScoringService:
         return topic_analysis
     
     async def generate_ai_feedback(self, question: Dict, user_answer: str, score: float) -> str:
-        """AI 피드백 생성 (MVP에서는 간단한 템플릿 사용, 추후 OpenRouter 연동)"""
+        """AI 피드백 생성 (템플릿 폴백 + LLM 캐시 + 프로바이더 추상화)"""
         # 우선 템플릿
         template = None
         if score == 1.0:
@@ -102,36 +116,28 @@ class ScoringService:
         else:
             template = f"아쉽게도 틀렸습니다. 정답은 '{question['answer']}'입니다. {question['topic']} 관련 내용을 다시 복습해보시는 것을 추천합니다."
 
-        # (옵션) OpenRouter 연동 - 환경 변수 키가 있을 때만
-        import os
-        OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-        if not OPENROUTER_API_KEY:
+        provider = get_llm_provider()
+        if not provider:
             return template
+
+        # 캐시 키 구성
+        rubric_version = (question.get("rubric") or "v1").strip() or "v1"
+        normalized_answer = self._normalize(user_answer)
+        cache_key = make_feedback_cache_key(int(question.get("id", 0)), rubric_version, normalized_answer)
+        cached = feedback_cache.get(cache_key)
+        if cached:
+            return cached
+
+        system_prompt = "간결하고 친절한 튜터."
+        user_prompt = (
+            "다음 코딩 퀴즈 응답에 대해 2-3문장 피드백을 한국어로 작성하세요.\n"
+            f"문항 주제: {question.get('topic','')}\n정답: {question.get('answer','')}\n사용자 답안: {user_answer}\n"
+        )
         try:
-            import httpx
-            prompt = (
-                "다음 코딩 퀴즈 응답에 대해 2-3문장 피드백을 한국어로 작성하세요.\n"
-                f"문항 주제: {question.get('topic','')}\n정답: {question.get('answer','')}\n사용자 답안: {user_answer}\n"
-            )
-            payload = {
-                "model": "openrouter/auto",
-                "messages": [
-                    {"role": "system", "content": "간결하고 친절한 튜터."},
-                    {"role": "user", "content": prompt},
-                ],
-                "max_tokens": 160,
-            }
-            headers = {
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                "Content-Type": "application/json",
-            }
-            with httpx.Client(timeout=10) as client:
-                r = client.post("https://openrouter.ai/api/v1/chat/completions", json=payload, headers=headers)
-                if r.status_code == 200:
-                    data = r.json()
-                    content = data.get("choices", [{}])[0].get("message", {}).get("content")
-                    if content:
-                        return content.strip()
+            content = await provider.generate(system_prompt, user_prompt, max_tokens=160)
+            if content:
+                feedback_cache.set(cache_key, content)
+                return content
         except Exception:
             pass
         return template

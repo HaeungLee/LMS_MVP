@@ -2,6 +2,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/authStore';
 import { getTeacherDashboardStats } from '../services/apiClient';
+import { listTeacherGroups, createTeacherGroup, addGroupMember } from '../services/teacherClient';
+import { fetchTaxonomyTopics } from '../services/taxonomyClient';
 import ChartAdapter from '../components/common/charts/ChartAdapter';
 
 export default function TeacherDashboard() {
@@ -11,6 +13,12 @@ export default function TeacherDashboard() {
   const [data, setData] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
+  const [topics, setTopics] = React.useState([]);
+  const [selectedTopic, setSelectedTopic] = React.useState('');
+  const [groups, setGroups] = React.useState([]);
+  const [groupId, setGroupId] = React.useState('');
+  const [newGroupName, setNewGroupName] = React.useState('');
+  const [addUserId, setAddUserId] = React.useState('');
 
   React.useEffect(() => {
     if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
@@ -22,7 +30,7 @@ export default function TeacherDashboard() {
     (async () => {
       try {
         setLoading(true);
-        const res = await getTeacherDashboardStats(subject);
+        const res = await getTeacherDashboardStats(subject, groupId || undefined);
         setData(res);
         setError('');
       } catch (e) {
@@ -31,14 +39,37 @@ export default function TeacherDashboard() {
         setLoading(false);
       }
     })();
+  }, [subject, groupId]);
+
+  // 그룹 목록 로드
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const res = await listTeacherGroups();
+        setGroups(res.items || []);
+      } catch {}
+    })();
+  }, []);
+
+  // 토픽 목록 로드
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetchTaxonomyTopics(subject);
+        setTopics(res.items || []);
+        setSelectedTopic('');
+      } catch {}
+    })();
   }, [subject]);
 
   if (loading) return <div style={{ padding:24 }}>불러오는 중...</div>;
   if (error) return <div style={{ padding:24, color:'#dc2626' }}>{error}</div>;
   if (!data) return <div style={{ padding:24 }}>데이터 없음</div>;
 
-  const topicBar = Object.entries(data.topics || {}).map(([label, value]) => ({ label, value }));
-  const accBar = Object.entries(data.topic_accuracy || {}).map(([label, v]) => ({ label, value: v.percentage }));
+  const allTopicBar = Object.entries(data.topics || {}).map(([label, value]) => ({ label, value }));
+  const allAccBar = Object.entries(data.topic_accuracy || {}).map(([label, v]) => ({ label, value: v.percentage }));
+  const topicBar = selectedTopic ? allTopicBar.filter(d => d.label === selectedTopic) : allTopicBar;
+  const accBar = selectedTopic ? allAccBar.filter(d => d.label === selectedTopic) : allAccBar;
 
   return (
     <div style={{ padding:24, maxWidth:1200, margin:'0 auto' }}>
@@ -48,6 +79,24 @@ export default function TeacherDashboard() {
           <label style={{ marginRight:8 }}>과목</label>
           <select value={subject} onChange={(e)=>setSubject(e.target.value)} style={{ padding:'6px 10px', border:'1px solid #d1d5db', borderRadius:6 }}>
             <option value="python_basics">Python 기초</option>
+          </select>
+          <label style={{ margin: '0 8px 0 16px' }}>그룹</label>
+          <select value={groupId} onChange={(e)=>setGroupId(e.target.value)} style={{ padding:'6px 10px', border:'1px solid #d1d5db', borderRadius:6 }}>
+            <option value="">전체</option>
+            {groups.map(g => (
+              <option key={g.id} value={g.id}>{g.name}</option>
+            ))}
+          </select>
+          <button onClick={async ()=>{ if(!newGroupName.trim()) return; const res = await createTeacherGroup(newGroupName.trim()); setGroups(g=>[{ id: res.id, name: res.name }, ...g]); setNewGroupName(''); }} style={{ marginLeft:8, padding:'6px 10px', border:'1px solid #d1d5db', borderRadius:6, background:'#fff' }}>그룹 추가</button>
+          <input value={newGroupName} onChange={(e)=>setNewGroupName(e.target.value)} placeholder="새 그룹명" style={{ marginLeft:8, padding:'6px 10px', border:'1px solid #d1d5db', borderRadius:6 }} />
+          <input value={addUserId} onChange={(e)=>setAddUserId(e.target.value)} placeholder="학생ID 추가" style={{ marginLeft:8, padding:'6px 10px', border:'1px solid #d1d5db', borderRadius:6, width:120 }} />
+          <button onClick={async ()=>{ if(!groupId || !addUserId) return; await addGroupMember(Number(groupId), Number(addUserId)); alert('추가 완료'); setAddUserId(''); }} style={{ marginLeft:8, padding:'6px 10px', border:'1px solid #d1d5db', borderRadius:6, background:'#fff' }}>멤버 추가</button>
+          <label style={{ margin: '0 8px 0 16px' }}>토픽</label>
+          <select value={selectedTopic} onChange={(e)=>setSelectedTopic(e.target.value)} style={{ padding:'6px 10px', border:'1px solid #d1d5db', borderRadius:6 }}>
+            <option value="">전체</option>
+            {topics.map(t => (
+              <option key={t.topic_key} value={t.topic_key}>{t.topic_key}{t.is_core ? '' : ' (ext)'}</option>
+            ))}
           </select>
         </div>
       </div>

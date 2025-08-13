@@ -130,3 +130,25 @@ def require_csrf(request: Request) -> None:
         raise HTTPException(status_code=403, detail="CSRF validation failed")
 
 
+def try_get_current_user(
+    request: Request,
+    db: Session = Depends(get_db),
+    creds: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+) -> Optional[User]:
+    """Optional authentication. Returns User if token exists and valid, else None."""
+    token: Optional[str] = None
+    token = _extract_token_from_cookies(request, "access_token")
+    if not token and creds and creds.scheme.lower() == "bearer":
+        token = creds.credentials
+    if not token:
+        return None
+    try:
+        payload = decode_token(token)
+        if payload.get("type") != "access":
+            return None
+        user = db.query(User).filter(User.id == int(payload["sub"])) .first()
+        return user
+    except Exception:
+        return None
+
+
