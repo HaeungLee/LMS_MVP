@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .api.v1 import questions, submit, dashboard, student, auth, admin, results_guard, teacher_dashboard, taxonomy, teacher_groups, feedback
+from .api.v1 import questions, submit, dashboard, student, auth, admin, results_guard, teacher_dashboard, taxonomy, teacher_groups, feedback, ai_learning
 from .core.config import settings
 from sqlalchemy import create_engine
 from .models.orm import Base
@@ -68,6 +68,7 @@ app.include_router(teacher_dashboard.router, prefix="/api/v1", tags=["teacher"])
 app.include_router(taxonomy.router, prefix="/api/v1", tags=["taxonomy"])
 app.include_router(teacher_groups.router, prefix="/api/v1", tags=["teacher_groups"])
 app.include_router(feedback.router, prefix="/api/v1", tags=["feedback"])
+app.include_router(ai_learning.router, prefix="/api/v1/ai-learning", tags=["ai-learning"])
 
 @app.get("/", tags=["root"])
 def read_root():

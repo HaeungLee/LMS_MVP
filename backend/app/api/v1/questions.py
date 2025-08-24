@@ -53,8 +53,9 @@ def get_questions(
                 "subject": r.subject,
                 "topic": r.topic,
                 "question_type": r.question_type,
+                "question_text": r.question_text or "",  # question_text 필드 추가
                 "code_snippet": r.code_snippet,
-                "answer": r.correct_answer,
+                "correct_answer": r.correct_answer,  # answer → correct_answer로 수정
                 "difficulty": r.difficulty,
                 "rubric": r.rubric or "",
             }

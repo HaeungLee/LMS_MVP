@@ -89,10 +89,25 @@ class OpenRouterProvider(LLMProvider):
                         "status_code": resp.status_code,
                         "latency_ms": latency_ms,
                     }, ensure_ascii=False))
+                    
+                    # 429 에러 (Rate Limiting)의 경우 더 긴 대기
+                    if resp.status_code == 429:
+                        wait_time = llm_rate_limiter.wait_time()
+                        if wait_time > 0 and attempt < self._max_attempts - 1:
+                            print(json.dumps({
+                                "event": "llm_rate_limit_wait",
+                                "provider": "openrouter", 
+                                "wait_seconds": wait_time,
+                                "attempt": attempt + 1
+                            }, ensure_ascii=False))
+                            await asyncio.sleep(wait_time)
+                        continue
+                        
             except Exception as e:  # noqa: BLE001
                 last_error = str(e)
             if attempt < self._max_attempts - 1:
-                await asyncio.sleep(0.25 * (attempt + 1))
+                # 일반 재시도는 짧은 대기
+                await asyncio.sleep(0.5 * (attempt + 1))
         return None
 
 

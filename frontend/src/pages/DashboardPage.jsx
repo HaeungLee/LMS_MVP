@@ -4,6 +4,9 @@ import { getDashboardStats, getLearningStatus } from '../services/apiClient';
 import useDashboardStore from '../stores/dashboardStore';
 import useQuizStore from '../stores/quizStore';
 import ChartAdapter from '../components/common/charts/ChartAdapter';
+import AILearningDashboard from '../components/dashboard/AILearningDashboard';
+import QuestionTypeGenerator from '../components/dashboard/QuestionTypeGenerator';
+import EnhancedFeedbackTester from '../components/dashboard/EnhancedFeedbackTester';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -18,6 +21,7 @@ const DashboardPage = () => {
   const [subject, setSubject] = React.useState('python_basics');
   // 차트 모드 상태는 모든 렌더에서 동일 순서로 훅이 호출되도록 최상단에 선언
   const [chartMode, setChartMode] = React.useState('bar'); // 'bar' | 'donut'
+  const [activeTab, setActiveTab] = React.useState('overview'); // 'overview' | 'ai-learning' | 'question-generator' | 'feedback-tester'
   
   // 퀴즈 스토어에서 최근 활동 가져오기
   const { recentActivities } = useQuizStore();
@@ -141,8 +145,83 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {/* 진행률 바 */}
-        <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '24px', marginBottom: '32px' }}>
+        {/* 탭 네비게이션 */}
+        <div style={{ marginBottom: '32px' }}>
+          <div style={{ borderBottom: '1px solid #e5e7eb' }}>
+            <nav style={{ display: 'flex', gap: '32px' }}>
+              <button
+                onClick={() => setActiveTab('overview')}
+                style={{
+                  padding: '12px 0',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  color: activeTab === 'overview' ? '#3b82f6' : '#6b7280',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  borderBottom: activeTab === 'overview' ? '2px solid #3b82f6' : '2px solid transparent',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                📊 학습 현황
+              </button>
+              <button
+                onClick={() => setActiveTab('ai-learning')}
+                style={{
+                  padding: '12px 0',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  color: activeTab === 'ai-learning' ? '#3b82f6' : '#6b7280',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  borderBottom: activeTab === 'ai-learning' ? '2px solid #3b82f6' : '2px solid transparent',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                🤖 AI 맞춤학습
+              </button>
+              <button
+                onClick={() => setActiveTab('question-generator')}
+                style={{
+                  padding: '12px 0',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  color: activeTab === 'question-generator' ? '#3b82f6' : '#6b7280',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  borderBottom: activeTab === 'question-generator' ? '2px solid #3b82f6' : '2px solid transparent',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                🔧 문제 생성기
+              </button>
+              <button
+                onClick={() => setActiveTab('feedback-tester')}
+                style={{
+                  padding: '12px 0',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  color: activeTab === 'feedback-tester' ? '#3b82f6' : '#6b7280',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  borderBottom: activeTab === 'feedback-tester' ? '2px solid #3b82f6' : '2px solid transparent',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                🧠 AI 피드백
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        {/* 탭 콘텐츠 */}
+        {activeTab === 'overview' && (
+          <>
+            {/* 진행률 바 */}
+            <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '24px', marginBottom: '32px' }}>
           <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>전체 진행률</h2>
           <div style={{ width: '100%', backgroundColor: '#e5e7eb', borderRadius: '9999px', height: '16px' }}>
             <div 
@@ -294,6 +373,20 @@ const DashboardPage = () => {
             ))}
           </div>
         </div>
+          </>
+        )}
+
+        {activeTab === 'ai-learning' && (
+          <AILearningDashboard />
+        )}
+
+        {activeTab === 'question-generator' && (
+          <QuestionTypeGenerator />
+        )}
+
+        {activeTab === 'feedback-tester' && (
+          <EnhancedFeedbackTester />
+        )}
       </div>
       
       <style>

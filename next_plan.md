@@ -13,7 +13,6 @@
 - **Backend**: FastAPI + Python
 - **Database**: JSON 파일 (18개 Python 문제)
 - **AI**: OpenRouter API (설정됨, 미사용)
-
 ---
 
 ## 📋 단계별 개발 로드맵

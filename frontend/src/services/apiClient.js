@@ -275,3 +275,251 @@ export const adminImportQuestions = async (file, { dry_run = false } = {}) => {
   if (!res.ok) throw new Error('import questions failed');
   return res.json();
 };
+
+// ====== AI Learning APIs ======
+
+export const getDailyLearningPlan = async (subject = 'python_basics') => {
+  const url = `${API_BASE_URL}/ai-learning/daily-plan?subject=${encodeURIComponent(subject)}`;
+  const res = await fetchWithTimeout(url, { credentials: 'include', timeoutMs: 15000 });
+  if (!res.ok) throw new Error('Failed to fetch daily learning plan');
+  return res.json();
+};
+
+export const generateQuestionsForTopic = async (topic, difficulty = 'easy', count = 5) => {
+  const url = `${API_BASE_URL}/ai-learning/generate-questions`;
+  const res = await fetchWithTimeout(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ topic, difficulty, count }),
+    credentials: 'include',
+    timeoutMs: 30000,
+  });
+  if (!res.ok) throw new Error('Failed to generate questions');
+  return res.json();
+};
+
+export const getAdaptiveQuestions = async (topic) => {
+  const url = `${API_BASE_URL}/ai-learning/adaptive-questions?topic=${encodeURIComponent(topic)}`;
+  const res = await fetchWithTimeout(url, { credentials: 'include', timeoutMs: 15000 });
+  if (!res.ok) throw new Error('Failed to fetch adaptive questions');
+  return res.json();
+};
+
+export const getClassProgressOverview = async (subject = 'python_basics') => {
+  const url = `${API_BASE_URL}/ai-learning/class-overview?subject=${encodeURIComponent(subject)}`;
+  const res = await fetchWithTimeout(url, { credentials: 'include', timeoutMs: 15000 });
+  if (!res.ok) throw new Error('Failed to fetch class overview');
+  return res.json();
+};
+
+export const assignLearningTopics = async (studentIds, subject, topicKeys) => {
+  const url = `${API_BASE_URL}/ai-learning/assign-learning`;
+  const res = await fetchWithTimeout(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      student_ids: studentIds, 
+      subject, 
+      topic_keys: topicKeys 
+    }),
+    credentials: 'include',
+    timeoutMs: 10000,
+  });
+  if (!res.ok) throw new Error('Failed to assign learning topics');
+  return res.json();
+};
+
+export const getLearningRecommendations = async (subject = 'python_basics') => {
+  const url = `${API_BASE_URL}/ai-learning/learning-recommendations?subject=${encodeURIComponent(subject)}`;
+  const res = await fetchWithTimeout(url, { credentials: 'include', timeoutMs: 10000 });
+  if (!res.ok) throw new Error('Failed to fetch learning recommendations');
+  return res.json();
+};
+
+export const analyzeStudentWeaknesses = async (subject = 'python_basics') => {
+  const url = `${API_BASE_URL}/ai-learning/weakness-analysis?subject=${encodeURIComponent(subject)}`;
+  const res = await fetchWithTimeout(url, { credentials: 'include', timeoutMs: 10000 });
+  if (!res.ok) throw new Error('Failed to analyze weaknesses');
+  return res.json();
+};
+
+export const submitQuestionQualityFeedback = async (questionId, qualityScore, feedbackText = '') => {
+  const url = `${API_BASE_URL}/ai-learning/question-quality-feedback`;
+  const res = await fetchWithTimeout(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      question_id: questionId, 
+      quality_score: qualityScore, 
+      feedback_text: feedbackText 
+    }),
+    credentials: 'include',
+    timeoutMs: 5000,
+  });
+  if (!res.ok) throw new Error('Failed to submit quality feedback');
+  return res.json();
+};
+
+// AI 피드백 요청 - Results 페이지용
+export const requestAiFeedback = async (submissionId) => {
+  try {
+    console.log('🚀 AI 피드백 요청 시작:', submissionId);
+    
+    const url = `${API_BASE_URL}/ai-learning/feedback/${submissionId}`;
+    const res = await fetchWithTimeout(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      timeoutMs: 30000, // AI 응답 시간 고려하여 30초
+    });
+    
+    console.log('📊 AI 피드백 응답 상태:', res.status, res.statusText);
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('❌ AI 피드백 API 오류:', errorText);
+      throw new Error(`AI 피드백 요청 실패: ${res.status} ${errorText}`);
+    }
+    
+    const data = await res.json();
+    console.log('✅ AI 피드백 데이터 수신:', data);
+    
+    return data;
+  } catch (error) {
+    console.error('🚨 AI 피드백 요청 중 오류:', error);
+    throw error;
+  }
+};
+
+// EnhancedFeedbackTester용 단일 답안 피드백 요청 (비동기 폴링 방식)
+export const submitAnswerForFeedback = async (questionId, questionType, userAnswer, userScore = null) => {
+  try {
+    console.log('🚀 단일 답안 AI 피드백 요청:', { questionId, questionType, userAnswer, userScore });
+    
+    // 1단계: 피드백 생성 요청
+    const requestUrl = `${API_BASE_URL}/feedback`;
+    const requestRes = await fetchWithTimeout(requestUrl, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-Token': getCsrfToken() // CSRF 토큰 추가
+      },
+      body: JSON.stringify({
+        question_id: questionId,
+        user_answer: userAnswer
+      }),
+      credentials: 'include',
+      timeoutMs: 10000,
+    });
+    
+    console.log('📊 피드백 요청 응답 상태:', requestRes.status, requestRes.statusText);
+    
+    if (!requestRes.ok) {
+      const errorText = await requestRes.text();
+      console.error('❌ 피드백 요청 API 오류:', {
+        status: requestRes.status,
+        statusText: requestRes.statusText,
+        error: errorText
+      });
+      throw new Error(`AI 피드백 요청 실패: ${requestRes.status} ${requestRes.statusText}`);
+    }
+    
+    const requestData = await requestRes.json();
+    const cacheKey = requestData.cache_key;
+    console.log('✅ 피드백 생성 시작됨. Cache Key:', cacheKey);
+    
+    // 2단계: 폴링으로 피드백 완료 대기
+    let maxAttempts = 20; // 최대 20번 시도 (20초)
+    let attempt = 0;
+    
+    while (attempt < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
+      attempt++;
+      
+      try {
+        const checkUrl = `${API_BASE_URL}/feedback/${cacheKey}`;
+        const checkRes = await fetchWithTimeout(checkUrl, {
+          method: 'GET',
+          credentials: 'include',
+          timeoutMs: 5000,
+        });
+        
+        if (checkRes.ok) {
+          const checkData = await checkRes.json();
+          console.log(`🔄 폴링 시도 ${attempt}:`, checkData);
+          
+          if (checkData.status === 'ready' && checkData.feedback) {
+            console.log('✅ AI 피드백 완료:', checkData.feedback);
+            return {
+              feedback: checkData.feedback,
+              status: 'success'
+            };
+          }
+        }
+      } catch (pollError) {
+        console.warn(`⚠️ 폴링 시도 ${attempt} 실패:`, pollError);
+      }
+    }
+    
+    throw new Error('AI 피드백 생성 시간 초과 (20초)');
+    
+  } catch (error) {
+    console.error('🚨 단일 답안 AI 피드백 요청 중 오류:', error);
+    throw error;
+  }
+};
+
+// CSRF 토큰 가져오기 함수
+function getCsrfToken() {
+  // 쿠키에서 CSRF 토큰 추출
+  const cookies = document.cookie.split(';');
+  for (let cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === 'csrftoken' || name === 'csrf_token') {
+      return value;
+    }
+  }
+  return '';
+}
+
+// Default export 추가
+const apiClient = {
+  // 기존 함수들
+  getDashboardStats,
+  getLearningStatus, 
+  getDailyLearningPlan,
+  generateQuestionsForTopic,
+  getAdaptiveQuestions,
+  getClassProgressOverview,
+  assignLearningTopics,
+  getLearningRecommendations,
+  analyzeStudentWeaknesses,
+  submitQuestionQualityFeedback,
+  requestAiFeedback, // AI 피드백 함수 추가
+  submitAnswerForFeedback, // 단일 답안 피드백 함수 추가
+  
+  // 새로 추가된 함수들 (POST 요청용)
+  post: async (url, data, options = {}) => {
+    return fetchWithTimeout(API_BASE_URL + url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      credentials: 'include',
+      timeoutMs: 15000,
+      ...options
+    });
+  },
+  
+  get: async (url, options = {}) => {
+    return fetchWithTimeout(API_BASE_URL + url, {
+      method: 'GET',
+      credentials: 'include',
+      timeoutMs: 10000,
+      ...options
+    });
+  }
+};
+
+export default apiClient;
+

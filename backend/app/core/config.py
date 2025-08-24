@@ -1,8 +1,14 @@
 import os
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 
 class Settings(BaseSettings):
     """애플리케이션 설정"""
+    
+    model_config = ConfigDict(
+        env_file=".env",
+        extra="ignore"
+    )
     
     # API 키
     openrouter_api_key: str = os.getenv("OPENROUTER_API_KEY", "")
@@ -41,10 +47,6 @@ class Settings(BaseSettings):
     llm_max_retries: int = int(os.getenv("LLM_MAX_RETRIES", "2"))
     llm_enabled: bool = os.getenv("LLM_ENABLED", "true").lower() in ("1", "true", "yes")
     llm_cache_ttl_seconds: int = int(os.getenv("LLM_CACHE_TTL_SECONDS", "600"))
-    llm_max_rpm: int = int(os.getenv("LLM_MAX_RPM", "120"))
-
-    class Config:
-        env_file = ".env"
-        extra = "ignore"  # 추가 필드 허용
+    llm_max_rpm: int = int(os.getenv("LLM_MAX_RPM", "20"))  # 무료 계정용 보수적 설정
 
 settings = Settings()

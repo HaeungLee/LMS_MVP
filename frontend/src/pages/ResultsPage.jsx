@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FeedbackModal from '../components/feedback/FeedbackModal';
 import { getQuestions, getSubmissionResults } from '../services/apiClient';
+import apiClient from '../services/apiClient';
 
 function ResultsPage() {
   const navigate = useNavigate();
@@ -11,6 +12,10 @@ function ResultsPage() {
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackStatus, setFeedbackStatus] = useState({});
+  
+  // AI 피드백 관련 상태
+  const [aiFeedbackData, setAiFeedbackData] = useState({});
+  const [aiFeedbackLoading, setAiFeedbackLoading] = useState({});
 
   useEffect(() => {
     const load = async () => {
@@ -53,10 +58,58 @@ function ResultsPage() {
     }
   };
 
+  // AI 피드백 요청 함수
+  const requestAiFeedback = async (result) => {
+    const question = questions[result.question_id];
+    if (!question) return;
+
+    setAiFeedbackLoading(prev => ({ ...prev, [result.question_id]: true }));
+
+    try {
+      const response = await apiClient.post('/ai-learning/submit-answer-with-feedback', {
+        question_id: result.question_id,
+        answer: result.user_answer,
+        question_type: question.question_type || 'short_answer', // 기본값 설정
+        question_data: {
+          correct_answer: result.correct_answer,
+          topic: question.topic || '파이썬 기초',
+          difficulty: question.difficulty || 'medium',
+          code_snippet: question.code_snippet || '',
+          choices: question.choices || [],
+          required_keywords: question.required_keywords || [],
+          bugs: question.bugs || []
+        }
+      });
+
+      console.log(`✅ Results 페이지 AI 피드백:`, response.data);
+      
+      setAiFeedbackData(prev => ({
+        ...prev,
+        [result.question_id]: response.data
+      }));
+
+    } catch (err) {
+      console.error(`❌ Results 페이지 AI 피드백 실패:`, err);
+      alert('AI 피드백 생성에 실패했습니다: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setAiFeedbackLoading(prev => ({ ...prev, [result.question_id]: false }));
+    }
+  };
+
   const handleShowFeedback = (result) => {
     const question = questions[result.question_id];
     if (question) {
-      setSelectedQuestion({ ...question, userAnswer: result.user_answer, score: result.score });
+      // AI 피드백이 없으면 요청
+      if (!aiFeedbackData[result.question_id]) {
+        requestAiFeedback(result);
+      }
+      
+      setSelectedQuestion({ 
+        ...question, 
+        userAnswer: result.user_answer, 
+        score: result.score,
+        aiFeedback: aiFeedbackData[result.question_id]
+      });
       setShowFeedbackModal(true);
       setFeedbackStatus(prev => ({
         ...prev,
@@ -291,17 +344,24 @@ function ResultsPage() {
                       {result.score < 1 ? (
                         <button
                           onClick={() => handleShowFeedback(result)}
+                          disabled={aiFeedbackLoading[result.question_id]}
                           style={{
-                            backgroundColor: feedbackStatus[result.question_id] === 'viewed' ? '#10b981' : '#3b82f6',
+                            backgroundColor: aiFeedbackLoading[result.question_id] 
+                              ? '#9ca3af' 
+                              : (feedbackStatus[result.question_id] === 'viewed' ? '#10b981' : '#3b82f6'),
                             color: 'white',
                             border: 'none',
                             padding: '6px 12px',
                             borderRadius: '6px',
                             fontSize: '12px',
-                            cursor: 'pointer'
+                            cursor: aiFeedbackLoading[result.question_id] ? 'not-allowed' : 'pointer'
                           }}
                         >
-                          {feedbackStatus[result.question_id] === 'viewed' ? '✅ 확인함' : '🤖 AI 피드백 보기'}
+                          {aiFeedbackLoading[result.question_id] 
+                            ? '🔄 분석 중...' 
+                            : (aiFeedbackData[result.question_id] 
+                                ? '✅ AI 피드백 보기' 
+                                : '🤖 AI 피드백 받기')}
                         </button>
                       ) : (
                         <span style={{ color: '#10b981', fontSize: '14px' }}>완벽!</span>
@@ -358,6 +418,7 @@ function ResultsPage() {
           score={selectedQuestion.score}
           isOpen={showFeedbackModal}
           onClose={() => setShowFeedbackModal(false)}
+          aiFeedback={selectedQuestion.aiFeedback}
         />
       )}
     </div>

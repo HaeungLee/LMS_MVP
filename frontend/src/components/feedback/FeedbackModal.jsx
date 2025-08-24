@@ -1,16 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { getFeedback } from '../../services/apiClient';
 
-function FeedbackModal({ question, userAnswer, score, isOpen, onClose }) {
+function FeedbackModal({ question, userAnswer, score, isOpen, onClose, aiFeedback }) {
   const [feedback, setFeedback] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (isOpen && question && (score < 1)) {
-      fetchFeedback();
+    if (isOpen && question) {
+      if (aiFeedback) {
+        // AI 피드백이 이미 있으면 사용
+        setFeedback(aiFeedback.feedback);
+        setLoading(false);
+      } else if (score < 1) {
+        // 기존 피드백 시스템 사용
+        fetchFeedback();
+      }
     }
-  }, [isOpen, question, userAnswer, score]);
+  }, [isOpen, question, userAnswer, score, aiFeedback]);
 
   const fetchFeedback = async () => {
     try {
@@ -148,7 +155,54 @@ function FeedbackModal({ question, userAnswer, score, isOpen, onClose }) {
 
         {feedback && (
           <div style={feedbackContentStyle}>
-            <p style={{ margin: 0, color: '#374151' }}>{feedback}</p>
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>
+                🤖 AI 피드백
+              </h4>
+              <p style={{ margin: 0, color: '#374151', lineHeight: '1.6' }}>{feedback}</p>
+            </div>
+            
+            {/* AI 피드백 추가 정보 표시 */}
+            {aiFeedback && (
+              <>
+                {aiFeedback.score !== undefined && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '6px', color: '#374151' }}>
+                      📊 점수
+                    </h4>
+                    <div style={{
+                      padding: '8px 12px',
+                      backgroundColor: aiFeedback.score >= 0.8 ? '#dcfce7' : aiFeedback.score >= 0.6 ? '#fef3c7' : '#fef2f2',
+                      color: aiFeedback.score >= 0.8 ? '#166534' : aiFeedback.score >= 0.6 ? '#a16207' : '#dc2626',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600'
+                    }}>
+                      {(aiFeedback.score * 100).toFixed(0)}점 / 100점
+                    </div>
+                  </div>
+                )}
+                
+                {aiFeedback.performance_analysis?.improvement_suggestions && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '6px', color: '#374151' }}>
+                      💡 개선 제안
+                    </h4>
+                    <ul style={{ 
+                      margin: 0, 
+                      paddingLeft: '16px', 
+                      color: '#6b7280',
+                      fontSize: '14px',
+                      lineHeight: '1.5'
+                    }}>
+                      {aiFeedback.performance_analysis.improvement_suggestions.map((suggestion, idx) => (
+                        <li key={idx} style={{ marginBottom: '4px' }}>{suggestion}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
 
