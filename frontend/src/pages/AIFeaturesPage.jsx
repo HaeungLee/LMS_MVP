@@ -1,8 +1,4 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { 
   Brain, 
   MessageCircle, 
@@ -10,195 +6,276 @@ import {
   Code,
   Map,
   Sparkles,
-  User,
-  BarChart3,
-  Settings
+  Settings,
+  CheckCircle,
+  Clock,
+  ChevronRight,
+  Lightbulb,
+  BarChart3 // 오류 수정을 위해 추가
 } from 'lucide-react';
 
-// AI 컴포넌트들 import
-import AIAnalysisDashboard from '../components/ai/AIAnalysisDashboard';
-import AIMentorChat from '../components/ai/AIMentorChat';
-import AdaptiveDifficultyWidget from '../components/ai/AdaptiveDifficultyWidget';
+// --- Mock Components (실제 컴포넌트로 교체 필요) ---
+// 실제 프로젝트에서는 이 부분들을 실제 컴포넌트 파일로 분리하여 import합니다.
+const Card = ({ children, className = '' }) => <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl ${className}`}>{children}</div>;
+const CardHeader = ({ children, className = '' }) => <div className={`p-6 border-b border-slate-200 dark:border-slate-800 ${className}`}>{children}</div>;
+const CardTitle = ({ children, className = '' }) => <h3 className={`text-lg font-semibold text-slate-900 dark:text-white ${className}`}>{children}</h3>;
+const CardDescription = ({ children, className = '' }) => <p className={`text-sm text-slate-500 dark:text-slate-400 ${className}`}>{children}</p>;
+const CardContent = ({ children, className = '' }) => <div className={`p-6 ${className}`}>{children}</div>;
+const Badge = ({ children, className = '' }) => <span className={`inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full ${className}`}>{children}</span>;
+
+const AIAnalysisDashboard = ({ userId }) => (
+  <Card className="h-full">
+    <CardHeader>
+      <CardTitle>심층 학습 분석 대시보드</CardTitle>
+      <CardDescription>사용자 ID: {userId}의 학습 데이터를 시각화합니다.</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-lg text-center">
+        <BarChart3 className="w-16 h-16 mx-auto text-blue-500 mb-4" />
+        <h4 className="font-semibold text-slate-800 dark:text-slate-200">분석 데이터 로딩 중...</h4>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          여기에 차트와 같은 데이터 시각화 컴포넌트가 표시됩니다.
+        </p>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const AIMentorChat = ({ userId }) => (
+  <Card className="h-full flex flex-col">
+    <CardHeader>
+      <CardTitle>AI 멘토</CardTitle>
+      <CardDescription>무엇이든 물어보세요! (사용자 ID: {userId})</CardDescription>
+    </CardHeader>
+    <CardContent className="flex-grow">
+      <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg h-full flex flex-col justify-end">
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">AI</div>
+            <div className="bg-white dark:bg-slate-700 p-3 rounded-lg rounded-tl-none max-w-xs">
+              <p className="text-sm text-slate-800 dark:text-slate-200">안녕하세요! 학습에 도움이 필요하신가요?</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 justify-end">
+            <div className="bg-blue-500 text-white p-3 rounded-lg rounded-br-none max-w-xs">
+              <p className="text-sm">네, 이 개념에 대해 더 자세히 설명해주세요.</p>
+            </div>
+             <div className="w-8 h-8 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-sm">Me</div>
+          </div>
+        </div>
+      </div>
+    </CardContent>
+    <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+      <input type="text" placeholder="메시지를 입력하세요..." className="w-full bg-slate-100 dark:bg-slate-800 border-transparent rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+    </div>
+  </Card>
+);
+
+const AdaptiveDifficultyWidget = ({ userId }) => (
+  <Card className="h-full">
+    <CardHeader>
+      <CardTitle>적응형 난이도 조절</CardTitle>
+      <CardDescription>사용자 ID: {userId}의 성과에 따라 난이도가 자동 조절됩니다.</CardDescription>
+    </CardHeader>
+    <CardContent className="text-center">
+        <div className="relative w-40 h-40 mx-auto">
+          <svg className="w-full h-full" viewBox="0 0 36 36">
+            <path className="text-slate-200 dark:text-slate-700" strokeWidth="3" fill="none" stroke="currentColor" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+            <path className="text-purple-500" strokeWidth="3" fill="none" stroke="currentColor" strokeDasharray="75, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-3xl font-bold text-slate-900 dark:text-white">75%</span>
+            <span className="text-sm text-slate-500 dark:text-slate-400">정답률</span>
+          </div>
+        </div>
+        <p className="mt-4 font-semibold text-slate-800 dark:text-slate-200">현재 난이도: <span className="text-purple-500">중급</span></p>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">다음 문제 난이도가 상향 조정될 예정입니다.</p>
+    </CardContent>
+  </Card>
+);
+// --- Mock Components End ---
 
 const AIFeaturesPage = () => {
-  const [activeTab, setActiveTab] = useState('analysis');
+  const [activeFeatureId, setActiveFeatureId] = useState('analysis');
   const [userId] = useState(1); // 실제로는 인증된 사용자 ID를 사용
 
   const aiFeatures = [
     {
       id: 'analysis',
       title: '심층 학습 분석',
-      description: 'AI가 당신의 학습 패턴을 분석하고 개인화된 인사이트를 제공합니다',
+      description: '학습 패턴을 분석하여 개인화된 인사이트를 제공합니다.',
       icon: Brain,
-      color: 'blue',
       component: AIAnalysisDashboard
     },
     {
       id: 'mentor',
       title: 'AI 멘토링',
-      description: '24/7 개인 학습 코치와 실시간 대화하며 학습 도움을 받으세요',
+      description: '24/7 개인 학습 코치와 실시간으로 대화하세요.',
       icon: MessageCircle,
-      color: 'green',
       component: AIMentorChat
     },
     {
       id: 'difficulty',
       title: '적응형 난이도',
-      description: '실시간 성과 분석을 통해 최적의 난이도로 자동 조절됩니다',
+      description: '성과에 따라 최적의 난이도를 자동으로 조절합니다.',
       icon: TrendingUp,
-      color: 'purple',
       component: AdaptiveDifficultyWidget
     },
     {
       id: 'code-review',
       title: 'AI 코드 리뷰',
-      description: '작성한 코드를 AI가 전문적으로 검토하고 개선 방안을 제시합니다',
+      description: '작성한 코드를 AI가 검토하고 개선점을 제안합니다.',
       icon: Code,
-      color: 'orange',
-      component: null // 추후 구현
+      component: null // Coming Soon
     },
     {
       id: 'learning-path',
       title: '개인화 학습 경로',
-      description: '목표와 현재 수준에 맞는 맞춤형 학습 로드맵을 생성합니다',
+      description: '목표에 맞는 맞춤형 학습 로드맵을 생성합니다.',
       icon: Map,
-      color: 'red',
-      component: null // 추후 구현
+      component: null // Coming Soon
     }
   ];
 
-  const renderFeatureContent = (feature) => {
-    if (!feature.component) {
-      return (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-12">
-              <feature.icon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-              <p className="text-gray-600 mb-4">{feature.description}</p>
-              <Badge variant="secondary">곧 출시 예정</Badge>
-            </div>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    const Component = feature.component;
-    return <Component userId={userId} />;
-  };
+  const activeFeature = aiFeatures.find(f => f.id === activeFeatureId);
+  const ActiveComponent = activeFeature?.component;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      {/* 헤더 */}
-      <div className="text-center mb-8">
-        <div className="flex items-center justify-center mb-4">
-          <Sparkles className="w-8 h-8 text-blue-500 mr-2" />
-          <h1 className="text-3xl font-bold">AI 학습 기능</h1>
-        </div>
-        <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-          첨단 AI 기술로 당신만의 맞춤형 학습 경험을 만나보세요
-        </p>
-      </div>
+    <div className="bg-slate-50 dark:bg-slate-950 min-h-screen font-sans text-slate-800 dark:text-slate-200">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
+          
+          {/* --- Left Sidebar --- */}
+          <aside className="w-full lg:w-1/4 lg:flex-shrink-0">
+            <div className="p-4 bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-xl backdrop-blur-sm sticky top-8">
+              <div className="flex items-center gap-3 mb-6 px-2">
+                <Sparkles className="w-7 h-7 text-blue-500" />
+                <h1 className="text-xl font-bold text-slate-900 dark:text-white">AI 학습 기능</h1>
+              </div>
+              <nav className="space-y-1">
+                {aiFeatures.map((feature) => {
+                  const Icon = feature.icon;
+                  const isActive = activeFeatureId === feature.id;
+                  return (
+                    <button
+                      key={feature.id}
+                      onClick={() => setActiveFeatureId(feature.id)}
+                      className={`w-full flex items-center text-left p-3 rounded-lg transition-all duration-200 ${
+                        isActive 
+                        ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' 
+                        : 'hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400'
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 mr-3 flex-shrink-0 ${isActive ? 'text-blue-500' : ''}`} />
+                      <div className="flex-grow">
+                        <p className={`font-semibold text-sm ${isActive ? 'text-blue-600 dark:text-blue-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                          {feature.title}
+                        </p>
+                      </div>
+                      {!feature.component && <Badge className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">예정</Badge>}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+          </aside>
 
-      {/* AI 기능 개요 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
-        {aiFeatures.map((feature) => {
-          const Icon = feature.icon;
-          return (
-            <Card 
-              key={feature.id} 
-              className={`cursor-pointer transition-all hover:shadow-lg ${
-                activeTab === feature.id ? 'ring-2 ring-blue-500' : ''
-              }`}
-              onClick={() => setActiveTab(feature.id)}
-            >
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <Icon className={`w-8 h-8 mx-auto mb-2 text-${feature.color}-500`} />
-                  <h3 className="font-semibold text-sm">{feature.title}</h3>
-                  <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                    {feature.description}
-                  </p>
+          {/* --- Main Content --- */}
+          <main className="flex-1 min-w-0">
+            <div className="space-y-8">
+              {activeFeature && (
+                <div className="mb-6">
+                  <h2 className="text-3xl font-bold text-slate-900 dark:text-white">{activeFeature.title}</h2>
+                  <p className="text-slate-500 dark:text-slate-400 mt-1">{activeFeature.description}</p>
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+              )}
+
+              <div className="min-h-[500px]">
+                {ActiveComponent ? (
+                  <ActiveComponent userId={userId} />
+                ) : (
+                  <Card className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800/50">
+                    <div className="text-center p-8">
+                      <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-full mx-auto flex items-center justify-center shadow-md mb-6">
+                        <activeFeature.icon className="w-10 h-10 text-slate-400 dark:text-slate-500" />
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">곧 출시될 기능입니다</h3>
+                      <p className="text-slate-600 dark:text-slate-400 max-w-sm mx-auto">
+                        {activeFeature.title} 기능은 현재 열심히 개발 중입니다. 더 나은 학습 경험을 위해 최선을 다하고 있으니 조금만 기다려주세요!
+                      </p>
+                      <Badge className="mt-6 bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300">Coming Soon</Badge>
+                    </div>
+                  </Card>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* AI System Status */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="w-5 h-5 text-slate-500" />
+                      AI 시스템 상태
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <div>
+                        <p className="font-semibold text-sm text-slate-800 dark:text-slate-200">학습 분석</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">정상</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <div>
+                        <p className="font-semibold text-sm text-slate-800 dark:text-slate-200">AI 멘토링</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">정상</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <div>
+                        <p className="font-semibold text-sm text-slate-800 dark:text-slate-200">난이도 조절</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">정상</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Clock className="w-5 h-5 text-amber-500" />
+                      <div>
+                        <p className="font-semibold text-sm text-slate-800 dark:text-slate-200">코드 리뷰</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">준비 중</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Tips */}
+                <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-800/50 dark:to-slate-900/50 border-blue-200 dark:border-slate-800">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-300">
+                      <Lightbulb className="w-5 h-5" />
+                      AI 기능 활용 팁
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-300/80">
+                      <li className="flex items-start">
+                        <ChevronRight className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                        <span><strong>AI 멘토에게</strong> 구체적으로 질문하면 더 정확한 답변을 얻을 수 있어요.</span>
+                      </li>
+                      <li className="flex items-start">
+                        <ChevronRight className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                        <span><strong>학습 분석은</strong> 데이터가 많을수록 더 정확해져요. 꾸준히 학습해보세요!</span>
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </main>
+        </div>
       </div>
-
-      {/* AI 기능 탭 */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          {aiFeatures.map((feature) => (
-            <TabsTrigger key={feature.id} value={feature.id} className="text-xs">
-              {feature.title.split(' ')[0]}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {aiFeatures.map((feature) => (
-          <TabsContent key={feature.id} value={feature.id} className="mt-6">
-            {renderFeatureContent(feature)}
-          </TabsContent>
-        ))}
-      </Tabs>
-
-      {/* AI 시스템 상태 */}
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Settings className="w-5 h-5 mr-2" />
-            AI 시스템 상태
-          </CardTitle>
-          <CardDescription>
-            현재 AI 기능들의 동작 상태를 확인하세요
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="w-3 h-3 bg-green-500 rounded-full mx-auto mb-2"></div>
-              <p className="text-sm font-medium">심층 분석</p>
-              <p className="text-xs text-gray-600">정상 동작</p>
-            </div>
-            <div className="text-center">
-              <div className="w-3 h-3 bg-green-500 rounded-full mx-auto mb-2"></div>
-              <p className="text-sm font-medium">AI 멘토링</p>
-              <p className="text-xs text-gray-600">정상 동작</p>
-            </div>
-            <div className="text-center">
-              <div className="w-3 h-3 bg-green-500 rounded-full mx-auto mb-2"></div>
-              <p className="text-sm font-medium">난이도 조절</p>
-              <p className="text-xs text-gray-600">정상 동작</p>
-            </div>
-            <div className="text-center">
-              <div className="w-3 h-3 bg-yellow-500 rounded-full mx-auto mb-2"></div>
-              <p className="text-sm font-medium">코드 리뷰</p>
-              <p className="text-xs text-gray-600">준비 중</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 도움말 */}
-      <Card className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
-        <CardContent className="pt-6">
-          <div className="text-center">
-            <h3 className="font-semibold text-blue-900 mb-2">💡 AI 기능 활용 팁</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-blue-800">
-              <div>
-                <strong>심층 분석:</strong> 최소 5개 문제를 풀어야 정확한 분석이 가능합니다
-              </div>
-              <div>
-                <strong>AI 멘토링:</strong> 구체적인 질문을 하면 더 도움이 되는 답변을 받을 수 있습니다
-              </div>
-              <div>
-                <strong>난이도 조절:</strong> 시간을 두고 문제를 풀면 더 정확한 난이도 추천을 받습니다
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
