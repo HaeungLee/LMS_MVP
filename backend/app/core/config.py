@@ -22,8 +22,10 @@ class Settings(BaseSettings):
     allowed_origins: list = [
         "http://localhost:3000",
         "http://localhost:5173",
+        "http://localhost:5174",  # 새로운 포트 추가
         "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173"
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174"   # 새로운 포트 추가
     ]
     
     # 데이터베이스 경로 (기존 JSON 파일)

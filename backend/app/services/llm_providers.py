@@ -26,6 +26,7 @@ class OpenRouterProvider(LLMProvider):
 
     async def generate(self, system_prompt: str, user_prompt: str, max_tokens: int = 160) -> Optional[str]:
         if not self._api_key:
+            print("❌ OpenRouter API 키가 설정되지 않았습니다. .env 파일에서 OPENROUTER_API_KEY를 확인해주세요.")
             return None
         payload: Dict[str, Any] = {
             "model": self._model,

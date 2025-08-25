@@ -34,17 +34,17 @@ const EnhancedFeedbackTester = () => {
       const response = await apiClient.get('/questions/python_basics?easy_count=3&medium_count=2&hard_count=0');
       
       console.log('🔍 API 응답 객체:', response);
+      console.log('🔍 응답 상태:', response.status, response.statusText);
+      
+      // 응답 상태 체크
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ API 에러 응답:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
       
       // Response 객체에서 JSON 데이터 추출
-      let questions;
-      if (response && typeof response.json === 'function') {
-        questions = await response.json();
-      } else if (Array.isArray(response)) {
-        questions = response;
-      } else {
-        console.error('❌ 예상하지 못한 응답 형식:', response);
-        throw new Error('Invalid response format');
-      }
+      const questions = await response.json();
       
       console.log('🔍 백엔드에서 가져온 실제 문제들:', questions);
       
@@ -59,10 +59,10 @@ const EnhancedFeedbackTester = () => {
           id: q.id,
           type: q.question_type || 'short_answer', // 기본값
           title: `${getTypeDisplayName(q.question_type)}: ${q.topic || '문제'}`,
-          question: q.question_text || q.question,
+          question: q.code_snippet || '', // code_snippet을 question으로 사용
           choices: q.choices || [],
           code_snippet: q.code_snippet || '',
-          correct_answer: q.correct_answer,
+          correct_answer: q.answer || q.correct_answer, // answer 필드 우선 사용
           topic: q.topic || '',
           difficulty: q.difficulty || 'medium',
           required_keywords: q.required_keywords || [],

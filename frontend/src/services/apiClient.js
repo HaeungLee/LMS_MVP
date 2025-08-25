@@ -298,6 +298,52 @@ export const generateQuestionsForTopic = async (topic, difficulty = 'easy', coun
   return res.json();
 };
 
+// 단일 문제 생성 (타입 지정)
+export const generateSingleQuestion = async (questionType, topic, difficulty) => {
+  const url = `${API_BASE_URL}/ai-learning/generate-single-question`;
+  const res = await fetchWithTimeout(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      question_type: questionType, 
+      topic, 
+      difficulty 
+    }),
+    credentials: 'include',
+    timeoutMs: 30000, // 30초 타임아웃
+  });
+  if (!res.ok) throw new Error('Failed to generate single question');
+  return res.json();
+};
+
+// 혼합 문제셋 생성
+export const generateMixedQuestions = async (topic, difficulty, count = 4) => {
+  const url = `${API_BASE_URL}/ai-learning/generate-mixed-questions`;
+  const res = await fetchWithTimeout(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ topic, difficulty, count }),
+    credentials: 'include',
+    timeoutMs: 45000, // 45초 타임아웃 (여러 문제 생성이라 더 길게)
+  });
+  if (!res.ok) throw new Error('Failed to generate mixed questions');
+  return res.json();
+};
+
+// 문제 저장 (생성된 AI 문제를 데이터베이스에 저장)
+export const saveQuestion = async (questionData) => {
+  const url = `${API_BASE_URL}/admin/questions`;
+  const res = await fetchWithTimeout(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(questionData),
+    credentials: 'include',
+    timeoutMs: 10000,
+  });
+  if (!res.ok) throw new Error('Failed to save question');
+  return res.json();
+};
+
 export const getAdaptiveQuestions = async (topic) => {
   const url = `${API_BASE_URL}/ai-learning/adaptive-questions?topic=${encodeURIComponent(topic)}`;
   const res = await fetchWithTimeout(url, { credentials: 'include', timeoutMs: 15000 });
@@ -490,6 +536,9 @@ const apiClient = {
   getLearningStatus, 
   getDailyLearningPlan,
   generateQuestionsForTopic,
+  generateSingleQuestion, // 새로 추가
+  generateMixedQuestions, // 새로 추가
+  saveQuestion, // 문제 저장 함수 추가
   getAdaptiveQuestions,
   getClassProgressOverview,
   assignLearningTopics,
@@ -506,7 +555,7 @@ const apiClient = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
       credentials: 'include',
-      timeoutMs: 15000,
+      timeoutMs: 30000, // 30초로 증가
       ...options
     });
   },
@@ -515,7 +564,7 @@ const apiClient = {
     return fetchWithTimeout(API_BASE_URL + url, {
       method: 'GET',
       credentials: 'include',
-      timeoutMs: 10000,
+      timeoutMs: 15000, // 15초로 증가
       ...options
     });
   }

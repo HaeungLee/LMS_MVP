@@ -48,17 +48,17 @@ const QuestionTypeGenerator = () => {
     setError('');
 
     try {
-      const response = await apiClient.post('/ai-learning/generate-single-question', {
-        question_type: selectedType,
-        topic: selectedTopic,
-        difficulty: selectedDifficulty
-      });
-
+      const response = await apiClient.generateSingleQuestion(selectedType, selectedTopic, selectedDifficulty);
       setGeneratedQuestion(response.question);
       console.log('✅ 단일 문제 생성 성공:', response);
     } catch (err) {
-      setError('문제 생성에 실패했습니다: ' + (err.response?.data?.detail || err.message));
-      console.error('❌ 단일 문제 생성 실패:', err);
+      console.error('❌ 단일 문제 생성 상세 에러:', {
+        message: err.message,
+        stack: err.stack,
+        name: err.name,
+        response: err.response
+      });
+      setError('문제 생성에 실패했습니다: ' + (err.message || '알 수 없는 오류'));
     } finally {
       setLoading(false);
     }
@@ -75,16 +75,11 @@ const QuestionTypeGenerator = () => {
     setError('');
 
     try {
-      const response = await apiClient.post('/ai-learning/generate-mixed-questions', {
-        topic: selectedTopic,
-        difficulty: selectedDifficulty,
-        count: 4 // 4가지 다른 유형
-      });
-
+      const response = await apiClient.generateMixedQuestions(selectedTopic, selectedDifficulty, 4);
       setMixedQuestions(response.questions);
       console.log('✅ 혼합 문제셋 생성 성공:', response);
     } catch (err) {
-      setError('혼합 문제셋 생성에 실패했습니다: ' + (err.response?.data?.detail || err.message));
+      setError('혼합 문제셋 생성에 실패했습니다: ' + (err.message || '알 수 없는 오류'));
       console.error('❌ 혼합 문제셋 생성 실패:', err);
     } finally {
       setLoading(false);

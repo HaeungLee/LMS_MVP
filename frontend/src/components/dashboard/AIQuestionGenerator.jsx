@@ -10,6 +10,8 @@ const AIQuestionGenerator = () => {
     count: 5
   });
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [lastGenerationSummary, setLastGenerationSummary] = useState(null);
   const [classOverview, setClassOverview] = useState(null);
 
   const topics = [
@@ -39,6 +41,8 @@ const AIQuestionGenerator = () => {
     try {
       setGenerating(true);
       setError(null);
+      setSuccessMessage(null);
+      setLastGenerationSummary(null);
 
       const response = await generateQuestionsForTopic(
         formData.topic,
@@ -48,6 +52,23 @@ const AIQuestionGenerator = () => {
 
       if (response.success) {
         setGeneratedQuestions(response.generated_questions);
+        
+        // 성공 메시지와 요약 정보 설정
+        const summary = {
+          topic: formData.topic,
+          difficulty: difficulties.find(d => d.value === formData.difficulty)?.label,
+          requestedCount: formData.count,
+          actualCount: response.generated_questions.length,
+          generatedAt: new Date().toLocaleString('ko-KR')
+        };
+        
+        setLastGenerationSummary(summary);
+        setSuccessMessage(`✅ 문제 생성 완료! ${response.generated_questions.length}개의 "${formData.topic}" 문제가 성공적으로 생성되었습니다.`);
+        
+        // 5초 후 성공 메시지 자동 사라짐
+        setTimeout(() => {
+          setSuccessMessage(null);
+        }, 5000);
       } else {
         setError('문제 생성에 실패했습니다.');
       }
@@ -72,14 +93,63 @@ const AIQuestionGenerator = () => {
   };
 
   const handleSaveQuestion = async (question, index) => {
-    // 실제로는 문제를 데이터베이스에 저장하는 API 호출
-    console.log('문제 저장:', question);
-    alert(`문제 #${index + 1}이 저장되었습니다.`);
+    try {
+      // AI 생성 문제 데이터를 DB 저장 형식으로 변환
+      const questionData = {
+        subject: 'python_basics', // 기본값
+        topic: question.topic || formData.topic || 'AI 생성 문제',
+        question_type: question.question_type || 'short_answer',
+        code_snippet: question.question_text || question.code_snippet || question.question || '',
+        correct_answer: question.correct_answer || question.answer || '',
+        difficulty: question.difficulty || formData.difficulty || 'medium',
+        rubric: question.explanation || question.rubric || '',
+        created_by: 'AI Generator',
+        is_active: true
+      };
+
+      console.log('💾 문제 저장 시도:', questionData);
+
+      // 실제 API 호출
+      const response = await apiClient.saveQuestion(questionData);
+
+      // 더 상세한 저장 완료 메시지
+      const questionPreview = questionData.code_snippet.length > 50 
+        ? questionData.code_snippet.substring(0, 50) + '...' 
+        : questionData.code_snippet;
+
+      setSuccessMessage(`✅ 문제 저장 완료! 데이터베이스 ID: ${response.id}`);
+      setTimeout(() => setSuccessMessage(null), 5000);
+
+      alert(`✅ 문제 저장 완료!\n\n문제 번호: #${index + 1}\n주제: ${questionData.topic}\n미리보기: ${questionPreview}\n\n문제가 데이터베이스에 저장되었습니다.\nDB ID: ${response.id}`);
+
+    } catch (error) {
+      console.error('❌ 문제 저장 실패:', error);
+      alert(`❌ 문제 저장 실패!\n\n오류: ${error.message}\n\n관리자에게 문의하세요.`);
+    }
   };
 
   const handleDeleteQuestion = (index) => {
-    const updated = generatedQuestions.filter((_, i) => i !== index);
-    setGeneratedQuestions(updated);
+    const question = generatedQuestions[index];
+    const questionPreview = question.question_text || question.code_snippet || '문제';
+    const truncatedPreview = questionPreview.length > 30 
+      ? questionPreview.substring(0, 30) + '...' 
+      : questionPreview;
+      
+    if (confirm(`문제 #${index + 1}을 삭제하시겠습니까?\n\n"${truncatedPreview}"`)) {
+      const updated = generatedQuestions.filter((_, i) => i !== index);
+      setGeneratedQuestions(updated);
+      
+      // 성공 메시지 업데이트
+      if (updated.length === 0) {
+        setSuccessMessage(null);
+        setLastGenerationSummary(null);
+      } else if (lastGenerationSummary) {
+        setLastGenerationSummary({
+          ...lastGenerationSummary,
+          actualCount: updated.length
+        });
+      }
+    }
   };
 
   return (
@@ -151,6 +221,45 @@ const AIQuestionGenerator = () => {
         </div>
       </div>
 
+      {/* 성공 메시지 */}
+      {successMessage && (
+        <div style={styles.successCard}>
+          <div style={styles.successMessage}>
+            <p>{successMessage}</p>
+          </div>
+          {lastGenerationSummary && (
+            <div style={styles.generationSummary}>
+              <h4 style={styles.summaryTitle}>📊 생성 요약</h4>
+              <div style={styles.summaryGrid}>
+                <div style={styles.summaryItem}>
+                  <span style={styles.summaryLabel}>주제:</span>
+                  <span style={styles.summaryValue}>{lastGenerationSummary.topic}</span>
+                </div>
+                <div style={styles.summaryItem}>
+                  <span style={styles.summaryLabel}>난이도:</span>
+                  <span style={styles.summaryValue}>{lastGenerationSummary.difficulty}</span>
+                </div>
+                <div style={styles.summaryItem}>
+                  <span style={styles.summaryLabel}>요청 개수:</span>
+                  <span style={styles.summaryValue}>{lastGenerationSummary.requestedCount}개</span>
+                </div>
+                <div style={styles.summaryItem}>
+                  <span style={styles.summaryLabel}>실제 생성:</span>
+                  <span style={styles.summaryValue}>{lastGenerationSummary.actualCount}개</span>
+                </div>
+                <div style={styles.summaryItem}>
+                  <span style={styles.summaryLabel}>생성 시간:</span>
+                  <span style={styles.summaryValue}>{lastGenerationSummary.generatedAt}</span>
+                </div>
+              </div>
+            </div>
+          )}
+          <button onClick={() => setSuccessMessage(null)} style={styles.closeButton}>
+            닫기
+          </button>
+        </div>
+      )}
+
       {/* 오류 메시지 */}
       {error && (
         <div style={styles.errorCard}>
@@ -170,7 +279,13 @@ const AIQuestionGenerator = () => {
             </h3>
             <div style={styles.resultActions}>
               <button 
-                onClick={() => setGeneratedQuestions([])}
+                onClick={() => {
+                  if (confirm(`모든 생성된 문제 ${generatedQuestions.length}개를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+                    setGeneratedQuestions([]);
+                    setSuccessMessage(null);
+                    setLastGenerationSummary(null);
+                  }
+                }}
                 style={styles.clearButton}
               >
                 전체 삭제
@@ -635,6 +750,59 @@ const styles = {
     padding: '2px 6px',
     borderRadius: '10px',
     fontSize: '12px',
+  },
+
+  // 성공 메시지 스타일
+  successCard: {
+    backgroundColor: '#f0fdf4',
+    border: '1px solid #bbf7d0',
+    borderRadius: '8px',
+    padding: '20px',
+    marginBottom: '20px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  },
+
+  successMessage: {
+    marginBottom: '16px',
+  },
+
+  generationSummary: {
+    backgroundColor: 'white',
+    border: '1px solid #dcfce7',
+    borderRadius: '6px',
+    padding: '16px',
+    marginBottom: '16px',
+  },
+
+  summaryTitle: {
+    margin: '0 0 12px 0',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    color: '#166534',
+  },
+
+  summaryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: '8px',
+  },
+
+  summaryItem: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '8px 0',
+    borderBottom: '1px solid #f0f0f0',
+  },
+
+  summaryLabel: {
+    fontWeight: '500',
+    color: '#374151',
+  },
+
+  summaryValue: {
+    fontWeight: 'bold',
+    color: '#059669',
   },
 };
 

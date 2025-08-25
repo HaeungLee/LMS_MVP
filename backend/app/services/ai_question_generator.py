@@ -542,9 +542,14 @@ class AIQuestionGenerator:
     async def _call_ai_api_new(self, prompt: str) -> str:
         """새로운 AI API 호출 함수"""
         try:
+            print(f"🚀 AI API 호출 시작...")
+            
             llm = get_llm_provider()
             if not llm:
-                raise Exception("LLM 제공자를 사용할 수 없습니다")
+                print("❌ LLM 제공자를 사용할 수 없습니다")
+                raise Exception("LLM 제공자를 사용할 수 없습니다. OpenRouter API 키를 확인해주세요.")
+            
+            print(f"🔧 LLM 제공자 확인됨, AI 호출 중...")
             
             # OpenRouter API는 system_prompt와 user_prompt를 구분
             response = await llm.generate(
@@ -554,8 +559,10 @@ class AIQuestionGenerator:
             )
             
             if not response:
+                print("❌ AI 응답이 비어있습니다")
                 raise Exception("AI 응답이 비어있습니다")
-                
+            
+            print(f"✅ AI API 호출 성공, 응답 길이: {len(response)}")
             return response
         except Exception as e:
             print(f"❌ AI API 호출 실패: {e}")
