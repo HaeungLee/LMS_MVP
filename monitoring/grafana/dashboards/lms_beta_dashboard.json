@@ -1,0 +1,217 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "LMS Beta Test Monitoring",
+    "tags": ["lms", "beta", "monitoring"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "System Health Overview",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=\"lms-backend\"}",
+            "legendFormat": "Backend Status"
+          },
+          {
+            "expr": "up{job=\"lms-frontend\"}",
+            "legendFormat": "Frontend Status"
+          },
+          {
+            "expr": "up{job=\"postgres\"}",
+            "legendFormat": "Database Status"
+          },
+          {
+            "expr": "up{job=\"redis\"}",
+            "legendFormat": "Redis Status"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "API Response Times",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Response Time (seconds)",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 3,
+        "title": "AI Feature Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(ai_feature_calls_total[5m])",
+            "legendFormat": "AI Calls/sec"
+          },
+          {
+            "expr": "rate(ai_mentoring_sessions_total[5m])",
+            "legendFormat": "Mentoring Sessions/sec"
+          },
+          {
+            "expr": "rate(ai_code_reviews_total[5m])",
+            "legendFormat": "Code Reviews/sec"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Calls per second",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Beta User Activity",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(user_logins_total{user_type=\"beta\"}[5m])",
+            "legendFormat": "Beta User Logins/sec"
+          },
+          {
+            "expr": "rate(module_completions_total{user_type=\"beta\"}[5m])",
+            "legendFormat": "Module Completions/sec"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Actions per second",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 5,
+        "title": "Error Rates",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{status=~\"5..\"}[5m])",
+            "legendFormat": "5xx Errors/sec"
+          },
+          {
+            "expr": "rate(http_requests_total{status=~\"4..\"}[5m])",
+            "legendFormat": "4xx Errors/sec"
+          },
+          {
+            "expr": "rate(ai_api_errors_total[5m])",
+            "legendFormat": "AI API Errors/sec"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Errors per second",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      },
+      {
+        "id": 6,
+        "title": "Database Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(postgresql_queries_total[5m])",
+            "legendFormat": "Queries/sec"
+          },
+          {
+            "expr": "postgresql_query_duration_seconds",
+            "legendFormat": "Query Duration"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Queries/Duration",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}
+      },
+      {
+        "id": 7,
+        "title": "Redis Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(redis_commands_processed_total[5m])",
+            "legendFormat": "Commands/sec"
+          },
+          {
+            "expr": "redis_connected_clients",
+            "legendFormat": "Connected Clients"
+          },
+          {
+            "expr": "redis_memory_used_bytes",
+            "legendFormat": "Memory Usage"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Operations/Bytes",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24}
+      },
+      {
+        "id": 8,
+        "title": "Beta Test Metrics Summary",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "count(count by (user_id) (user_activity_total{user_type=\"beta\"}))",
+            "legendFormat": "Active Beta Users"
+          },
+          {
+            "expr": "sum(ai_feature_usage_total)",
+            "legendFormat": "Total AI Feature Uses"
+          },
+          {
+            "expr": "avg(user_satisfaction_score)",
+            "legendFormat": "Average Satisfaction Score"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "5s"
+  }
+}

@@ -252,3 +252,332 @@ class LearningResource(Base):
     # 관계 설정
     module = relationship("LearningModule", back_populates="resources")
 
+
+# Phase 2: 개인화 엔진을 위한 모델들
+
+class UserProgress(Base):
+    """사용자 학습 진도 추적"""
+    __tablename__ = "user_progress"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    track_id = Column(Integer, ForeignKey("learning_tracks.id"), nullable=False, index=True)
+    module_id = Column(Integer, ForeignKey("learning_modules.id"), nullable=True, index=True)
+    
+    # 진도 상태
+    status = Column(String(50), default='not_started', nullable=False)  # 'not_started', 'in_progress', 'completed', 'paused'
+    completion_percentage = Column(Float, default=0.0, nullable=False)  # 0.0 ~ 100.0
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    last_accessed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # 학습 데이터
+    total_attempts = Column(Integer, default=0, nullable=False)
+    successful_attempts = Column(Integer, default=0, nullable=False)
+    time_spent_minutes = Column(Integer, default=0, nullable=False)
+    
+    # 메타데이터
+    current_difficulty = Column(Integer, default=1, nullable=False)  # 적응형 난이도
+    learning_velocity = Column(Float, default=1.0, nullable=False)  # 학습 속도 계수
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # 관계 설정
+    user = relationship("User")
+    track = relationship("LearningTrack")
+    module = relationship("LearningModule")
+
+
+class UserWeakness(Base):
+    """사용자 약점/강점 분석"""
+    __tablename__ = "user_weaknesses"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # 약점 분류
+    category = Column(String(100), nullable=False, index=True)  # 'concept', 'syntax', 'logic', 'debugging'
+    subcategory = Column(String(100), nullable=True)  # 'loops', 'functions', 'data_structures'
+    topic = Column(String(100), nullable=False)  # 구체적 주제
+    
+    # 약점 데이터
+    error_count = Column(Integer, default=1, nullable=False)
+    accuracy_rate = Column(Float, default=0.0, nullable=False)  # 0.0 ~ 1.0
+    avg_time_taken = Column(Float, default=0.0, nullable=False)  # 평균 소요 시간(초)
+    
+    # AI 분석 결과
+    weakness_type = Column(String(50), nullable=False)  # 'critical', 'moderate', 'minor'
+    suggested_practice = Column(Text, nullable=True)  # AI 추천 연습 방법
+    improvement_trend = Column(String(20), default='stable', nullable=False)  # 'improving', 'stable', 'declining'
+    
+    # 메타데이터
+    first_detected_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    last_updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    is_resolved = Column(Boolean, default=False, nullable=False)
+    resolved_at = Column(DateTime, nullable=True)
+    
+    # 관계 설정
+    user = relationship("User")
+
+
+class UserTrackProgress(Base):
+    """사용자별 트랙 진행 상황"""
+    __tablename__ = "user_track_progress"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    track_id = Column(Integer, ForeignKey("learning_tracks.id"), nullable=False, index=True)
+    
+    # 트랙 상태
+    status = Column(String(50), default='not_started', nullable=False)
+    enrollment_date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    estimated_completion_date = Column(DateTime, nullable=True)
+    actual_completion_date = Column(DateTime, nullable=True)
+    
+    # 진도 메트릭
+    modules_completed = Column(Integer, default=0, nullable=False)
+    total_modules = Column(Integer, default=0, nullable=False)
+    overall_accuracy = Column(Float, default=0.0, nullable=False)
+    total_time_spent = Column(Integer, default=0, nullable=False)  # 분 단위
+    
+    # 개인화 데이터
+    preferred_difficulty = Column(Integer, default=2, nullable=False)  # 1-5
+    learning_pace = Column(String(20), default='normal', nullable=False)  # 'slow', 'normal', 'fast'
+    industry_preference = Column(String(100), default='general', nullable=False)
+    
+    # 추천 시스템 데이터
+    next_recommended_module_id = Column(Integer, ForeignKey("learning_modules.id"), nullable=True)
+    recommendation_reason = Column(Text, nullable=True)
+    last_recommendation_at = Column(DateTime, nullable=True)
+    
+    # 메타데이터
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # 관계 설정
+    user = relationship("User")
+    track = relationship("LearningTrack")
+    next_recommended_module = relationship("LearningModule", foreign_keys=[next_recommended_module_id])
+
+
+class LearningGoal(Base):
+    """사용자 학습 목표"""
+    __tablename__ = "learning_goals"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # 목표 설정
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    target_completion_date = Column(DateTime, nullable=True)
+    priority_level = Column(Integer, default=3, nullable=False)  # 1(낮음) ~ 5(높음)
+    
+    # 목표 분류
+    goal_type = Column(String(50), nullable=False)  # 'skill_mastery', 'project_completion', 'career_milestone'
+    target_tracks = Column(ARRAY(Integer), default=[], nullable=False)  # 관련 트랙 ID들
+    success_criteria = Column(Text, nullable=True)  # 성공 기준
+    
+    # 진행 상황
+    status = Column(String(50), default='active', nullable=False)  # 'active', 'completed', 'paused', 'cancelled'
+    progress_percentage = Column(Float, default=0.0, nullable=False)
+    milestones_achieved = Column(ARRAY(Text), default=[], nullable=False)
+    
+    # 메타데이터
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+    
+    # 관계 설정
+    user = relationship("User")
+
+
+class PersonalizedRecommendation(Base):
+    """개인화된 추천 기록"""
+    __tablename__ = "personalized_recommendations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # 추천 내용
+    recommendation_type = Column(String(50), nullable=False)  # 'next_module', 'skill_reinforcement', 'career_path'
+    recommended_item_type = Column(String(50), nullable=False)  # 'module', 'track', 'resource', 'project'
+    recommended_item_id = Column(Integer, nullable=False)
+    
+    # 추천 이유
+    reasoning = Column(Text, nullable=False)
+    confidence_score = Column(Float, default=0.5, nullable=False)  # 0.0 ~ 1.0
+    algorithm_version = Column(String(50), default='v1.0', nullable=False)
+    
+    # 사용자 반응
+    user_action = Column(String(50), nullable=True)  # 'accepted', 'declined', 'ignored', 'postponed'
+    feedback_rating = Column(Integer, nullable=True)  # 1-5 별점
+    user_feedback = Column(Text, nullable=True)
+    
+    # 결과 추적
+    was_helpful = Column(Boolean, nullable=True)
+    completion_rate = Column(Float, nullable=True)  # 추천 항목 완료율
+    time_to_complete = Column(Integer, nullable=True)  # 완료까지 소요 시간(분)
+    
+    # 메타데이터
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    actioned_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    
+    # 관계 설정
+    user = relationship("User")
+
+
+# Phase 2: 실무 프로젝트 연계 모델들
+
+class ProjectTemplate(Base):
+    """실무 프로젝트 템플릿"""
+    __tablename__ = "project_templates"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(200), nullable=False, unique=True, index=True)
+    display_name = Column(String(200), nullable=False)
+    description = Column(Text, nullable=False)
+    
+    # 프로젝트 분류
+    project_type = Column(String(50), nullable=False)  # 'web_app', 'api', 'data_analysis', 'mobile_app'
+    difficulty_level = Column(Integer, default=2, nullable=False)  # 1-5
+    estimated_hours = Column(Integer, default=20, nullable=False)
+    
+    # 기술 스택
+    required_skills = Column(ARRAY(Text), default=[], nullable=False)  # 필수 기술
+    technologies = Column(ARRAY(Text), default=[], nullable=False)    # 사용 기술
+    industry_focus = Column(String(100), default='general', nullable=False)
+    
+    # 프로젝트 구조
+    project_structure = Column(Text, nullable=True)  # JSON 형태의 프로젝트 구조
+    starter_code = Column(Text, nullable=True)       # 시작 코드
+    requirements_file = Column(Text, nullable=True)  # requirements.txt 내용
+    
+    # 평가 기준
+    evaluation_criteria = Column(Text, nullable=False)  # 평가 기준
+    success_metrics = Column(ARRAY(Text), default=[], nullable=False)
+    
+    # 메타데이터
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # 관계 설정
+    user_projects = relationship("UserProject", back_populates="template")
+
+
+class UserProject(Base):
+    """사용자 프로젝트 진행 상황"""
+    __tablename__ = "user_projects"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    template_id = Column(Integer, ForeignKey("project_templates.id"), nullable=False, index=True)
+    
+    # 프로젝트 상태
+    status = Column(String(50), default='not_started', nullable=False)  # 'not_started', 'in_progress', 'completed', 'paused'
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    deadline = Column(DateTime, nullable=True)
+    
+    # 진행 정보
+    progress_percentage = Column(Float, default=0.0, nullable=False)
+    current_milestone = Column(String(100), nullable=True)
+    completed_milestones = Column(ARRAY(Text), default=[], nullable=False)
+    
+    # 프로젝트 파일
+    project_repository = Column(String(500), nullable=True)  # GitHub 등 저장소 URL
+    deployed_url = Column(String(500), nullable=True)        # 배포된 프로젝트 URL
+    submission_files = Column(Text, nullable=True)           # 제출 파일 정보 (JSON)
+    
+    # 평가 결과
+    self_evaluation_score = Column(Float, nullable=True)     # 자기 평가 점수
+    peer_evaluation_score = Column(Float, nullable=True)     # 동료 평가 점수
+    instructor_evaluation_score = Column(Float, nullable=True)  # 강사 평가 점수
+    final_score = Column(Float, nullable=True)
+    
+    # 피드백
+    instructor_feedback = Column(Text, nullable=True)
+    improvement_suggestions = Column(Text, nullable=True)
+    
+    # 메타데이터
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # 관계 설정
+    user = relationship("User")
+    template = relationship("ProjectTemplate", back_populates="user_projects")
+
+
+class Portfolio(Base):
+    """사용자 포트폴리오"""
+    __tablename__ = "portfolios"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    
+    # 기본 정보
+    title = Column(String(200), nullable=False)
+    bio = Column(Text, nullable=True)
+    profile_image_url = Column(String(500), nullable=True)
+    
+    # 기술 스택
+    skills = Column(ARRAY(Text), default=[], nullable=False)
+    specializations = Column(ARRAY(Text), default=[], nullable=False)
+    
+    # 연락처
+    email = Column(String(100), nullable=True)
+    github_url = Column(String(500), nullable=True)
+    linkedin_url = Column(String(500), nullable=True)
+    website_url = Column(String(500), nullable=True)
+    
+    # 포트폴리오 설정
+    is_public = Column(Boolean, default=False, nullable=False)
+    custom_domain = Column(String(100), nullable=True, unique=True)
+    theme = Column(String(50), default='modern', nullable=False)
+    
+    # 통계
+    view_count = Column(Integer, default=0, nullable=False)
+    last_viewed_at = Column(DateTime, nullable=True)
+    
+    # 메타데이터
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # 관계 설정
+    user = relationship("User")
+    project_showcases = relationship("PortfolioProject", back_populates="portfolio")
+
+
+class PortfolioProject(Base):
+    """포트폴리오에 표시할 프로젝트"""
+    __tablename__ = "portfolio_projects"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    portfolio_id = Column(Integer, ForeignKey("portfolios.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_project_id = Column(Integer, ForeignKey("user_projects.id"), nullable=True)  # 연계된 학습 프로젝트
+    
+    # 프로젝트 정보
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=False)
+    technologies = Column(ARRAY(Text), default=[], nullable=False)
+    
+    # 링크
+    demo_url = Column(String(500), nullable=True)
+    repository_url = Column(String(500), nullable=True)
+    
+    # 이미지/미디어
+    thumbnail_url = Column(String(500), nullable=True)
+    screenshots = Column(ARRAY(Text), default=[], nullable=False)
+    
+    # 메타데이터
+    display_order = Column(Integer, default=0, nullable=False)
+    is_featured = Column(Boolean, default=False, nullable=False)
+    completion_date = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # 관계 설정
+    portfolio = relationship("Portfolio", back_populates="project_showcases")
+    user_project = relationship("UserProject")
+

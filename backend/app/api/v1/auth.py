@@ -50,14 +50,14 @@ def register(body: RegisterDto, response: Response, db: Session = Depends(get_db
     db.flush()
     # issue tokens
     access = create_access_token(user)
-    # Remember me 정책: ON=30일, OFF=14일
-    refresh_days = 30 if (body.remember is None or body.remember) else 14
+    # 회원가입 시에는 기본 30일로 설정 (remember me 기본값 적용)
+    refresh_days = 30
     refresh, jti, exp = create_refresh_token(user, expires_days=refresh_days)
     db.add(RefreshToken(id=jti, user_id=user.id, issued_at=datetime.utcnow(), expires_at=exp, revoked=False))
     db.commit()
     resp = {"id": user.id, "email": user.email, "role": user.role, "display_name": user.display_name}
     response.set_cookie("access_token", access, httponly=True, samesite="lax")
-    # refresh는 remember에 따라 만료일 지정
+    # refresh는 기본 30일로 설정
     max_age = refresh_days * 24 * 60 * 60
     response.set_cookie("refresh_token", refresh, httponly=True, samesite="lax", max_age=max_age)
     # CSRF 토큰 발급 (더블 서브밋 쿠키)

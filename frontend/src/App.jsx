@@ -6,6 +6,9 @@ import AuthLogin from './pages/AuthLogin';
 import AuthRegister from './pages/AuthRegister';
 import AdminQuestions from './pages/AdminQuestions';
 import TeacherDashboard from './pages/TeacherDashboard';
+import AIFeaturesPage from './pages/AIFeaturesPage';
+import BetaDashboard from './pages/BetaDashboard';
+import BetaOnboarding from './components/onboarding/BetaOnboarding';
 import useAuthStore from './stores/authStore';
 
 function Navigation() {
@@ -69,12 +72,29 @@ function Navigation() {
               퀴즈
             </Link>
           </li>
+          <li>
+            <Link to="/ai-features" style={getLinkStyle('/ai-features')}>
+              🤖 AI 기능
+            </Link>
+          </li>
+          <li>
+            <Link to="/beta-onboarding" style={getLinkStyle('/beta-onboarding')}>
+              🧪 베타 온보딩
+            </Link>
+          </li>
           {(user && (user.role === 'teacher' || user.role === 'admin')) && (
-            <li>
-              <Link to="/teacher/dashboard" style={getLinkStyle('/teacher/dashboard')}>
-                교사용 대시보드
-              </Link>
-            </li>
+            <>
+              <li>
+                <Link to="/teacher/dashboard" style={getLinkStyle('/teacher/dashboard')}>
+                  교사용 대시보드
+                </Link>
+              </li>
+              <li>
+                <Link to="/beta-dashboard" style={getLinkStyle('/beta-dashboard')}>
+                  📊 베타 대시보드
+                </Link>
+              </li>
+            </>
           )}
           {/* 결과 페이지는 제출 후 라우팅으로만 접근 */}
         </ul>
@@ -110,6 +130,9 @@ function App() {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/quiz" element={<Protected><QuizPage /></Protected>} />
             <Route path="/results/:submission_id" element={<ResultsPage />} />
+            <Route path="/ai-features" element={<AIFeaturesPage />} />
+            <Route path="/beta-onboarding" element={<BetaOnboarding userId={1} onComplete={() => alert('온보딩 완료!')} />} />
+            <Route path="/beta-dashboard" element={<Protected><BetaDashboard /></Protected>} />
             <Route path="/teacher/dashboard" element={<Protected><TeacherDashboard /></Protected>} />
             <Route path="/admin/questions" element={<Protected><AdminQuestions /></Protected>} />
             <Route path="/login" element={<AuthLogin />} />

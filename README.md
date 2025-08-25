@@ -1,153 +1,122 @@
 # LMS MVP 프로젝트 실행 가이드
 
-## 1. 프로젝트 소개
+## 1) 프로젝트 소개
 
-AI 기반 코딩 학습 피드백을 제공하는 LMS(Learning Management System)의 MVP(Minimum Viable Product) 버전입니다. 사용자는 문제를 풀고 AI가 제공하는 피드백을 통해 학습할 수 있습니다.
+AI 기반 코딩 학습 피드백을 제공하는 LMS(Learning Management System) MVP입니다. 사용자는 문제를 풀고 AI 피드백으로 학습합니다.
 
-## 2. 기술 스택
+## 2) 기술 스택
 
-- **백엔드**: FastAPI (Python)
-- **프론트엔드**: React (Vite) + Zustand
-- **데이터베이스**: PostgreSQL (Docker) + JSON (기존 호환성)
-- **상태관리**: Zustand (20명 동시접속 최적화)
+- 백엔드: FastAPI (Python)
+- 프론트엔드: React (Vite) + Zustand
+- 데이터베이스: PostgreSQL (Docker) + JSON 호환
+- 기타: Redis/Celery(옵션), Prometheus/Grafana(옵션)
 
-## 3. 사전 준비 사항
+## 3) 사전 준비물
 
-프로젝트를 실행하기 위해 아래의 프로그램들이 설치되어 있어야 합니다.
+- Python 3.11 권장 (3.9+ 동작)
+- Node.js 18.x + npm
+- Docker + Docker Compose
 
-- Python (3.8 이상 권장)
-- Node.js (18.x 이상 권장) 및 npm
-- Docker & Docker Compose
+환경 변수 템플릿: 루트의 `env.sample`를 복사해 `.env`를 만듭니다. (필수는 아님)
 
-## 4. 실행 절차
+```text
+cp env.sample .env  # Windows PowerShell은 수동 복사 또는 편집기로 생성
+```
 
-### 4.0. PostgreSQL 데이터베이스 시작 (Docker)
+중요 값 예시(루트 .env 또는 `backend/.env`):
 
-1. **PostgreSQL 컨테이너 실행**
-   ```bash
-   docker-compose up -d
-   ```
-   
-2. **데이터베이스 상태 확인**
-   ```bash
-   docker ps | findstr lms
-   ```
-   `healthy` 상태가 표시되면 정상입니다.
+```
+DATABASE_URL=postgresql://lms_user:1234@localhost:15432/lms_mvp_db
+JWT_SECRET=dev_secret_change_me
+OPENROUTER_API_KEY=
+VITE_API_BASE_URL=http://localhost:8000
+```
 
-### 4.1. 백엔드 서버 실행
+## 4) 로컬 실행 (개발용, Windows PowerShell)
 
-1. **환경 변수 설정**
-   - 기본값으로 동작합니다. 필요 시 `backend/.env`에 아래 예시로 설정하세요.
-   ```env
-   DATABASE_URL=postgresql://lms_user:1234@localhost:15432/lms_mvp_db
-   JWT_SECRET=dev_secret_change_me
-   JWT_EXPIRES_IN_MIN=15
-   REFRESH_EXPIRES_IN_DAYS=14
-   OPENROUTER_API_KEY=
-   ```
+### 4.0 데이터베이스(컨테이너) 시작
 
-2. **의존성 설치 (venv 권장)**
-   ```bash
-   cd backend
-   python -m venv venv
-   ./venv/Scripts/pip install -r requirements_new.txt  # Windows
-   # 또는: source venv/bin/activate && pip install -r requirements_new.txt
-   ```
-
-3. **시드 스크립트 실행(최초 1회)**
-   ```bash
-   ./venv/Scripts/python -m scripts.seed_taxonomy
-   ./venv/Scripts/python -m scripts.seed_teacher
-   ./venv/Scripts.python -m scripts.seed_admin
-   ```
-
-4. **백엔드 서버 시작**
-   ```bash
-   ./venv/Scripts/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-   ```
-   서버가 정상적으로 실행되면 `http://localhost:8000` 에서 API가 활성화됩니다.### 4.2. 프론트엔드 클라이언트 실행
-
-1.  **의존성 설치**
-    새로운 터미널을 열고 `frontend` 디렉토리로 이동한 후, 아래 명령어를 실행하여 Node.js 패키지를 설치합니다.
-    ```bash
-    cd frontend
-    npm install
-    ```
-
-2.  **프론트엔드 개발 서버 시작**
-    아래 명령어를 실행하여 React 개발 서버를 시작합니다.
-    ```bash
-    npm run dev
-    ```
-    서버가 시작되면 브라우저에서 `http://localhost:5173` (또는 `5174`)로 접속합니다.
-
-## 5. 참고 사항
-
-- **실행 순서**: 
-  1. Docker PostgreSQL 컨테이너 (`docker-compose up -d`)
-  2. 백엔드 서버 (`uvicorn` 명령어)
-  3. 프론트엔드 서버 (`npm run dev`)
-
-- **데이터 관리**: 
-  - 문제 데이터: `backend/data/db.json` (30개 Python 문제)
-  - 사용자 활동: PostgreSQL 데이터베이스 (Docker)
-  - 최근 활동: Zustand 상태관리로 실시간 업데이트
-
-- **상태관리**: Zustand를 사용하여 20명 동시접속에 최적화
-
-- **사용자 편의성**:
-  - 진행률 바에서 원하는 문제로 즉시 이동 가능
-  - 건너뛰기 버튼으로 문제 스킵 후 나중에 돌아올 수 있음
-  - 퀴즈 완료 시 자동으로 최근 활동에 기록
-
-- **라우팅(핵심)**
-  - `/`: 학생 대시보드
-  - `/quiz`: 퀴즈(보호 라우트)
-  - `/results/:submission_id`: 결과(보호 + 사전 권한 점검)
-  - `/admin/questions`: 출제 관리(교사/관리자)
-  - `/teacher/dashboard`: 교사용 대시보드(교사/관리자)
-
-## 6. 데이터베이스 관리
-
-### PostgreSQL 컨테이너 관리
-```bash
-# 컨테이너 시작
+```powershell
 docker-compose up -d
+docker ps | findstr lms_mvp_db_container
+```
+`healthy`면 준비 완료입니다. 포트: 15432 → 컨테이너 5432.
 
-# 컨테이너 중지
+### 4.1 백엔드 실행
+
+```powershell
+cd backend
+python -m venv venv
+./venv/Scripts/Activate.ps1
+pip install -r requirements_new.txt
+
+# (선택) 초기 데이터 시드
+python -m scripts.seed_taxonomy
+python -m scripts.seed_teacher
+python -m scripts.seed_admin
+# 필요 시: python -m scripts.seed_questions ; python -m scripts.seed_curriculum_phase1
+
+# 서버 시작
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+API: http://localhost:8000
+
+### 4.2 프론트엔드 실행
+
+프론트 개발 서버 기본 포트는 `vite.config.js`에 따라 5174입니다.
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+웹: http://localhost:5174
+
+## 5) 운영/패키징 (요약)
+
+프로덕션 이미지는 각 디렉토리의 `Dockerfile.prod`를 사용합니다. 상위 `docker-compose.prod.yml`은 Redis/모니터링/NGINX까지 포함하므로 일부 로컬 파일(nginx 설정 등)이 추가로 필요할 수 있습니다. 최소 구성만 배포하려면 다음을 참고하세요.
+
+- Postgres: compose 사용(포트 5432 매핑 필요 시 수정)
+- Backend: `backend/Dockerfile.prod`로 빌드/실행 (환경변수로 DATABASE_URL 지정)
+- Frontend: `frontend/Dockerfile.prod`로 빌드/실행 (Nginx 정적 서빙)
+
+간단한 통합 실행 가이드는 `run.md`를 확인하세요.
+
+## 6) 데이터베이스 관리
+
+```powershell
+# 시작/중지
+docker-compose up -d
 docker-compose down
 
-# 컨테이너 로그 확인
+# 로그 확인
 docker logs lms_mvp_db_container
 
-# 데이터베이스 접속
+# psql 접속
 docker exec -it lms_mvp_db_container psql -U lms_user -d lms_mvp_db
 ```
 
-### 연결 정보
-- **호스트**: localhost
-- **포트**: 15432 (기본 포트 충돌 방지)
-- **데이터베이스**: lms_mvp_db
-- **사용자**: lms_user
-- **비밀번호**: 1234
+연결 정보
+- 호스트: localhost
+- 포트: 15432
+- DB: lms_mvp_db
+- 사용자: lms_user / 비밀번호: 1234
 
+## 7) 인증/보안 요약
 
-## 7. 인증/보안 요약
-
-- 세션: httpOnly 쿠키(`access_token`, `refresh_token`), Remember me ON 시 refresh 30일 유지
+- 세션: httpOnly 쿠키(`access_token`, `refresh_token`), Remember me 시 refresh 30일
 - CSRF: 더블 서브밋 쿠키(`csrf_token`) + 헤더(`x-csrf-token`)
-  - 프론트에서 POST/PUT/DELETE 시 자동 첨부됨
-- 결과 접근 제어: `/api/v1/results/secure/{submission_id}`로 소유자/권한 확인 후 결과 조회
-- CORS: `http://localhost:5173`, `http://localhost:5174`, `http://127.0.0.1:5173/5174` 허용, credentials 허용
+- 결과 접근 제어: `/api/v1/results/secure/{submission_id}` 소유자/권한 확인
+- CORS: `http://localhost:5174` 등 로컬 개발 도메인 허용, credentials 허용
 
-## 8. 관리자/교사용 기능
+## 8) 관리자/교사용 기능
 
-- 출제 관리 UI: `/admin/questions`
-  - 등록/목록/검색(q)/페이징/토픽 드롭다운(택소노미)/간단 수정/삭제
-- 교사용 대시보드: `/teacher/dashboard`
-  - 주제별 문제 수/정답률, 최근 제출 10건
+- 출제 관리 UI: `/admin/questions` (등록/검색/페이징/택소노미/간단 수정/삭제)
+- 교사용 대시보드: `/teacher/dashboard` (주제별 문제 수/정답률, 최근 제출 10건)
 
-## 9. 테스트 계정
+## 9) 테스트 계정
 
 - 교사: `test@test.com` / `test`
 - 관리자: `admin@admin.com` / `admin`

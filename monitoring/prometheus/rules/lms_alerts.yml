@@ -1,0 +1,182 @@
+# LMS 베타 테스트 알림 규칙
+
+groups:
+  - name: lms_system_alerts
+    rules:
+      # 시스템 다운 알림
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.job }} service is down"
+          description: "{{ $labels.job }} service has been down for more than 1 minute."
+
+      # 높은 응답 시간 알림
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }}s for {{ $labels.job }}"
+
+      # 높은 에러율 알림
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} errors per second for {{ $labels.job }}"
+
+      # 데이터베이스 연결 문제
+      - alert: DatabaseConnectionIssue
+        expr: postgresql_up == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection issue"
+          description: "PostgreSQL database is not responding"
+
+      # Redis 연결 문제
+      - alert: RedisConnectionIssue
+        expr: redis_up == 0
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis connection issue"
+          description: "Redis server is not responding"
+
+  - name: lms_ai_alerts
+    rules:
+      # AI API 에러율 높음
+      - alert: HighAIAPIErrorRate
+        expr: rate(ai_api_errors_total[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High AI API error rate"
+          description: "AI API error rate is {{ $value }} errors per second"
+
+      # AI 기능 사용량 급증
+      - alert: UnusualAIUsageSpike
+        expr: rate(ai_feature_calls_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: info
+        annotations:
+          summary: "Unusual AI usage spike detected"
+          description: "AI feature usage is {{ $value }} calls per second"
+
+      # 멘토링 세션 대기 시간 높음
+      - alert: HighMentoringResponseTime
+        expr: ai_mentoring_response_duration_seconds > 10
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High AI mentoring response time"
+          description: "AI mentoring response time is {{ $value }}s"
+
+  - name: lms_beta_alerts
+    rules:
+      # 베타 사용자 활동 급감
+      - alert: LowBetaUserActivity
+        expr: rate(user_activity_total{user_type="beta"}[1h]) < 0.01
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low beta user activity"
+          description: "Beta user activity rate is {{ $value }} actions per second"
+
+      # 베타 테스터 만족도 낮음
+      - alert: LowBetaUserSatisfaction
+        expr: avg(user_satisfaction_score{user_type="beta"}) < 3.0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low beta user satisfaction"
+          description: "Average beta user satisfaction is {{ $value }}/5.0"
+
+      # 새로운 베타 테스터 온보딩 실패율 높음
+      - alert: HighOnboardingFailureRate
+        expr: rate(onboarding_failures_total[1h]) / rate(onboarding_attempts_total[1h]) > 0.2
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High onboarding failure rate"
+          description: "Onboarding failure rate is {{ $value * 100 }}%"
+
+  - name: lms_performance_alerts
+    rules:
+      # CPU 사용률 높음
+      - alert: HighCPUUsage
+        expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}"
+
+      # 메모리 사용률 높음
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}% on {{ $labels.instance }}"
+
+      # 디스크 사용률 높음
+      - alert: HighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High disk usage"
+          description: "Disk usage is {{ $value }}% on {{ $labels.instance }} ({{ $labels.mountpoint }})"
+
+  - name: lms_business_alerts
+    rules:
+      # 일일 신규 사용자 등록 없음
+      - alert: NoNewUserRegistrations
+        expr: increase(user_registrations_total[24h]) == 0
+        for: 1h
+        labels:
+          severity: info
+        annotations:
+          summary: "No new user registrations in 24 hours"
+          description: "No new users have registered in the last 24 hours"
+
+      # 학습 완료율 급감
+      - alert: LowModuleCompletionRate
+        expr: rate(module_completions_total[1h]) / rate(module_starts_total[1h]) < 0.5
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low module completion rate"
+          description: "Module completion rate is {{ $value * 100 }}%"
+
+      # AI 기능 채택률 낮음
+      - alert: LowAIFeatureAdoption
+        expr: rate(ai_feature_first_use_total[24h]) / rate(user_logins_total[24h]) < 0.1
+        for: 2h
+        labels:
+          severity: info
+        annotations:
+          summary: "Low AI feature adoption rate"
+          description: "AI feature adoption rate is {{ $value * 100 }}% among daily users"

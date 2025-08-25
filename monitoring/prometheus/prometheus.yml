@@ -1,0 +1,78 @@
+# Prometheus 설정 파일 - LMS 베타 테스트 모니터링
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "rules/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # LMS 백엔드 메트릭
+  - job_name: 'lms-backend'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: '/api/v1/monitoring/prometheus-metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # LMS 프론트엔드 메트릭 (nginx에서 제공)
+  - job_name: 'lms-frontend'
+    static_configs:
+      - targets: ['frontend:80']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # PostgreSQL 메트릭
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres_exporter:9187']
+    scrape_interval: 15s
+
+  # Redis 메트릭
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis_exporter:9121']
+    scrape_interval: 15s
+
+  # Celery 메트릭
+  - job_name: 'celery'
+    static_configs:
+      - targets: ['backend:8001']  # Celery 메트릭 엔드포인트
+    metrics_path: '/celery/metrics'
+    scrape_interval: 30s
+
+  # Node Exporter (시스템 메트릭)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node_exporter:9100']
+    scrape_interval: 15s
+
+  # Prometheus 자체 메트릭
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # AI 기능 전용 메트릭
+  - job_name: 'ai-features'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: '/api/v1/ai-features/metrics'
+    scrape_interval: 30s
+    honor_labels: true
+    params:
+      'format': ['prometheus']
+
+  # 베타 테스트 메트릭
+  - job_name: 'beta-testing'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: '/api/v1/beta/metrics'
+    scrape_interval: 60s
+    honor_labels: true
