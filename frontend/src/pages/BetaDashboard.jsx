@@ -3,6 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+
+const API_BASE_URL = 'http://localhost:8000/api/v1';
+
 import { 
   Users, 
   Activity, 
@@ -29,7 +32,7 @@ const BetaDashboard = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/v1/beta/dashboard');
+      const response = await fetch(`${API_BASE_URL}/beta/dashboard`);
       const data = await response.json();
       
       if (data.success) {
