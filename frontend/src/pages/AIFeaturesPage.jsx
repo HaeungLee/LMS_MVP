@@ -1,4 +1,9 @@
 import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import AIAnalysisDashboard from '@/components/ai/AIAnalysisDashboard';
+import AIMentorChat from '@/components/ai/AIMentorChat';
+import AdaptiveDifficultyWidget from '@/components/ai/AdaptiveDifficultyWidget';
 import { 
   Brain, 
   MessageCircle, 
@@ -11,89 +16,8 @@ import {
   Clock,
   ChevronRight,
   Lightbulb,
-  BarChart3 // 오류 수정을 위해 추가
+  BarChart3
 } from 'lucide-react';
-
-// --- Mock Components (실제 컴포넌트로 교체 필요) ---
-// 실제 프로젝트에서는 이 부분들을 실제 컴포넌트 파일로 분리하여 import합니다.
-const Card = ({ children, className = '' }) => <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl ${className}`}>{children}</div>;
-const CardHeader = ({ children, className = '' }) => <div className={`p-6 border-b border-slate-200 dark:border-slate-800 ${className}`}>{children}</div>;
-const CardTitle = ({ children, className = '' }) => <h3 className={`text-lg font-semibold text-slate-900 dark:text-white ${className}`}>{children}</h3>;
-const CardDescription = ({ children, className = '' }) => <p className={`text-sm text-slate-500 dark:text-slate-400 ${className}`}>{children}</p>;
-const CardContent = ({ children, className = '' }) => <div className={`p-6 ${className}`}>{children}</div>;
-const Badge = ({ children, className = '' }) => <span className={`inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full ${className}`}>{children}</span>;
-
-const AIAnalysisDashboard = ({ userId }) => (
-  <Card className="h-full">
-    <CardHeader>
-      <CardTitle>심층 학습 분석 대시보드</CardTitle>
-      <CardDescription>사용자 ID: {userId}의 학습 데이터를 시각화합니다.</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-lg text-center">
-        <BarChart3 className="w-16 h-16 mx-auto text-blue-500 mb-4" />
-        <h4 className="font-semibold text-slate-800 dark:text-slate-200">분석 데이터 로딩 중...</h4>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-          여기에 차트와 같은 데이터 시각화 컴포넌트가 표시됩니다.
-        </p>
-      </div>
-    </CardContent>
-  </Card>
-);
-
-const AIMentorChat = ({ userId }) => (
-  <Card className="h-full flex flex-col">
-    <CardHeader>
-      <CardTitle>AI 멘토</CardTitle>
-      <CardDescription>무엇이든 물어보세요! (사용자 ID: {userId})</CardDescription>
-    </CardHeader>
-    <CardContent className="flex-grow">
-      <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg h-full flex flex-col justify-end">
-        <div className="space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">AI</div>
-            <div className="bg-white dark:bg-slate-700 p-3 rounded-lg rounded-tl-none max-w-xs">
-              <p className="text-sm text-slate-800 dark:text-slate-200">안녕하세요! 학습에 도움이 필요하신가요?</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 justify-end">
-            <div className="bg-blue-500 text-white p-3 rounded-lg rounded-br-none max-w-xs">
-              <p className="text-sm">네, 이 개념에 대해 더 자세히 설명해주세요.</p>
-            </div>
-             <div className="w-8 h-8 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-sm">Me</div>
-          </div>
-        </div>
-      </div>
-    </CardContent>
-    <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-      <input type="text" placeholder="메시지를 입력하세요..." className="w-full bg-slate-100 dark:bg-slate-800 border-transparent rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-    </div>
-  </Card>
-);
-
-const AdaptiveDifficultyWidget = ({ userId }) => (
-  <Card className="h-full">
-    <CardHeader>
-      <CardTitle>적응형 난이도 조절</CardTitle>
-      <CardDescription>사용자 ID: {userId}의 성과에 따라 난이도가 자동 조절됩니다.</CardDescription>
-    </CardHeader>
-    <CardContent className="text-center">
-        <div className="relative w-40 h-40 mx-auto">
-          <svg className="w-full h-full" viewBox="0 0 36 36">
-            <path className="text-slate-200 dark:text-slate-700" strokeWidth="3" fill="none" stroke="currentColor" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
-            <path className="text-purple-500" strokeWidth="3" fill="none" stroke="currentColor" strokeDasharray="75, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-3xl font-bold text-slate-900 dark:text-white">75%</span>
-            <span className="text-sm text-slate-500 dark:text-slate-400">정답률</span>
-          </div>
-        </div>
-        <p className="mt-4 font-semibold text-slate-800 dark:text-slate-200">현재 난이도: <span className="text-purple-500">중급</span></p>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">다음 문제 난이도가 상향 조정될 예정입니다.</p>
-    </CardContent>
-  </Card>
-);
-// --- Mock Components End ---
 
 const AIFeaturesPage = () => {
   const [activeFeatureId, setActiveFeatureId] = useState('analysis');
@@ -197,7 +121,7 @@ const AIFeaturesPage = () => {
                   <Card className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800/50">
                     <div className="text-center p-8">
                       <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-full mx-auto flex items-center justify-center shadow-md mb-6">
-                        <activeFeature.icon className="w-10 h-10 text-slate-400 dark:text-slate-500" />
+                        {React.createElement(activeFeature.icon, { className: "w-10 h-10 text-slate-400 dark:text-slate-500" })}
                       </div>
                       <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">곧 출시될 기능입니다</h3>
                       <p className="text-slate-600 dark:text-slate-400 max-w-sm mx-auto">
