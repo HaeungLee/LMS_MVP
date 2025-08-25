@@ -32,8 +32,9 @@ class InMemoryTTLCache:
         self._store[key] = (time.time() + self._ttl, value)
 
 
-def make_feedback_cache_key(question_id: int, rubric_version: str, normalized_answer: str) -> str:
-    base = f"feedback:{question_id}:{rubric_version}:{normalized_answer}"
+def make_feedback_cache_key(question_id: int, rubric_version: str, normalized_answer: str, user_id: Optional[int] = None) -> str:
+    user_segment = f"u{user_id}" if user_id is not None else "anon"
+    base = f"feedback:{user_segment}:{question_id}:{rubric_version}:{normalized_answer}"
     return hashlib.sha256(base.encode("utf-8")).hexdigest()
 
 

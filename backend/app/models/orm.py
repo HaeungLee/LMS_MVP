@@ -12,6 +12,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    ARRAY,
 )
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -170,4 +171,84 @@ class StudentAssignment(Base):
     subject = Column(String(100), nullable=False, index=True)
     topic_key = Column(String(100), nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
+# Phase 1: 확장 가능한 커리큘럼 아키텍처 모델들
+
+class CurriculumCategory(Base):
+    """커리큘럼 카테고리 (최상위 레벨)"""
+    __tablename__ = "curriculum_categories"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False, unique=True, index=True)  # 'saas_development'
+    display_name = Column(String(100), nullable=False)  # 'SaaS 개발자 종합과정'
+    description = Column(Text, nullable=True)
+    target_audience = Column(String(100), nullable=True)  # 'beginner_to_professional'
+    estimated_total_months = Column(Integer, default=12)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # 관계 설정
+    tracks = relationship("LearningTrack", back_populates="curriculum_category")
+
+
+class LearningTrack(Base):
+    """학습 트랙 (중간 레벨) - 새로 생성"""
+    __tablename__ = "learning_tracks"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False, unique=True, index=True)  # 'python_basics'
+    display_name = Column(String(100), nullable=False)  # 'Python 기초'
+    category = Column(String(50), nullable=False)  # 'foundation', 'development', 'specialization'
+    curriculum_category_id = Column(Integer, ForeignKey("curriculum_categories.id"), nullable=True)
+    specialization_level = Column(String(50), default='general')  # 'general', 'specialist', 'expert', 'master'
+    prerequisite_tracks = Column(ARRAY(Text), default=[])  # 선수 트랙들
+    difficulty_level = Column(Integer, default=1)  # 1-5
+    estimated_hours = Column(Integer, default=20)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # 관계 설정
+    curriculum_category = relationship("CurriculumCategory", back_populates="tracks")
+    modules = relationship("LearningModule", back_populates="track")
+
+
+class LearningModule(Base):
+    """학습 모듈 (최하위 레벨)"""
+    __tablename__ = "learning_modules"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    track_id = Column(Integer, ForeignKey("learning_tracks.id"), nullable=False)
+    name = Column(String(100), nullable=False)  # 'react_hooks'
+    display_name = Column(String(100), nullable=False)  # 'React Hooks 마스터'
+    module_type = Column(String(50), default='core')  # 'core', 'elective', 'project', 'certification'
+    estimated_hours = Column(Integer, default=8)
+    difficulty_level = Column(Integer, default=1)  # 1-5
+    prerequisites = Column(ARRAY(Text), default=[])  # 다른 모듈 이름들
+    tags = Column(ARRAY(Text), default=[])  # ['frontend', 'state-management', 'hooks']
+    industry_focus = Column(String(100), default='general')  # 'fintech', 'ecommerce', 'enterprise'
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # 관계 설정
+    track = relationship("LearningTrack", back_populates="modules")
+    resources = relationship("LearningResource", back_populates="module")
+
+
+class LearningResource(Base):
+    """AI 참고자료 시스템"""
+    __tablename__ = "learning_resources"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    module_id = Column(Integer, ForeignKey("learning_modules.id"), nullable=True)
+    track_id = Column(Integer, ForeignKey("learning_tracks.id"), nullable=False)
+    sub_topic = Column(String(100), nullable=True)
+    resource_type = Column(String(50), nullable=False)  # 'documentation', 'tutorial', 'video', 'project'
+    title = Column(String(200), nullable=False)
+    url = Column(Text, nullable=False)
+    description = Column(Text, nullable=True)
+    difficulty_level = Column(Integer, default=1)
+    industry_focus = Column(String(100), default='general')
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # 관계 설정
+    module = relationship("LearningModule", back_populates="resources")
 

@@ -610,7 +610,7 @@ class ScoringService:
             
         return topic_analysis
     
-    async def generate_ai_feedback(self, question: Dict, user_answer: str, score: float) -> str:
+    async def generate_ai_feedback(self, question: Dict, user_answer: str, score: float, user_id: Optional[int] = None) -> str:
         """고도화된 AI 피드백 생성 (문제 유형별 특화)"""
         provider = get_llm_provider()
         
@@ -623,7 +623,8 @@ class ScoringService:
         cache_key = make_feedback_cache_key(
             int(question.get("id", 0)), 
             question_type, 
-            self._normalize(user_answer)
+            self._normalize(user_answer),
+            user_id
         )
         cached = feedback_cache.get(cache_key)
         if cached:
