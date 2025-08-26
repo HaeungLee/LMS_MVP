@@ -32,7 +32,7 @@ function Navigation() {
 
   const logoStyle = {
     color: '#ffffff',
-    fontSize: '24px',
+    fontSize: '20px',
     fontWeight: 'bold',
     textDecoration: 'none'
   };
@@ -42,17 +42,18 @@ function Navigation() {
     listStyle: 'none',
     margin: 0,
     padding: 0,
-    gap: '32px'
+    gap: '24px'
   };
 
   const getLinkStyle = (path) => ({
     color: location.pathname === path ? '#3b82f6' : '#d1d5db',
     textDecoration: 'none',
     fontWeight: '500',
-    padding: '8px 16px',
+    padding: '6px 12px',
     borderRadius: '6px',
     transition: 'all 0.2s',
-    backgroundColor: location.pathname === path ? '#374151' : 'transparent'
+    backgroundColor: location.pathname === path ? '#374151' : 'transparent',
+    fontSize: '14px'
   });
 
   return (
@@ -100,17 +101,19 @@ function Navigation() {
         </ul>
         <div>
           {user ? (
-            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               {(user.role === 'teacher' || user.role === 'admin') && (
-                <Link to="/admin/questions" style={{ color:'#d1d5db', textDecoration:'none', marginRight: 8 }}>문항 출제</Link>
+                <Link to="/admin/questions" style={{ color:'#d1d5db', textDecoration:'none', fontSize:'13px', marginRight: 6 }}>문항 출제</Link>
               )}
-              <span style={{ color:'#d1d5db' }}>{user.display_name || user.email}</span>
-              <button onClick={logout} style={{ padding:'6px 10px', borderRadius:6, border:'1px solid #4b5563', background:'#374151', color:'#fff' }}>로그아웃</button>
+              <span style={{ color:'#d1d5db', fontSize:'13px', maxWidth:'120px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                {user.display_name || user.email.split('@')[0]}
+              </span>
+              <button onClick={logout} style={{ padding:'4px 8px', borderRadius:4, border:'1px solid #4b5563', background:'#374151', color:'#fff', fontSize:'12px' }}>로그아웃</button>
             </div>
           ) : (
-            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-              <Link to="/login" style={{ color:'#d1d5db', textDecoration:'none' }}>로그인</Link>
-              <Link to="/register" style={{ color:'#d1d5db', textDecoration:'none' }}>회원가입</Link>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <Link to="/login" style={{ color:'#d1d5db', textDecoration:'none', fontSize:'13px' }}>로그인</Link>
+              <Link to="/register" style={{ color:'#d1d5db', textDecoration:'none', fontSize:'13px' }}>회원가입</Link>
             </div>
           )}
         </div>

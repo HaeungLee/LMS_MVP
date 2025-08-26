@@ -16,12 +16,20 @@
 docker-compose up -d
 ```
 
-2) 백엔드 (FastAPI)
+2) 데이터베이스 상태 확인 (선택사항)
+```powershell
+cd backend
+python check_db.py
+```
+- 데이터베이스 연결 상태와 문제 데이터 개수를 확인합니다
+- 연결 실패 시 Docker 컨테이너 상태를 먼저 확인하세요
+
+3) 백엔드 (FastAPI)
 ```powershell
 cd backend
 python -m venv venv
 ./venv/Scripts/Activate.ps1
-pip install -r requirements_new.txt
+pip install -r requirements.txt
 
 # (최초 1회) 시드
 python -m scripts.seed_taxonomy
