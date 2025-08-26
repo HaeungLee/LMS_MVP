@@ -13,6 +13,7 @@ from ...core.database import SessionLocal
 from ...core.security import get_current_user, require_csrf
 from ...models.orm import User as OrmUser
 from ...models.orm import Submission as OrmSubmission, SubmissionItem as OrmSubmissionItem
+from ...models.orm import Question as OrmQuestion
 
 router = APIRouter()
 
@@ -35,24 +36,42 @@ async def submit_answers(
         results = []
         total_score = 0.0
         
-        for user_answer in submission.user_answers:
-            # 문제 정보 조회
-            question = scoring_service.get_question_by_id(user_answer.question_id)
-            if not question:
-                raise HTTPException(status_code=404, detail=f"Question {user_answer.question_id} not found")
-            
-            # 채점
-            score = scoring_service.score_answer(question, user_answer.user_answer)
-            total_score += score
-            
-            result = QuestionResult(
-                question_id=user_answer.question_id,
-                user_answer=user_answer.user_answer,
-                correct_answer=question["answer"],
-                score=score,
-                topic=question["topic"]
-            )
-            results.append(result)
+        db = SessionLocal()
+        try:
+            for user_answer in submission.user_answers:
+                # DB에서 문제 정보 조회
+                orm_q = db.query(OrmQuestion).filter(OrmQuestion.id == user_answer.question_id).first()
+                if not orm_q:
+                    raise HTTPException(status_code=404, detail=f"Question {user_answer.question_id} not found")
+                
+                # 스코어링용 구조로 매핑 (answer와 correct_answer 모두 제공)
+                question = {
+                    "id": orm_q.id,
+                    "question_type": orm_q.question_type or "short_answer",
+                    "answer": orm_q.correct_answer,
+                    "correct_answer": orm_q.correct_answer,
+                    "topic": orm_q.topic,
+                    "difficulty": orm_q.difficulty,
+                    "code_snippet": orm_q.code_snippet or "",
+                }
+                
+                # 채점
+                score = scoring_service.score_answer(question, user_answer.user_answer)
+                total_score += score
+                
+                result = QuestionResult(
+                    question_id=user_answer.question_id,
+                    user_answer=user_answer.user_answer,
+                    correct_answer=question["answer"],
+                    score=score,
+                    topic=question["topic"]
+                )
+                results.append(result)
+        finally:
+            try:
+                db.close()
+            except Exception:
+                pass
         
         # 주제별 분석
         topic_analysis = scoring_service.analyze_by_topic([r.dict() for r in results])
@@ -129,9 +148,27 @@ async def request_feedback(request: Request, body: FeedbackRequest, background_t
     require_csrf(request)
     """AI 피드백 요청 (비동기 처리)"""
     try:
-        question = scoring_service.get_question_by_id(body.question_id)
-        if not question:
+        db = SessionLocal()
+        try:
+            orm_q = db.query(OrmQuestion).filter(OrmQuestion.id == body.question_id).first()
+        finally:
+            try:
+                db.close()
+            except Exception:
+                pass
+        if not orm_q:
             raise HTTPException(status_code=404, detail="Question not found")
+        
+        # 스코어링용 구조로 매핑 (answer와 correct_answer 모두 제공)
+        question = {
+            "id": orm_q.id,
+            "question_type": orm_q.question_type or "short_answer",
+            "answer": orm_q.correct_answer,
+            "correct_answer": orm_q.correct_answer,
+            "topic": orm_q.topic,
+            "difficulty": orm_q.difficulty,
+            "code_snippet": orm_q.code_snippet or "",
+        }
         
         # 채점
         score = scoring_service.score_answer(question, body.user_answer)

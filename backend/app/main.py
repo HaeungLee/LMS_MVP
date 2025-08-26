@@ -15,6 +15,14 @@ app = FastAPI(
     description="AI 기반 코딩 학습 플랫폼 API",
     version="1.0.0"
 )
+# CORS 미들웨어 추가 - 등록은 다른 커스텀 미들웨어보다 먼저 해야 함
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.allowed_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
 # Request ID
 app.add_middleware(RequestIDMiddleware)
 
@@ -42,19 +50,7 @@ except Exception:
     # DB가 아직 준비되지 않은 개발 초기 단계에서도 앱이 기동되도록 무시
     pass
 
-# CORS 미들웨어 추가 - 더 명확하게 설정
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173", 
-        "http://localhost:5174", 
-        "http://127.0.0.1:5173", 
-        "http://127.0.0.1:5174"
-    ],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
-)
+
 
 # 라우터 등록
 app.include_router(questions.router, prefix="/api/v1", tags=["questions"])

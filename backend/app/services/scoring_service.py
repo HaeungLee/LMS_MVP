@@ -42,6 +42,58 @@ class ScoringService:
                 return question
         return None
     
+    async def evaluate_with_llm(self, question: Dict, user_answer: str) -> Dict[str, object]:
+        """LLM을 사용해 직접 채점(점수)과 피드백을 동시에 생성한다.
+        반환: { "score": float (0.0~1.0), "feedback": str }
+        실패 시 기존 스코어링과 템플릿 피드백으로 폴백한다.
+        """
+        provider = get_llm_provider()
+        if not provider:
+            # LLM 비활성 → 기존 로직 폴백
+            score = self.score_answer(question, user_answer)
+            feedback = await self.generate_ai_feedback(question, user_answer, score)
+            return {"score": float(score), "feedback": feedback}
+
+        # 문제/정답/사용자 답안을 맥락으로 제공하고 JSON으로 결과 요구
+        system_prompt = (
+            "당신은 프로그래밍 튜터 겸 채점자입니다. 문제, 정답, 학습자 답안을 바탕으로"
+            " 정밀하게 채점하고, JSON으로만 응답하세요."
+            " 반환 JSON 스키마: {\"score\": 0|0.5|1, \"feedback\": string }"
+            " feedback은 한국어로 2~4문장, 구체적이며 주제에 맞는 설명만 포함하세요."
+        )
+        correct_answer = question.get("correct_answer") or question.get("answer", "")
+        user_prompt = (
+            f"문제 유형: {question.get('question_type', 'short_answer')}\n"
+            f"주제: {question.get('topic', '')}\n"
+            f"난이도: {question.get('difficulty', 'easy')}\n"
+            f"코드:\n{question.get('code_snippet', '')}\n\n"
+            f"정답: {correct_answer}\n"
+            f"학습자 답안: {user_answer}\n\n"
+            "점수는 0, 0.5, 1 중 하나만 선택해 주세요. JSON 외 텍스트 금지."
+        )
+
+        try:
+            content = await provider.generate(system_prompt, user_prompt, max_tokens=220)
+            # JSON 파싱 시도
+            data = json.loads((content or "").strip())
+            score = float(data.get("score", 0))
+            # 허용 범위 제한
+            if score not in (0.0, 0.5, 1.0):
+                score = 0.0
+            feedback = str(data.get("feedback", ""))
+            if not feedback:
+                raise ValueError("empty feedback")
+            return {"score": score, "feedback": feedback}
+        except Exception as e:
+            # 실패 시 폴백
+            try:
+                score = self.score_answer(question, user_answer)
+                feedback = await self.generate_ai_feedback(question, user_answer, score)
+                return {"score": float(score), "feedback": feedback}
+            except Exception:
+                # 최종 폴백
+                return {"score": 0.0, "feedback": "피드백 생성에 실패했습니다. 잠시 후 다시 시도해주세요."}
+    
     def _normalize(self, text: str) -> str:
         t = (text or "").strip().lower()
         # 공백 축약
@@ -199,148 +251,6 @@ class ScoringService:
         matched_keywords = sum(1 for keyword in required_keywords if keyword.lower() in user_text)
         
         return matched_keywords / len(required_keywords)
-
-    def _check_code_logic_similarity(self, user_code: str, correct_code: str) -> bool:
-        """코드 로직 유사성 검사 (간단한 패턴 매칭)"""
-        # 공백 및 주석 제거 후 비교
-        user_clean = re.sub(r'#.*', '', user_code).replace(' ', '').replace('\n', '')
-        correct_clean = re.sub(r'#.*', '', correct_code).replace(' ', '').replace('\n', '')
-        
-        # 80% 이상 유사하면 로직이 비슷하다고 판단
-        try:
-            similarity = fuzz.ratio(user_clean, correct_clean)
-            return similarity >= 80
-        except:
-            return user_clean == correct_clean
-
-    def _extract_identified_bugs(self, user_answer: str) -> List[str]:
-        """사용자 답안에서 식별된 버그 목록 추출"""
-        # 간단한 패턴 매칭으로 버그 키워드 추출
-        bug_patterns = [
-            r'오타|typo|철자',
-            r'인덴트|indent|들여쓰기',
-            r'세미콜론|semicolon|;',
-            r'변수명|variable|name',
-            r'함수명|function|def',
-            r'괄호|bracket|parenthesis',
-            r'등호|equal|=',
-            r'비교|comparison|==',
-        ]
-        
-        identified = []
-        user_text = user_answer.lower()
-        
-        for pattern in bug_patterns:
-            if re.search(pattern, user_text):
-                identified.append(pattern.split('|')[0])  # 첫 번째 키워드 사용
-        
-        return identified
-
-    def _calculate_bug_identification_score(self, identified: List[str], correct: List[str]) -> float:
-        """버그 식별 정확도 점수 계산"""
-        if not correct:
-            return 1.0 if not identified else 0.5
-        
-        if not identified:
-            return 0.0
-        
-        # 간단한 키워드 매칭 (정확한 구현은 실제 버그 데이터에 따라 조정)
-        matches = 0
-        for bug in correct:
-            for identified_bug in identified:
-                if identified_bug.lower() in bug.lower() or bug.lower() in identified_bug.lower():
-                    matches += 1
-                    break
-        
-        return min(matches / len(correct), 1.0)
-
-    def _evaluate_debug_solution(self, user_answer: str, correct_solution: str) -> float:
-        """디버깅 해결책 평가"""
-        # 키워드 기반 유사도 검사
-        try:
-            similarity = fuzz.token_sort_ratio(user_answer.lower(), correct_solution.lower())
-            if similarity >= 80:
-                return 1.0
-            elif similarity >= 60:
-                return 0.7
-            elif similarity >= 40:
-                return 0.4
-            else:
-                return 0.0
-        except:
-            return 0.5 if user_answer.strip() else 0.0
-
-    def _parse_true_false_answer(self, user_answer: str) -> Tuple[Optional[str], Optional[str]]:
-        """OX 답안에서 정답과 이유 분리"""
-        text = user_answer.strip()
-        
-        # OX, True/False, 참/거짓 패턴 검색
-        tf_patterns = [
-            r'\b(O|X)\b',
-            r'\b(True|False)\b',
-            r'\b(참|거짓)\b',
-            r'\b(맞|틀)\b',
-        ]
-        
-        tf_answer = None
-        reasoning = text
-        
-        for pattern in tf_patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
-            if match:
-                tf_answer = match.group(1)
-                # 매칭된 부분을 제거하고 나머지를 이유로 간주
-                reasoning = re.sub(pattern, '', text, flags=re.IGNORECASE).strip()
-                break
-        
-        return tf_answer, reasoning if reasoning else None
-
-    def _evaluate_reasoning_quality(self, reasoning: str, question: Dict) -> float:
-        """이유 설명의 품질 평가"""
-        if not reasoning or len(reasoning.strip()) < 10:
-            return 0.0
-        
-        # 기본 점수: 설명이 있으면 0.5점
-        score = 0.5
-        
-        # 주요 키워드 포함 시 가산점
-        topic_keywords = question.get("topic", "").split()
-        for keyword in topic_keywords:
-            if keyword.lower() in reasoning.lower():
-                score += 0.1
-        
-        # 논리적 접속사 사용 시 가산점
-        logical_connectors = ['because', 'since', 'therefore', '왜냐하면', '따라서', '그러므로']
-        for connector in logical_connectors:
-            if connector in reasoning.lower():
-                score += 0.1
-                break
-        
-        return min(score, 1.0)
-
-    def _legacy_score_answer(self, question: Dict, user_answer: str) -> float:
-        """기존 채점 로직 (하위 호환성 유지)"""
-        ua = self._normalize(user_answer)
-        ca = self._normalize(question.get("answer", ""))
-
-        # 1. 완전 일치 (1.0점)
-        if ua == ca or self._unordered_token_match(ua, ca):
-            return 1.0
-
-        # 2. 의미적 유사도 검사 (프로그래밍 코드 특화)
-        semantic_score = self._check_semantic_similarity(question, ua, ca)
-        if semantic_score >= 0.9:
-            return 1.0
-        elif semantic_score >= 0.6:
-            return 0.5
-
-        # 3. 부분 정답 검사 (기존 로직 강화)
-        if question.get("question_type") in {"fill_in_the_blank", "short_answer"}:
-            partial_score = self._check_partial_correctness(question, ua, ca)
-            if partial_score > 0:
-                return partial_score
-
-        return 0.0
 
     def _check_code_logic_similarity(self, user_code: str, correct_code: str) -> bool:
         """코드 로직 유사성 검사 (간단한 패턴 매칭)"""

@@ -131,7 +131,7 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
-LMS_process/*
+LMS_progress/*
 # Environments
 .venv
 env/

@@ -11,11 +11,9 @@ async function fetchWithTimeout(resource, options = {}) {
     try {
       const method = (rest.method || 'GET').toUpperCase();
       const needsCsrf = !['GET', 'HEAD', 'OPTIONS'].includes(method);
-      if (needsCsrf) {
-        const csrf = document.cookie.split('; ').find((x) => x.startsWith('csrf_token='));
-        if (csrf && !headers.has('x-csrf-token')) {
-          headers.set('x-csrf-token', decodeURIComponent(csrf.split('=')[1]));
-        }
+      if (needsCsrf && !headers.has('x-csrf-token')) {
+        const csrf = getCsrfToken();
+        if (csrf) headers.set('x-csrf-token', csrf);
       }
     } catch {}
     const res = await fetch(resource, { ...rest, headers, signal: controller.signal, credentials: rest.credentials });
@@ -518,12 +516,12 @@ export const submitAnswerForFeedback = async (questionId, questionType, userAnsw
 
 // CSRF 토큰 가져오기 함수
 function getCsrfToken() {
-  // 쿠키에서 CSRF 토큰 추출
+  // 쿠키에서 CSRF 토큰 추출 (두 이름 모두 지원)
   const cookies = document.cookie.split(';');
   for (let cookie of cookies) {
     const [name, value] = cookie.trim().split('=');
     if (name === 'csrftoken' || name === 'csrf_token') {
-      return value;
+      return decodeURIComponent(value || '');
     }
   }
   return '';
