@@ -157,11 +157,11 @@ const QuestionTypeGenerator = () => {
             </div>
           )}
 
-          {question.choices && question.choices.length > 0 && (
+      {((question.choices && question.choices.length > 0) || (question.options && question.options.length > 0)) && (
             <div>
               <h4 style={{ fontWeight: '600', marginBottom: '8px', fontSize: '14px' }}>선택지</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {question.choices.map((choice, idx) => (
+        {(question.choices || question.options).map((choice, idx) => (
                   <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ 
                       fontFamily: 'monospace', 
@@ -173,7 +173,7 @@ const QuestionTypeGenerator = () => {
                     }}>
                       {String.fromCharCode(65 + idx)}
                     </span>
-                    <span style={{ fontSize: '14px' }}>{choice}</span>
+          <span style={{ fontSize: '14px' }}>{typeof choice === 'string' ? choice : JSON.stringify(choice)}</span>
                   </div>
                 ))}
               </div>

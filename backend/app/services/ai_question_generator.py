@@ -4,6 +4,7 @@ import asyncio
 import json
 import random
 from typing import Dict, List, Optional, Any
+import re
 from datetime import datetime
 
 from app.services.llm_providers import get_llm_provider
@@ -587,6 +588,25 @@ class AIQuestionGenerator:
                 for field in required_fields[question_type]:
                     if field not in question_data:
                         raise ValueError(f"필수 필드 누락: {field}")
+
+            # Normalize field names: some prompts use 'options' while frontend expects 'choices'
+            if 'options' in question_data and 'choices' not in question_data:
+                opts = question_data.get('options') or []
+                # Ensure list and clean prefixed labels like 'A) ...' or 'A. ...'
+                if isinstance(opts, list):
+                    cleaned = []
+                    for o in opts:
+                        if isinstance(o, str):
+                            cleaned.append(re.sub(r'^[A-Za-z][\)\.\-:\s]*', '', o).strip())
+                        else:
+                            cleaned.append(str(o))
+                else:
+                    cleaned = [str(opts)]
+                question_data['choices'] = cleaned
+
+            # Backwards: if 'choices' present but frontend expects 'options', keep both to be safe
+            if 'choices' in question_data and 'options' not in question_data:
+                question_data['options'] = question_data['choices']
             
             return question_data
             

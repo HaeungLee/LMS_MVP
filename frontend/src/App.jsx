@@ -45,16 +45,11 @@ function Navigation() {
     gap: '24px'
   };
 
-  const getLinkStyle = (path) => ({
-    color: location.pathname === path ? '#3b82f6' : '#d1d5db',
-    textDecoration: 'none',
-    fontWeight: '500',
-    padding: '6px 12px',
-    borderRadius: '6px',
-    transition: 'all 0.2s',
-    backgroundColor: location.pathname === path ? '#374151' : 'transparent',
-    fontSize: '14px'
-  });
+  // Prefer class-based styling (more reliable and visible in DevTools).
+  const getLinkClass = (path) => {
+    const isActive = location.pathname === path;
+    return `nav-link${isActive ? ' active' : ''}`;
+  };
 
   return (
     <nav style={navStyle}>
@@ -64,34 +59,34 @@ function Navigation() {
         </Link>
         <ul style={navListStyle}>
           <li>
-            <Link to="/" style={getLinkStyle('/')}>
+            <Link to="/" className={getLinkClass('/')}>
               대시보드
             </Link>
           </li>
           <li>
-            <Link to="/quiz" style={getLinkStyle('/quiz')}>
+            <Link to="/quiz" className={getLinkClass('/quiz')}>
               퀴즈
             </Link>
           </li>
           <li>
-            <Link to="/ai-features" style={getLinkStyle('/ai-features')}>
+            <Link to="/ai-features" className={getLinkClass('/ai-features')}>
               🤖 AI 기능
             </Link>
           </li>
           <li>
-            <Link to="/beta-onboarding" style={getLinkStyle('/beta-onboarding')}>
+            <Link to="/beta-onboarding" className={getLinkClass('/beta-onboarding')}>
               🧪 베타 온보딩
             </Link>
           </li>
           {(user && (user.role === 'teacher' || user.role === 'admin')) && (
             <>
               <li>
-                <Link to="/teacher/dashboard" style={getLinkStyle('/teacher/dashboard')}>
+                <Link to="/teacher/dashboard" className={getLinkClass('/teacher/dashboard')}>
                   교사용 대시보드
                 </Link>
               </li>
               <li>
-                <Link to="/beta-dashboard" style={getLinkStyle('/beta-dashboard')}>
+                <Link to="/beta-dashboard" className={getLinkClass('/beta-dashboard')}>
                   📊 베타 대시보드
                 </Link>
               </li>

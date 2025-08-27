@@ -4,7 +4,9 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from app.core.security import get_current_user
-from app.models.orm import User
+from app.models.orm import User, Question
+from app.core.database import get_db
+from sqlalchemy.orm import Session
 from app.models.question_types import (
     QuestionGenerationRequest, MixedQuestionRequest, 
     QuestionGenerationResponse, QuestionType, DifficultyLevel
@@ -105,7 +107,8 @@ async def get_daily_learning_plan(
 @router.post("/generate-questions")
 async def generate_questions_for_topic(
     request: Dict[str, Any],
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """주제별 AI 문제 생성"""
 
@@ -135,12 +138,72 @@ async def generate_questions_for_topic(
             count=count
         )
 
+        # Persist generated questions to DB so students can take them
+        import os as _os
+        print(f"[ai_learning] DATABASE_URL={_os.getenv('DATABASE_URL')}")
+        print(f"[ai_learning] Generated questions count: {len(questions)} - attempting DB insert")
+        inserted = []
+        try:
+            for q in questions:
+                # Normalize keys and map to ORM fields
+                qtype = q.get('question_type') or q.get('type') or q.get('question_type')
+                subject_val = request.get('subject', 'python_basics')
+                topic_val = q.get('topic') or topic
+                difficulty_val = q.get('difficulty') or difficulty
+
+                # code_snippet: prefer explicit fields, fall back to question text or concatenated content
+                code_snippet = q.get('code_snippet') or q.get('code_template') or q.get('question') or q.get('statement') or q.get('buggy_code') or ''
+
+                # correct_answer: many formats - attempt common keys
+                correct_answer = q.get('correct_answer') or q.get('answer') or q.get('sample_answer') or ''
+
+                # rubric: explanation or rubric or serialized scoring_criteria
+                rubric = q.get('rubric') or q.get('explanation') or None
+                if rubric is None and 'scoring_criteria' in q:
+                    try:
+                        rubric = str(q.get('scoring_criteria'))
+                    except Exception:
+                        rubric = None
+
+                created_by = f"ai:{current_user.id}" if hasattr(current_user, 'id') else 'ai'
+
+                rec = Question(
+                    subject=subject_val,
+                    topic=topic_val,
+                    question_type=qtype or 'generated',
+                    code_snippet=code_snippet,
+                    correct_answer=str(correct_answer),
+                    difficulty=difficulty_val,
+                    rubric=rubric,
+                    created_by=created_by,
+                    is_active=True,
+                )
+                db.add(rec)
+                try:
+                    db.flush()  # get id without committing yet
+                    inserted.append(rec.id)
+                    print(f"[ai_learning] staged question id={rec.id} topic={topic_val} type={qtype}")
+                except Exception as _e:
+                    print(f"[ai_learning] flush failed for record (topic={topic_val}): {_e}")
+                    raise
+
+            db.commit()
+            print(f"[ai_learning] DB commit successful, inserted ids: {inserted}")
+        except Exception as e:
+            # rollback on any DB error but still return generated content
+            try:
+                db.rollback()
+            except Exception:
+                pass
+            print(f"문제 DB 저장 실패: {e}")
+
         return {
             "success": True,
             "questions": questions,
             "topic": topic,
             "difficulty": difficulty,
-            "generated_count": len(questions)
+            "generated_count": len(questions),
+            "inserted_question_ids": inserted,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"문제 생성 실패: {str(e)}")

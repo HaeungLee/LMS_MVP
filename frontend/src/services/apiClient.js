@@ -1,4 +1,20 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000') + '/api/v1';
+// Resolve VITE_API_BASE_URL and normalize common malformed values (e.g. ':8000')
+const rawBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+function normalizeBase(url) {
+  if (!url) return 'http://localhost:8000';
+  // If value is like ':8000' -> prepend localhost
+  if (/^:\d+$/.test(url)) return `http://localhost${url}`;
+  // If value is like 'localhost:8000' -> add scheme
+  if (/^[^:/]+:\d+$/.test(url) && !/^https?:\/\//.test(url)) return `http://${url}`;
+  // If scheme-relative like '//example.com' -> add http:
+  if (/^\/\//.test(url)) return `http:${url}`;
+  // If missing scheme, add http://
+  if (!/^https?:\/\//.test(url)) return `http://${url}`;
+  return url.replace(/\/$/, '');
+}
+const API_BASE_URL = normalizeBase(rawBase) + '/api/v1';
+// helpful runtime debug when developing
+try { console.debug('[apiClient] API_BASE_URL =', API_BASE_URL); } catch (e) {}
 
 // 공용 타임아웃 래퍼
 async function fetchWithTimeout(resource, options = {}) {

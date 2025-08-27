@@ -50,8 +50,6 @@ except Exception:
     # DB가 아직 준비되지 않은 개발 초기 단계에서도 앱이 기동되도록 무시
     pass
 
-
-
 # 라우터 등록
 app.include_router(questions.router, prefix="/api/v1", tags=["questions"])
 app.include_router(submit.router, prefix="/api/v1", tags=["submissions"])

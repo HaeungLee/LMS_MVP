@@ -1,3 +1,43 @@
+/* Tailwind directives (processed by PostCSS + tailwindcss) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Safe fallback CSS variables for theme tokens used by tailwind.config.js
+   These ensure utility classes like bg-card and text-card-foreground render
+   even if a theme provider or :root variables are not present at runtime. */
+:root {
+  /* HSL triplets (without the hsl() wrapper) because tailwind config uses hsl(var(--name)) */
+  --border: 210 16% 96%;
+  --input: 210 16% 100%;
+  --ring: 222 90% 56%;
+  --background: 210 16% 98%;
+  --foreground: 222 20% 10%;
+
+  --primary: 222 90% 56%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 240 4% 96%;
+  --secondary-foreground: 222 15% 20%;
+
+  --destructive: 0 75% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  --muted: 210 8% 95%;
+  --muted-foreground: 215 18% 46%;
+
+  --accent: 252 95% 60%;
+  --accent-foreground: 0 0% 100%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 20% 10%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 222 20% 10%;
+
+  --radius: 12px;
+}
+
 /* Tailwind CSS를 사용하지 않고 기본 CSS로 스타일링 */
 
 /* CSS Reset */
@@ -200,4 +240,27 @@ body {
 
 @media (min-width: 1280px) {
   .container { max-width: 1280px; }
+}
+
+/* Navigation link styles (used by App.Navigation) */
+.nav-link {
+  color: #d1d5db;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.15s ease-in-out;
+  background-color: transparent;
+  font-size: 14px;
+  display: inline-block;
+}
+
+.nav-link:hover {
+  background-color: #374151;
+  color: #ffffff;
+}
+
+.nav-link.active {
+  background-color: #374151;
+  color: #3b82f6;
 }
