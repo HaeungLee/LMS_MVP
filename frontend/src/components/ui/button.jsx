@@ -6,6 +6,7 @@ export const Button = ({
   size = "default", 
   children, 
   disabled = false,
+  style = {},
   ...props 
 }) => {
   const baseClasses = "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
@@ -29,6 +30,12 @@ export const Button = ({
   return (
     <button
       className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
+      style={{
+        backgroundColor: `hsl(var(--primary, 222 90% 56%))`,
+        color: `hsl(var(--primary-foreground, 0 0% 100%))`,
+        borderColor: `hsl(var(--border, 210 16% 96%))`,
+        ...style
+      }}
       disabled={disabled}
       {...props}
     >

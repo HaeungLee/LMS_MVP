@@ -1,4 +1,9 @@
 import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import AIAnalysisDashboard from '@/components/ai/AIAnalysisDashboard';
+import AIMentorChat from '@/components/ai/AIMentorChat';
+import AdaptiveDifficultyWidget from '@/components/ai/AdaptiveDifficultyWidget';
 import { 
   Brain, 
   MessageCircle, 
@@ -11,14 +16,8 @@ import {
   Clock,
   ChevronRight,
   Lightbulb,
-  BarChart3 // 오류 수정을 위해 추가
+  BarChart3
 } from 'lucide-react';
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import AIAnalysisDashboard from '@/components/ai/AIAnalysisDashboard';
-import AIMentorChat from '@/components/ai/AIMentorChat';
-import AdaptiveDifficultyWidget from '@/components/ai/AdaptiveDifficultyWidget';
 
 const AIFeaturesPage = () => {
   const [activeFeatureId, setActiveFeatureId] = useState('analysis');
@@ -122,7 +121,7 @@ const AIFeaturesPage = () => {
                   <Card className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800/50">
                     <div className="text-center p-8">
                       <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-full mx-auto flex items-center justify-center shadow-md mb-6">
-                        <activeFeature.icon className="w-10 h-10 text-slate-400 dark:text-slate-500" />
+                        {React.createElement(activeFeature.icon, { className: "w-10 h-10 text-slate-400 dark:text-slate-500" })}
                       </div>
                       <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">곧 출시될 기능입니다</h3>
                       <p className="text-slate-600 dark:text-slate-400 max-w-sm mx-auto">

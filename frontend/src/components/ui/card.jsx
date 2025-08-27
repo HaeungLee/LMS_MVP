@@ -1,13 +1,23 @@
 import React from "react";
 
-export const Card = ({ className = "", children, ...props }) => (
-  <div
-    className={`rounded-lg border bg-card text-card-foreground shadow-sm ${className}`}
-    {...props}
-  >
-    {children}
-  </div>
-);
+export const Card = ({ className = "", children, style = {}, ...props }) => {
+  const fallbackStyle = {
+    backgroundColor: `hsl(var(--card, 0 0% 100%))`,
+    color: `hsl(var(--card-foreground, 222 20% 10%))`,
+    borderColor: `hsl(var(--border, 210 16% 96%))`,
+  };
+  const combinedStyle = { ...fallbackStyle, ...style };
+
+  return (
+    <div
+      className={`rounded-lg border bg-card text-card-foreground shadow-sm ${className}`}
+      style={combinedStyle}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+};
 
 export const CardHeader = ({ className = "", children, ...props }) => (
   <div className={`flex flex-col space-y-1.5 p-6 ${className}`} {...props}>
