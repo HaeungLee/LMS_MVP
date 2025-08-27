@@ -1,3 +1,5 @@
+// src/main.jsx (또는 index.tsx)
+import './index.css';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import DashboardPage from './pages/DashboardPage';
 import QuizPage from './pages/QuizPage';
@@ -6,9 +8,9 @@ import AuthLogin from './pages/AuthLogin';
 import AuthRegister from './pages/AuthRegister';
 import AdminQuestions from './pages/AdminQuestions';
 import TeacherDashboard from './pages/TeacherDashboard';
-import AIFeaturesPage from './pages/AIFeaturesPage';
+import AIFeaturesPage2 from './pages/AIFeaturesPage2';
 import BetaDashboard from './pages/BetaDashboard';
-import BetaOnboarding from './components/onboarding/BetaOnboarding';
+import BetaOnboarding2 from './components/onboarding/BetaOnboarding2';
 import useAuthStore from './stores/authStore';
 
 function Navigation() {
@@ -74,7 +76,7 @@ function Navigation() {
             </Link>
           </li>
           <li>
-            <Link to="/beta-onboarding" className={getLinkClass('/beta-onboarding')}>
+            <Link to="/beta-onboarding2" className={getLinkClass('/beta-onboarding2')}>
               🧪 베타 온보딩
             </Link>
           </li>
@@ -128,8 +130,8 @@ function App() {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/quiz" element={<Protected><QuizPage /></Protected>} />
             <Route path="/results/:submission_id" element={<ResultsPage />} />
-            <Route path="/ai-features" element={<AIFeaturesPage />} />
-            <Route path="/beta-onboarding" element={<BetaOnboarding userId={1} onComplete={() => alert('온보딩 완료!')} />} />
+            <Route path="/ai-features" element={<AIFeaturesPage2 />} />
+            <Route path="/beta-onboarding2" element={<BetaOnboarding2 userId={1} onComplete={() => alert('온보딩 완료!')} />} />
             <Route path="/beta-dashboard" element={<Protected><BetaDashboard /></Protected>} />
             <Route path="/teacher/dashboard" element={<Protected><TeacherDashboard /></Protected>} />
             <Route path="/admin/questions" element={<Protected><AdminQuestions /></Protected>} />
