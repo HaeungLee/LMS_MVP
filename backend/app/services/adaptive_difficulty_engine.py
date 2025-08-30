@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from enum import Enum
 from sqlalchemy.orm import Session
 
-from app.models.orm import Question, SubmissionItem, User, UserProgress
+from app.models.orm import Question, Submission, SubmissionItem, User, UserProgress
 from app.services.redis_service import get_redis_service
 from app.services.ai_providers import generate_ai_response, ModelTier
 
@@ -147,28 +147,28 @@ class AdaptiveDifficultyEngine:
             # 최근 30분간의 제출 기록
             recent_time = datetime.utcnow() - timedelta(minutes=30)
             
-            query = self.db.query(SubmissionItem).filter(
-                SubmissionItem.user_id == user_id,
-                SubmissionItem.submitted_at >= recent_time
+            query = self.db.query(SubmissionItem).join(Submission).filter(
+                Submission.user_id == user_id,
+                Submission.submitted_at >= recent_time
             )
             
             # 토픽 필터링
             if topic:
                 query = query.join(Question).filter(Question.topic == topic)
             
-            recent_submissions = query.order_by(SubmissionItem.submitted_at.desc()).limit(10).all()
+            recent_submissions = query.order_by(Submission.submitted_at.desc()).limit(10).all()
             
             # 더 넓은 기간의 데이터 (분석용)
             extended_time = datetime.utcnow() - timedelta(days=7)
-            extended_query = self.db.query(SubmissionItem).filter(
-                SubmissionItem.user_id == user_id,
-                SubmissionItem.submitted_at >= extended_time
+            extended_query = self.db.query(SubmissionItem).join(Submission).filter(
+                Submission.user_id == user_id,
+                Submission.submitted_at >= extended_time
             )
             
             if topic:
                 extended_query = extended_query.join(Question).filter(Question.topic == topic)
             
-            extended_submissions = extended_query.order_by(SubmissionItem.submitted_at.desc()).limit(50).all()
+            extended_submissions = extended_query.order_by(Submission.submitted_at.desc()).limit(50).all()
             
             return {
                 'recent_submissions': [{
@@ -418,8 +418,8 @@ class AdaptiveDifficultyEngine:
         
         try:
             # 전체 제출 통계 기반 레벨 판단
-            total_submissions = self.db.query(SubmissionItem).filter(
-                SubmissionItem.user_id == user_id
+            total_submissions = self.db.query(SubmissionItem).join(Submission).filter(
+                Submission.user_id == user_id
             ).count()
             
             if total_submissions < 10:
@@ -581,10 +581,10 @@ class AdaptiveDifficultyEngine:
         
         try:
             # 최근 제출된 문제의 난이도
-            recent_submission = self.db.query(SubmissionItem).join(Question).filter(
-                SubmissionItem.user_id == user_id,
+            recent_submission = self.db.query(SubmissionItem).join(Submission).join(Question).filter(
+                Submission.user_id == user_id,
                 Question.topic == topic
-            ).order_by(SubmissionItem.submitted_at.desc()).first()
+            ).order_by(Submission.submitted_at.desc()).first()
             
             if recent_submission and hasattr(recent_submission, 'question'):
                 return getattr(recent_submission.question, 'difficulty', 2)

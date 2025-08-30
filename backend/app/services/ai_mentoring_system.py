@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from enum import Enum
 from sqlalchemy.orm import Session
 
-from app.models.orm import User, SubmissionItem, UserProgress, LearningGoal
+from app.models.orm import User, Submission, SubmissionItem, UserProgress, LearningGoal
 from app.services.ai_providers import generate_ai_response, ModelTier, get_ai_provider_manager
 from app.services.deep_learning_analyzer import get_deep_learning_analyzer, LearnerType
 from app.services.redis_service import get_redis_service
@@ -212,9 +212,10 @@ class AIMentoringSystem:
         try:
             # 최근 학습 성과 기반 기분 평가
             recent_time = datetime.utcnow() - timedelta(hours=24)
-            recent_submissions = self.db.query(SubmissionItem).filter(
-                SubmissionItem.user_id == user_id,
-                SubmissionItem.submitted_at >= recent_time
+            # SubmissionItem에서 user_id를 얻기 위해 JOIN 사용
+            recent_submissions = self.db.query(SubmissionItem).join(Submission).filter(
+                Submission.user_id == user_id,
+                Submission.submitted_at >= recent_time
             ).limit(10).all()
             
             if not recent_submissions:
@@ -266,8 +267,12 @@ class AIMentoringSystem:
         
         personality = self.mentor_personalities[session.mentor_personality]
         
+        # 세션 고유 식별자 추가
+        session_timestamp = int(datetime.utcnow().timestamp())
+
         greeting_prompt = f"""당신은 {personality['tone']} 톤의 AI 학습 멘토입니다.
-        
+[세션 ID: {session.session_id}_{session_timestamp}]
+
 학습자 정보:
 - 현재 기분: {session.current_mood}
 - 세션 목표: {', '.join(session.session_goals)}
@@ -375,8 +380,12 @@ class AIMentoringSystem:
         
         personality = self.mentor_personalities[session.mentor_personality]
         
+        # 고유한 대화 식별자 추가 (캐시 충돌 방지)
+        conversation_id = f"{session.session_id}_{len(session.conversation_history)}_{int(datetime.utcnow().timestamp())}"
+
         # 프롬프트 구성
         response_prompt = f"""당신은 {personality['tone']} AI 학습 멘토입니다.
+[대화 ID: {conversation_id}]
 
 멘토 특성:
 - 스타일: {personality['style']}

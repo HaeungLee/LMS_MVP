@@ -9,6 +9,7 @@ AI 제공자 통합 시스템 - Phase 4
 import asyncio
 import json
 import logging
+import os
 from typing import Dict, Any, List, Optional, Union
 from enum import Enum
 from dataclasses import dataclass
@@ -67,37 +68,29 @@ class AIProviderManager:
         
         # 사용 가능한 모델 정의
         self.models = {
-            # OpenRouter 무료/저비용 모델
-            "google/gemma-2-9b-it:free": ModelConfig(
-                name="google/gemma-2-9b-it:free",
-                provider=AIProvider.OPENROUTER,
-                tier=ModelTier.FREE,
-                cost_per_1k_tokens=0.0,
-                max_tokens=8192,
-                context_window=8192,
-                strengths=["빠른 응답", "기본 추론", "코딩 지원"],
-                best_for=["일반 피드백", "간단한 질문 답변", "기초 분석"]
-            ),
-            "meta-llama/llama-3.1-8b-instruct:free": ModelConfig(
-                name="meta-llama/llama-3.1-8b-instruct:free",
-                provider=AIProvider.OPENROUTER,
-                tier=ModelTier.FREE,
-                cost_per_1k_tokens=0.0,
-                max_tokens=8192,
-                context_window=128000,
-                strengths=["긴 컨텍스트", "논리적 추론", "다국어"],
-                best_for=["학습 분석", "패턴 인식", "요약"]
-            ),
-            "microsoft/phi-3-medium-128k-instruct:free": ModelConfig(
-                name="microsoft/phi-3-medium-128k-instruct:free",
+            # OpenRouter 무료/저비용 모델 (현재 사용 불가로 주석 처리)
+            # "google/gemma-2-9b-it:free": ModelConfig(
+            #     name="google/gemma-2-9b-it:free",
+            #     provider=AIProvider.OPENROUTER,
+            #     tier=ModelTier.FREE,
+            #     cost_per_1k_tokens=0.0,
+            #     max_tokens=8192,
+            #     context_window=8192,
+            #     strengths=["빠른 응답", "기본 추론", "코딩 지원"],
+            #     best_for=["일반 피드백", "간단한 질문 답변", "기초 분석"]
+            # ),
+            # ✅ 안정적인 무료 모델로 교체 (Mistral 7B)
+            "mistralai/mistral-7b-instruct:free": ModelConfig(
+                name="mistralai/mistral-7b-instruct:free",
                 provider=AIProvider.OPENROUTER,
                 tier=ModelTier.FREE,
                 cost_per_1k_tokens=0.0,
                 max_tokens=4096,
-                context_window=128000,
-                strengths=["코드 이해", "수학", "논리"],
-                best_for=["코딩 피드백", "문제 해결", "알고리즘 분석"]
+                context_window=4096,
+                strengths=["교육 콘텐츠", "일반 대화", "문제 해결", "코드 지원"],
+                best_for=["학습 지원", "실시간 피드백", "프로그래밍 교육"]
             ),
+
             
             # OpenRouter 저비용 모델
             "anthropic/claude-3-haiku": ModelConfig(
@@ -154,30 +147,30 @@ class AIProviderManager:
             )
         }
         
-        # 작업 유형별 최적 모델 매핑
+        # 🚀 작업 유형별 최적 모델 매핑 (안정적인 Mistral로 변경)
         self.task_model_mapping = {
             "feedback": {
-                ModelTier.FREE: "google/gemma-2-9b-it:free",
+                ModelTier.FREE: "mistralai/mistral-7b-instruct:free",  # 안정적인 교육 모델
                 ModelTier.BASIC: "anthropic/claude-3-haiku",
                 ModelTier.PREMIUM: "gpt-4o-mini"
             },
             "analysis": {
-                ModelTier.FREE: "meta-llama/llama-3.1-8b-instruct:free", 
+                ModelTier.FREE: "mistralai/mistral-7b-instruct:free",  # 안정적인 분석 모델
                 ModelTier.BASIC: "google/gemini-flash-1.5",
                 ModelTier.PREMIUM: "gpt-4o-mini"
             },
             "coding": {
-                ModelTier.FREE: "microsoft/phi-3-medium-128k-instruct:free",
+                ModelTier.FREE: "mistralai/mistral-7b-instruct:free",  # 코딩 지원 모델
                 ModelTier.BASIC: "anthropic/claude-3-haiku",
                 ModelTier.PREMIUM: "gpt-4o-mini"
             },
             "mentoring": {
-                ModelTier.FREE: "google/gemma-2-9b-it:free",
-                ModelTier.BASIC: "anthropic/claude-3-haiku", 
+                ModelTier.FREE: "mistralai/mistral-7b-instruct:free",  # 교육용 대화 모델
+                ModelTier.BASIC: "anthropic/claude-3-haiku",
                 ModelTier.PREMIUM: "gpt-4o-mini"
             },
             "project_review": {
-                ModelTier.FREE: "meta-llama/llama-3.1-8b-instruct:free",
+                ModelTier.FREE: "mistralai/mistral-7b-instruct:free",  # 코드 리뷰 모델
                 ModelTier.BASIC: "google/gemini-flash-1.5",
                 ModelTier.PREMIUM: "gpt-4o"
             }
@@ -226,8 +219,8 @@ class AIProviderManager:
         # 4. 모델 설정 반환
         model_config = self.models.get(model_name)
         if not model_config:
-            # 최종 폴백: 기본 무료 모델
-            model_config = self.models["google/gemma-2-9b-it:free"]
+            # 🚀 최종 폴백: 안정적인 Mistral 7B 모델
+            model_config = self.models["mistralai/mistral-7b-instruct:free"]
         
         logger.info(f"선택된 모델: {model_config.name} (등급: {model_config.tier.value})")
         return model_config
@@ -260,7 +253,13 @@ class AIProviderManager:
             
             if response['success']:
                 # 캐시 저장
-                self.redis_service.set_llm_cache(cache_key, response['response'], 3600)
+                # 🚀 캐시 최적화: 멘토링은 짧은 TTL, 일반은 긴 TTL
+                if "mentoring" in request.task_type:
+                    ttl_seconds = 1800  # 멘토링: 30분 (대화 맥락 유지)
+                else:
+                    ttl_seconds = 14400  # 일반: 4시간
+
+                self.redis_service.set_llm_cache(cache_key, response['response'], ttl_seconds)
                 
                 # 비용 추적
                 await self._track_usage(request.user_id, model_config, response.get('tokens_used', 0))
@@ -289,17 +288,18 @@ class AIProviderManager:
                 model_config.max_tokens
             )
             
-            # API 호출 (OpenAI 호환 형식)
+            # 🚀 속도 최적화된 API 호출
             completion = await client.chat.completions.create(
                 model=model_config.name,
                 messages=[
                     {"role": "user", "content": request.prompt}
                 ],
-                max_tokens=max_tokens,
-                temperature=request.temperature,
-                top_p=0.9,
+                max_tokens=min(max_tokens, 1024),  # 응답 길이 제한으로 속도 향상
+                temperature=min(request.temperature or 0.3, 0.3),  # 낮은 temperature로 응답 속도 향상
+                top_p=0.8,  # 약간 낮춰서 속도 향상
                 frequency_penalty=0.0,
-                presence_penalty=0.0
+                presence_penalty=0.0,
+                stream=False  # 스트리밍 비활성화로 초기 응답 속도 향상
             )
             
             response_text = completion.choices[0].message.content
@@ -335,10 +335,22 @@ class AIProviderManager:
             raise e
     
     def _generate_cache_key(self, prompt: str, model_name: str) -> str:
-        """캐시 키 생성"""
+        """🚀 고속 캐시 키 생성 (멘토링용 개선)"""
         import hashlib
-        content = f"{model_name}:{prompt}"
-        return hashlib.sha256(content.encode()).hexdigest()[:16]
+        import time
+
+        # 멘토링 프롬프트의 경우 타임스탬프 추가로 캐시 충돌 방지
+        if "AI 학습 멘토" in prompt or "멘토링" in prompt:
+            timestamp = str(int(time.time()))  # 현재 타임스탬프 추가
+            normalized_prompt = prompt.strip().lower()[:300]  # 300자로 증가
+            content = f"{model_name}:{normalized_prompt}:{timestamp}"
+        else:
+            # 일반 프롬프트는 기존 로직 유지
+            normalized_prompt = prompt.strip().lower()[:200]
+            content = f"{model_name}:{normalized_prompt}"
+
+        # 더 긴 해시 사용 (충돌 방지)
+        return hashlib.md5(content.encode()).hexdigest()[:16]
     
     async def _track_usage(self, user_id: Optional[int], model_config: ModelConfig, tokens_used: int):
         """사용량 추적"""
@@ -435,7 +447,25 @@ def get_ai_provider_manager() -> AIProviderManager:
     """AI 제공자 관리자 인스턴스 반환"""
     return ai_provider_manager
 
-# 편의 함수들
+# 모의 모드 지원
+def get_llm_provider(use_mock: bool = None):
+    """LLM 제공자 인스턴스 반환 (실제 또는 모의)"""
+    # 환경변수로 모의 모드 결정 (기본값: 실제 모드)
+    if use_mock is None:
+        use_mock = os.getenv("USE_MOCK_AI", "false").lower() in ("1", "true", "yes")
+
+    if use_mock:
+        try:
+            from app.services.mock_ai_provider import get_mock_ai_provider
+            print("🎭 모의 AI 모드로 작동합니다 (교육용 고품질 응답 제공)")
+            return get_mock_ai_provider()
+        except ImportError:
+            print("⚠️ 모의 AI 제공자를 사용할 수 없습니다. 실제 AI 제공자를 사용합니다.")
+            return ai_provider_manager
+
+    print("🚀 실제 OpenRouter AI 모드로 작동합니다")
+    return ai_provider_manager
+
 async def generate_ai_response(
     prompt: str,
     task_type: str = "general",
