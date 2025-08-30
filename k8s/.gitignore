@@ -1,0 +1,41 @@
+# Kubernetes .gitignore
+
+# === Kubernetes Secrets ===
+secrets/
+*secret*.yaml
+*secret*.yml
+
+# === Environment Specific ===
+development/
+staging/
+testing/
+
+# === Generated Files ===
+*.generated.yaml
+*.generated.yml
+
+# === Logs ===
+*.log
+logs/
+*.log.*
+
+# === Temporary Files ===
+*.tmp
+*.temp
+*.bak
+
+# === OS ===
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# === Keep ===
+!.gitkeep
+!.gitignore
+
+# Note: Keep production configs but ignore secrets
+# !production/secret*.yaml

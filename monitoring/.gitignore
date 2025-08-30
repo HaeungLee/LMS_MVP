@@ -1,0 +1,40 @@
+# Monitoring (Grafana/Prometheus) .gitignore
+
+# === Grafana ===
+grafana/data/
+grafana/logs/
+grafana/plugins/
+
+# === Prometheus ===
+prometheus/data/
+prometheus/wal/
+
+# === Logs ===
+*.log
+logs/
+*.log.*
+
+# === Configuration ===
+# Keep sample configs but ignore actual configs
+grafana/grafana.ini
+prometheus/prometheus.yml
+!grafana/grafana.ini.sample
+!prometheus/prometheus.yml.sample
+
+# === Temporary Files ===
+*.tmp
+*.temp
+*.bak
+
+# === OS ===
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# === Keep ===
+!.gitkeep
+!.gitignore

@@ -1,1 +1,70 @@
-  
+# Frontend (React/Vite) .gitignore
+
+# === Node.js ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# === Build Output ===
+dist/
+build/
+.next/
+out/
+
+# === Environment ===
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# === OS ===
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# === Logs ===
+*.log
+logs/
+*.log.*
+
+# === Testing ===
+coverage/
+.nyc_output/
+.pytest_cache/
+.tox/
+.cache
+cypress/videos/
+cypress/screenshots/
+
+# === Build Tools ===
+.parcel-cache/
+.cache/
+.vite/
+.turbo/
+
+# === Temporary Files ===
+*.tmp
+*.temp
+*.bak
+
+# === Development ===
+debug.log
+hot-update.json
+
+# === Keep ===
+!.gitkeep
+!.gitignore
