@@ -44,3 +44,29 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Navigation link defaults used by `Navigation` in App.jsx */
+.nav-link {
+  color: #ffffff; /* visible on dark nav background */
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 150ms ease, background-color 150ms ease, transform 120ms ease;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+.nav-link:hover {
+  color: #e6e6e6;
+  background-color: rgba(255,255,255,0.03);
+  transform: translateY(-1px);
+}
+
+.nav-link:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.14);
+}
+
+.nav-link.active {
+  color: #fff0b3; /* subtle highlight for active route */
+  background-color: rgba(255,255,255,0.04);
+}

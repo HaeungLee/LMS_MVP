@@ -394,9 +394,32 @@ const BetaOnboarding = ({ onComplete }) => {
 
   const handleNext = () => currentStep < steps.length - 1 && setCurrentStep(currentStep + 1);
   const handlePrev = () => currentStep > 0 && setCurrentStep(currentStep - 1);
-  const handleComplete = () => {
-    console.log("Onboarding Complete:", formData);
-    if (onComplete) onComplete(formData);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+
+  const handleComplete = async () => {
+    setSubmitError(null);
+    setSubmitting(true);
+    const payload = {
+      name: formData.name,
+      email: formData.email,
+      experience_level: formData.experience_level,
+      interests: formData.interests,
+      goals: formData.goals,
+      beta_feedback_consent: formData.beta_feedback_consent,
+      ai_features_interest: formData.ai_features_interest,
+    };
+    try {
+      // lazy import to avoid circular deps
+      const api = (await import('../../services/apiClient')).default;
+      const res = await api.registerBetaTester(payload);
+      setSubmitting(false);
+      if (onComplete) onComplete(res);
+    } catch (err) {
+      console.error('Onboarding submit error', err);
+      setSubmitError(err.message || 'Failed to register');
+      setSubmitting(false);
+    }
   };
 
   const stepComponents = {

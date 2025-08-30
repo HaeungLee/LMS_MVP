@@ -371,7 +371,7 @@ const BetaDashboard = () => {
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium">전체 진행률</span>
                 <span className="text-sm text-gray-600">
-                  {overview.total_beta_testers}/20 테스터 참여
+                  {overview.total_beta_testers}/30 테스터 참여
                 </span>
               </div>
               <Progress value={(overview.total_beta_testers / 20) * 100} className="h-3" />

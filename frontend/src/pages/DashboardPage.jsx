@@ -163,7 +163,7 @@ const DashboardPage = () => {
                   transition: 'all 0.2s'
                 }}
               >
-                📊 학습 현황
+                학습 현황
               </button>
               <button
                 onClick={() => setActiveTab('ai-learning')}
@@ -179,7 +179,7 @@ const DashboardPage = () => {
                   transition: 'all 0.2s'
                 }}
               >
-                🤖 AI 맞춤학습
+                AI 맞춤학습
               </button>
               <button
                 onClick={() => setActiveTab('question-generator')}
@@ -195,7 +195,7 @@ const DashboardPage = () => {
                   transition: 'all 0.2s'
                 }}
               >
-                🔧 문제 생성기
+                문제 생성기
               </button>
               <button
                 onClick={() => setActiveTab('feedback-tester')}
@@ -211,7 +211,7 @@ const DashboardPage = () => {
                   transition: 'all 0.2s'
                 }}
               >
-                🧠 AI 피드백
+                AI 피드백
               </button>
             </nav>
           </div>
