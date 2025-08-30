@@ -12,6 +12,7 @@ import AIFeaturesPage2 from './pages/AIFeaturesPage2';
 import BetaDashboard from './pages/BetaDashboard';
 import BetaOnboarding2 from './components/onboarding/BetaOnboarding2';
 import useAuthStore from './stores/authStore';
+import lmsLogo from './image/LMS.png';
 
 function Navigation() {
   const location = useLocation();
@@ -33,9 +34,8 @@ function Navigation() {
   };
 
   const logoStyle = {
-    color: '#ffffff',
-    fontSize: '20px',
-    fontWeight: 'bold',
+    display: 'flex',
+    alignItems: 'center',
     textDecoration: 'none'
   };
 
@@ -57,7 +57,22 @@ function Navigation() {
     <nav style={navStyle}>
       <div style={containerStyle}>
         <Link to="/" style={logoStyle}>
-          🎓 LMS MVP
+          <img
+            src={lmsLogo}
+            alt="LMS MVP"
+            style={{
+              height: '60px',
+              width: 'auto',
+              marginRight: '8px'
+            }}
+          />
+          <span style={{
+            color: '#ffffff',
+            fontSize: '18px',
+            fontWeight: 'bold'
+          }}>
+            
+          </span>
         </Link>
         <ul style={navListStyle}>
           <li>
@@ -72,12 +87,12 @@ function Navigation() {
           </li>
           <li>
             <Link to="/ai-features" className={getLinkClass('/ai-features')}>
-              🤖 AI 기능
+              AI 기능
             </Link>
           </li>
           <li>
             <Link to="/beta-onboarding2" className={getLinkClass('/beta-onboarding2')}>
-              🧪 베타 온보딩
+              베타 온보딩
             </Link>
           </li>
           {(user && (user.role === 'teacher' || user.role === 'admin')) && (
@@ -89,7 +104,7 @@ function Navigation() {
               </li>
               <li>
                 <Link to="/beta-dashboard" className={getLinkClass('/beta-dashboard')}>
-                  📊 베타 대시보드
+                  베타 대시보드
                 </Link>
               </li>
             </>

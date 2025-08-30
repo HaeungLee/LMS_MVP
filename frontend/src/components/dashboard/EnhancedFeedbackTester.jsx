@@ -29,27 +29,21 @@ const EnhancedFeedbackTester = () => {
   const loadRealQuestions = async () => {
     try {
       setQuestionsLoading(true);
-      
+
       // 백엔드에서 실제 문제들을 가져옴 (python_basics 과목에서 5개)
+      console.log('🚀 실제 문제 데이터 로드 시작...');
       const response = await apiClient.get('/questions/python_basics?easy_count=3&medium_count=2&hard_count=0');
-      
+
       console.log('🔍 API 응답 객체:', response);
       console.log('🔍 응답 상태:', response.status, response.statusText);
-      
-      // 응답 상태 체크
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ API 에러 응답:', errorText);
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-      
-      // Response 객체에서 JSON 데이터 추출
+
+      // Response 객체에서 JSON 데이터 추출 (apiClient.get이 이미 에러 처리를 했으므로 바로 json() 호출)
       const questions = await response.json();
-      
+
       console.log('🔍 백엔드에서 가져온 실제 문제들:', questions);
-      
+
       if (!Array.isArray(questions)) {
-        throw new Error('Questions is not an array');
+        throw new Error('Questions is not an array - received: ' + typeof questions);
       }
       
       // 백엔드 문제 데이터를 프론트엔드 형식으로 변환

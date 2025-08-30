@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { 
-  Brain, 
-  MessageCircle, 
-  TrendingUp, 
+import React, { useState, useEffect } from 'react';
+import {
+  Brain,
+  MessageCircle,
+  TrendingUp,
   Code,
   Map,
   Sparkles,
@@ -11,8 +11,11 @@ import {
   Clock,
   ChevronRight,
   Lightbulb,
-  BarChart3 // 오류 수정을 위해 추가
+  BarChart3,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
+import apiClient from '../services/apiClient';
 
 // --- Mock Components (실제 컴포넌트로 교체 필요) ---
 // 실제 프로젝트에서는 이 부분들을 실제 컴포넌트 파일로 분리하여 import합니다.
@@ -23,76 +26,674 @@ const CardDescription = ({ children, className = '' }) => <p className={`text-sm
 const CardContent = ({ children, className = '' }) => <div className={`p-6 ${className}`}>{children}</div>;
 const Badge = ({ children, className = '' }) => <span className={`inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full ${className}`}>{children}</span>;
 
-const AIAnalysisDashboard = ({ userId }) => (
-  <Card className="h-full">
-    <CardHeader>
-      <CardTitle>심층 학습 분석 대시보드</CardTitle>
-      <CardDescription>사용자 ID: {userId}의 학습 데이터를 시각화합니다.</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-lg text-center">
-        <BarChart3 className="w-16 h-16 mx-auto text-blue-500 mb-4" />
-        <h4 className="font-semibold text-slate-800 dark:text-slate-200">분석 데이터 로딩 중...</h4>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-          여기에 차트와 같은 데이터 시각화 컴포넌트가 표시됩니다.
-        </p>
-      </div>
-    </CardContent>
-  </Card>
-);
+const AIAnalysisDashboard = ({ userId }) => {
+  const [analysisData, setAnalysisData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-const AIMentorChat = ({ userId }) => (
-  <Card className="h-full flex flex-col">
-    <CardHeader>
-      <CardTitle>AI 멘토</CardTitle>
-      <CardDescription>무엇이든 물어보세요! (사용자 ID: {userId})</CardDescription>
-    </CardHeader>
-    <CardContent className="flex-grow">
-      <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg h-full flex flex-col justify-end">
-        <div className="space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">AI</div>
-            <div className="bg-white dark:bg-slate-700 p-3 rounded-lg rounded-tl-none max-w-xs">
-              <p className="text-sm text-slate-800 dark:text-slate-200">안녕하세요! 학습에 도움이 필요하신가요?</p>
+  useEffect(() => {
+    const fetchAnalysisData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // 여러 API를 동시에 호출하여 분석 데이터 수집
+        const [dashboardStats, learningStatus, weaknesses] = await Promise.allSettled([
+          apiClient.getDashboardStats('python_basics'),
+          apiClient.getLearningStatus('python_basics'),
+          apiClient.analyzeStudentWeaknesses('python_basics')
+        ]);
+
+        const data = {
+          dashboard: dashboardStats.status === 'fulfilled' ? dashboardStats.value : null,
+          learning: learningStatus.status === 'fulfilled' ? learningStatus.value : null,
+          weaknesses: weaknesses.status === 'fulfilled' ? weaknesses.value : null,
+          lastUpdated: new Date().toLocaleString('ko-KR')
+        };
+
+        setAnalysisData(data);
+      } catch (err) {
+        console.error('분석 데이터 로드 실패:', err);
+        setError('분석 데이터를 불러오는 중 오류가 발생했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalysisData();
+  }, [userId]);
+
+  const handleRefresh = () => {
+    setLoading(true);
+    setError(null);
+    // useEffect가 자동으로 다시 실행됨
+  };
+
+  if (loading) {
+    return (
+      <Card className="h-full">
+        <CardHeader>
+          <CardTitle>심층 학습 분석 대시보드</CardTitle>
+          <CardDescription>학습 데이터를 분석하고 있습니다...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-64">
+            <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
+            <span className="ml-2 text-slate-600 dark:text-slate-400">분석 중...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="h-full">
+        <CardHeader>
+          <CardTitle>심층 학습 분석 대시보드</CardTitle>
+          <CardDescription>분석 데이터를 불러올 수 없습니다.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center h-64 text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+            <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
+            <button
+              onClick={handleRefresh}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              다시 시도
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="h-full">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>심층 학습 분석 대시보드</CardTitle>
+          <CardDescription>
+            마지막 업데이트: {analysisData?.lastUpdated}
+          </CardDescription>
+        </div>
+        <button
+          onClick={handleRefresh}
+          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          title="새로고침"
+        >
+          <RefreshCw className="w-4 h-4" />
+        </button>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* 학습 통계 */}
+          {analysisData?.dashboard && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+              <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">학습 통계</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-blue-700 dark:text-blue-300">총 문제 수:</span>
+                  <span className="font-medium">{analysisData.dashboard.total_questions || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-700 dark:text-blue-300">정답률:</span>
+                  <span className="font-medium">{analysisData.dashboard.accuracy_rate || 0}%</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 약점 분석 */}
+          {analysisData?.weaknesses && (
+            <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+              <h4 className="font-semibold text-red-900 dark:text-red-100 mb-2">약점 분석</h4>
+              <div className="space-y-2 text-sm">
+                {analysisData.weaknesses.weak_topics?.slice(0, 3).map((topic, index) => (
+                  <div key={index} className="flex justify-between">
+                    <span className="text-red-700 dark:text-red-300">{topic.topic}:</span>
+                    <span className="font-medium">{topic.accuracy}%</span>
+                  </div>
+                )) || <p className="text-red-600 dark:text-red-400">약점 데이터가 없습니다.</p>}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 학습 진행 상태 */}
+        {analysisData?.learning && (
+          <div className="mt-4 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+            <h4 className="font-semibold text-green-900 dark:text-green-100 mb-2">학습 진행 상태</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-green-700 dark:text-green-300">완료된 토픽:</span>
+                <span className="font-medium">{analysisData.learning.completed_topics || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-green-700 dark:text-green-300">진행 중:</span>
+                <span className="font-medium">{analysisData.learning.in_progress_topics || 0}</span>
+              </div>
             </div>
           </div>
-          <div className="flex items-start gap-3 justify-end">
-            <div className="bg-blue-500 text-white p-3 rounded-lg rounded-br-none max-w-xs">
-              <p className="text-sm">네, 이 개념에 대해 더 자세히 설명해주세요.</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+const AIMentorChat = ({ userId }) => {
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
+
+  // 세션 시작 및 초기 메시지
+  useEffect(() => {
+    const startSession = async () => {
+      if (!userId) return;
+
+      try {
+        setIsTyping(true);
+        setError(null);
+
+        // AI 멘토링 세션 시작
+        const response = await apiClient.startMentoringSession(userId, {
+          initial_question: null
+        });
+
+        if (response.success) {
+          setSessionId(response.session.session_id);
+
+          // 초기 인사말 메시지 추가
+          const greetingMessage = {
+            id: Date.now(),
+            type: 'ai',
+            content: response.session.greeting || '안녕하세요! 저는 당신의 학습을 도와드리는 AI 멘토입니다. 파이썬 프로그래밍에 대해 궁금한 점이 있으신가요?',
+            timestamp: new Date()
+          };
+          setMessages([greetingMessage]);
+        }
+      } catch (err) {
+        console.error('AI 멘토링 세션 시작 오류:', err);
+        setError('AI 멘토링 세션을 시작할 수 없습니다.');
+
+        // 기본 메시지로 폴백
+        const fallbackMessage = {
+          id: Date.now(),
+          type: 'ai',
+          content: '안녕하세요! 저는 당신의 학습을 도와드리는 AI 멘토입니다. 파이썬 프로그래밍에 대해 궁금한 점이 있으신가요?',
+          timestamp: new Date()
+        };
+        setMessages([fallbackMessage]);
+      } finally {
+        setIsTyping(false);
+      }
+    };
+
+    startSession();
+  }, [userId]);
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || isTyping) return;
+
+    const userMessage = {
+      id: Date.now(),
+      type: 'user',
+      content: inputMessage.trim(),
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsTyping(true);
+    setError(null);
+
+    try {
+      // 실제 AI 멘토링 API 호출
+      const response = await apiClient.continueMentoringConversation({
+        session_id: sessionId,
+        message: inputMessage.trim(),
+        conversation_mode: 'help_seeking'
+      });
+
+      if (response.success) {
+        const aiMessage = {
+          id: Date.now() + 1,
+          type: 'ai',
+          content: response.mentor_response.content,
+          timestamp: new Date(),
+          suggestions: response.mentor_response.suggestions,
+          resources: response.mentor_response.resources
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        throw new Error('AI 응답을 받을 수 없습니다.');
+      }
+
+    } catch (err) {
+      console.error('AI 멘토링 응답 오류:', err);
+
+      // LLM API 호출 실패 시 명확한 오류 메시지 표시
+      const errorMessage = err.name === 'AbortError' || err.message?.includes('signal is aborted')
+        ? '⏱️ AI 응답이 지연되고 있습니다. 잠시 기다렸다가 다시 시도해주세요.'
+        : err.message?.includes('429') || err.message?.includes('rate-limited')
+        ? '⚠️ AI 서비스가 일시적으로 과부하 상태입니다. 잠시 후 다시 시도해주세요.'
+        : err.message?.includes('timeout')
+        ? '⏱️ 요청 시간이 초과되었습니다. 인터넷 연결을 확인하고 다시 시도해주세요.'
+        : '⚠️ AI 멘토링 서비스에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.';
+
+      setError(errorMessage);
+
+      // 오류 메시지를 채팅에 표시 (더 이상 mockup 응답 사용하지 않음)
+      const errorAiMessage = {
+        id: Date.now() + 1,
+        type: 'ai',
+        content: errorMessage,
+        timestamp: new Date(),
+        isError: true  // 오류 메시지 표시용 플래그
+      };
+
+      setMessages(prev => [...prev, errorAiMessage]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  return (
+    <Card className="h-full flex flex-col">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <MessageCircle className="w-5 h-5" />
+          AI 멘토
+        </CardTitle>
+        <CardDescription>무엇이든 물어보세요! 실시간으로 도와드리겠습니다.</CardDescription>
+      </CardHeader>
+
+      <CardContent className="flex-grow flex flex-col">
+        {/* 채팅 메시지 영역 */}
+        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 h-full overflow-y-auto flex flex-col space-y-4">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex items-start gap-3 ${message.type === 'user' ? 'justify-end' : ''}`}
+            >
+              {message.type === 'ai' && (
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                  AI
+                </div>
+              )}
+              <div
+                className={`p-3 rounded-lg max-w-[90%] break-words ${
+                  message.type === 'user'
+                    ? 'bg-blue-500 text-white rounded-br-none'
+                    : message.isError
+                    ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 rounded-tl-none'
+                    : 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-tl-none'
+                }`}
+              >
+                <p className="text-base">{message.content}</p>
+                <p className="text-xs opacity-70 mt-1">
+                  {message.timestamp.toLocaleTimeString('ko-KR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+              {message.type === 'user' && (
+                <div className="w-8 h-8 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-sm flex-shrink-0">
+                  Me
+                </div>
+              )}
             </div>
-             <div className="w-8 h-8 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-sm">Me</div>
+          ))}
+
+          {/* 타이핑 인디케이터 */}
+          {isTyping && (
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">
+                AI
+              </div>
+              <div className="bg-white dark:bg-slate-700 p-3 rounded-lg rounded-tl-none max-w-[90%]">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 에러 메시지 */}
+          {error && (
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-sm">
+                !
+              </div>
+              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg rounded-tl-none border border-red-200 dark:border-red-800 max-w-[90%]">
+                <p className="text-base text-red-800 dark:text-red-200">{error}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 메시지 입력 영역 */}
+        <div className="mt-4 border-t border-slate-200 dark:border-slate-800 pt-4">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="AI 멘토에게 질문해보세요..."
+              disabled={isTyping}
+              className="flex-1 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={!inputMessage.trim() || isTyping}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              전송
+            </button>
           </div>
         </div>
-      </div>
-    </CardContent>
-    <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-      <input type="text" placeholder="메시지를 입력하세요..." className="w-full bg-slate-100 dark:bg-slate-800 border-transparent rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-    </div>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
+};
 
-const AdaptiveDifficultyWidget = ({ userId }) => (
-  <Card className="h-full">
-    <CardHeader>
-      <CardTitle>적응형 난이도 조절</CardTitle>
-      <CardDescription>사용자 ID: {userId}의 성과에 따라 난이도가 자동 조절됩니다.</CardDescription>
-    </CardHeader>
-    <CardContent className="text-center">
-        <div className="relative w-40 h-40 mx-auto">
-          <svg className="w-full h-full" viewBox="0 0 36 36">
-            <path className="text-slate-200 dark:text-slate-700" strokeWidth="3" fill="none" stroke="currentColor" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
-            <path className="text-purple-500" strokeWidth="3" fill="none" stroke="currentColor" strokeDasharray="75, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+const AdaptiveDifficultyWidget = ({ userId }) => {
+  const [difficultyData, setDifficultyData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchDifficultyData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // 실제 적응형 난이도 API 호출
+        console.log('🚀 실제 적응형 난이도 API 호출 시작...');
+        const [optimalDifficulty, dashboardStats, nextQuestionDifficulty] = await Promise.allSettled([
+          apiClient.getOptimalDifficulty(userId, 'python_basics'),
+          apiClient.getDashboardStats('python_basics'),
+          apiClient.getNextQuestionDifficulty(userId, 'python_basics')
+        ]);
+
+        console.log('📊 API 응답들:', {
+          optimalDifficulty: optimalDifficulty.status === 'fulfilled' ? optimalDifficulty.value : '실패',
+          dashboardStats: dashboardStats.status === 'fulfilled' ? dashboardStats.value : '실패',
+          nextQuestionDifficulty: nextQuestionDifficulty.status === 'fulfilled' ? nextQuestionDifficulty.value : '실패'
+        });
+
+        // 실제 API 데이터 기반으로 UI 데이터 생성
+        let accuracy = 75; // 기본값
+        let currentDifficulty = '초급';
+        let nextDifficulty = '초급';
+        let difficultyColor = 'text-green-500';
+        let progressPercent = accuracy;
+        let adjustmentMessage = '난이도를 분석하고 있습니다...';
+
+        // 대시보드 통계에서 실제 정확도 가져오기
+        if (dashboardStats.status === 'fulfilled' && dashboardStats.value?.accuracy_rate) {
+          accuracy = dashboardStats.value.accuracy_rate;
+          progressPercent = accuracy;
+        }
+
+        // 실제 적응형 난이도 엔진 결과 사용
+        if (optimalDifficulty.status === 'fulfilled' && optimalDifficulty.value?.success) {
+          const recommendation = optimalDifficulty.value.recommendation;
+          console.log('🎯 AI 난이도 추천:', recommendation);
+
+          // AI 추천에 따른 난이도 매핑
+          const difficultyMap = {
+            1: '매우 쉬움',
+            2: '초급',
+            3: '중급',
+            4: '상급',
+            5: '최상급'
+          };
+
+          if (recommendation.recommended_difficulty) {
+            currentDifficulty = difficultyMap[recommendation.recommended_difficulty] || '초급';
+          }
+
+          // 다음 난이도 예측
+          const nextLevel = Math.min(recommendation.recommended_difficulty + 1, 5);
+          nextDifficulty = difficultyMap[nextLevel] || currentDifficulty;
+
+          // 색상 설정
+          if (recommendation.recommended_difficulty >= 4) {
+            difficultyColor = 'text-red-500';
+          } else if (recommendation.recommended_difficulty >= 3) {
+            difficultyColor = 'text-purple-500';
+          } else if (recommendation.recommended_difficulty >= 2) {
+            difficultyColor = 'text-blue-500';
+          } else {
+            difficultyColor = 'text-green-500';
+          }
+
+          // 조정 메시지
+          if (recommendation.reasoning) {
+            adjustmentMessage = recommendation.reasoning;
+          } else if (accuracy >= 80) {
+            adjustmentMessage = '다음 문제 난이도가 상향 조정될 예정입니다.';
+          } else if (accuracy >= 60) {
+            adjustmentMessage = '현재 난이도를 유지하며 연습을 계속하세요.';
+          } else {
+            adjustmentMessage = '더 쉬운 난이도의 문제를 추천드립니다.';
+          }
+        } else {
+          console.warn('⚠️ 적응형 난이도 API 실패, 기본 로직 사용');
+          // 기존 기본 로직 유지
+          if (accuracy >= 85) {
+            currentDifficulty = '상급';
+            nextDifficulty = '상급';
+            difficultyColor = 'text-red-500';
+          } else if (accuracy >= 70) {
+            currentDifficulty = '중급';
+            nextDifficulty = '상급';
+            difficultyColor = 'text-purple-500';
+          } else if (accuracy >= 50) {
+            currentDifficulty = '초급';
+            nextDifficulty = '중급';
+            difficultyColor = 'text-blue-500';
+          } else {
+            currentDifficulty = '매우 쉬움';
+            nextDifficulty = '초급';
+            difficultyColor = 'text-gray-500';
+          }
+        }
+
+        const data = {
+          accuracy: accuracy,
+          currentDifficulty: currentDifficulty,
+          nextDifficulty: nextDifficulty,
+          difficultyColor: difficultyColor,
+          progressPercent: progressPercent,
+          adjustmentMessage: adjustmentMessage,
+          lastUpdated: new Date().toLocaleString('ko-KR'),
+          optimalDifficultyData: optimalDifficulty.status === 'fulfilled' ? optimalDifficulty.value : null,
+          dashboardStats: dashboardStats.status === 'fulfilled' ? dashboardStats.value : null,
+          nextQuestionDifficulty: nextQuestionDifficulty.status === 'fulfilled' ? nextQuestionDifficulty.value : null
+        };
+
+        console.log('✅ 최종 난이도 데이터:', data);
+        setDifficultyData(data);
+      } catch (err) {
+        console.error('❌ 적응형 난이도 데이터 로드 실패:', err);
+        setError('난이도 데이터를 불러오는 중 오류가 발생했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDifficultyData();
+  }, [userId]);
+
+  const handleRefresh = () => {
+    setLoading(true);
+    setError(null);
+    // useEffect가 자동으로 다시 실행됨
+  };
+
+  if (loading) {
+    return (
+      <Card className="h-full">
+        <CardHeader>
+          <CardTitle>적응형 난이도 조절</CardTitle>
+          <CardDescription>난이도를 분석하고 있습니다...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-64">
+            <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
+            <span className="ml-2 text-slate-600 dark:text-slate-400">분석 중...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="h-full">
+        <CardHeader>
+          <CardTitle>적응형 난이도 조절</CardTitle>
+          <CardDescription>난이도 데이터를 불러올 수 없습니다.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center h-64 text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+            <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
+            <button
+              onClick={handleRefresh}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              다시 시도
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="h-full">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5" />
+            적응형 난이도 조절
+          </CardTitle>
+          <CardDescription>
+            실시간으로 최적의 난이도를 제공합니다.
+          </CardDescription>
+        </div>
+        <button
+          onClick={handleRefresh}
+          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          title="새로고침"
+        >
+          <RefreshCw className="w-4 h-4" />
+        </button>
+      </CardHeader>
+
+      <CardContent className="text-center">
+        {/* 원형 프로그레스 바 */}
+        <div className="relative w-40 h-40 mx-auto mb-6">
+          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+            <path
+              className="text-slate-200 dark:text-slate-700"
+              strokeWidth="3"
+              fill="none"
+              stroke="currentColor"
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
+            <path
+              className={`${difficultyData?.difficultyColor} transition-all duration-500`}
+              strokeWidth="3"
+              fill="none"
+              stroke="currentColor"
+              strokeDasharray={`${difficultyData?.progressPercent || 0}, 100`}
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-3xl font-bold text-slate-900 dark:text-white">75%</span>
+            <span className="text-3xl font-bold text-slate-900 dark:text-white">
+              {difficultyData?.accuracy || 0}%
+            </span>
             <span className="text-sm text-slate-500 dark:text-slate-400">정답률</span>
           </div>
         </div>
-        <p className="mt-4 font-semibold text-slate-800 dark:text-slate-200">현재 난이도: <span className="text-purple-500">중급</span></p>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">다음 문제 난이도가 상향 조정될 예정입니다.</p>
-    </CardContent>
-  </Card>
-);
+
+        {/* 난이도 정보 */}
+        <div className="space-y-3">
+          <p className="font-semibold text-slate-800 dark:text-slate-200">
+            현재 난이도: <span className={`${difficultyData?.difficultyColor} font-bold`}>
+              {difficultyData?.currentDifficulty}
+            </span>
+          </p>
+
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            {difficultyData?.adjustmentMessage}
+          </p>
+
+          {/* 난이도 레벨 표시 */}
+          <div className="flex justify-center gap-2 mt-4">
+            {['매우 쉬움', '초급', '중급', '상급'].map((level) => (
+              <div
+                key={level}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  level === difficultyData?.currentDifficulty
+                    ? `${difficultyData?.difficultyColor} bg-opacity-20`
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                }`}
+              >
+                {level}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 추가 정보 */}
+        <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            {difficultyData?.adaptiveQuestions && (
+              <div className="text-center">
+                <p className="text-slate-500 dark:text-slate-400">추천 문제</p>
+                <p className="font-semibold text-slate-800 dark:text-slate-200">
+                  {difficultyData.adaptiveQuestions.length || 0}개
+                </p>
+              </div>
+            )}
+            {difficultyData?.learningStatus && (
+              <div className="text-center">
+                <p className="text-slate-500 dark:text-slate-400">진행률</p>
+                <p className="font-semibold text-slate-800 dark:text-slate-200">
+                  {difficultyData.learningStatus.overall_progress || 0}%
+                </p>
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
+            마지막 업데이트: {difficultyData?.lastUpdated}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 // --- Mock Components End ---
 
 const AIFeaturesPage = () => {

@@ -82,7 +82,7 @@ const AILearningDashboard = () => {
           {console.log('⏰ estimated_time:', dailyPlan.estimated_time)}
           {console.log('🎯 target_accuracy:', dailyPlan.target_accuracy)}
           <div style={styles.cardHeader}>
-            <h3>📚 오늘의 학습 목표</h3>
+            <h3>오늘의 학습 목표</h3>
             <span style={styles.date}>{new Date().toLocaleDateString('ko-KR')}</span>
           </div>
           
@@ -113,7 +113,7 @@ const AILearningDashboard = () => {
             
             {dailyPlan.focus_areas && dailyPlan.focus_areas.length > 0 && (
               <div style={styles.focusAreas}>
-                <h4>🎯 집중 학습 영역</h4>
+                <h4>집중 학습 영역</h4>
                 <div style={styles.tagContainer}>
                   {dailyPlan.focus_areas.map((area, index) => (
                     <span key={index} style={styles.focusTag}>
