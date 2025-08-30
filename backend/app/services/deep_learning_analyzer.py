@@ -17,7 +17,7 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sqlalchemy.orm import Session
 
-from app.models.orm import User, SubmissionItem, UserProgress, UserWeakness, LearningGoal
+from app.models.orm import User, Submission, SubmissionItem, UserProgress, UserWeakness, LearningGoal
 from app.services.ai_providers import get_ai_provider_manager, ModelTier, generate_ai_response, analyze_learning_pattern
 from app.services.redis_service import get_redis_service
 
@@ -192,10 +192,10 @@ class DeepLearningAnalyzer:
             start_date = end_date - timedelta(days=self.analysis_window_days)
             
             # 제출 기록 조회
-            submissions = self.db.query(SubmissionItem).filter(
-                SubmissionItem.user_id == user_id,
-                SubmissionItem.submitted_at >= start_date
-            ).order_by(SubmissionItem.submitted_at.asc()).all()
+            submissions = self.db.query(SubmissionItem).join(Submission).filter(
+                Submission.user_id == user_id,
+                Submission.submitted_at >= start_date
+            ).order_by(Submission.submitted_at.asc()).all()
             
             # 사용자 진도 조회
             user_progress = self.db.query(UserProgress).filter(
@@ -210,7 +210,7 @@ class DeepLearningAnalyzer:
             # 학습 목표 조회
             learning_goals = self.db.query(LearningGoal).filter(
                 LearningGoal.user_id == user_id,
-                LearningGoal.is_active == True
+                LearningGoal.status == 'active'
             ).all()
             
             return {

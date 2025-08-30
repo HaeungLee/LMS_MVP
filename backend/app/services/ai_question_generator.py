@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Any
 import re
 from datetime import datetime
 
-from app.services.llm_providers import get_llm_provider
+from app.services.ai_providers import get_llm_provider, AIRequest, ModelTier
 from app.services.llm_cache import feedback_cache
 from app.models.question_types import (
     QuestionType, DifficultyLevel, QuestionUnion,
@@ -223,6 +223,12 @@ class AIQuestionGenerator:
                     question["created_at"] = datetime.now().isoformat()
                     question["ai_generated"] = True
                     generated_questions.append(question)
+                else:
+                    # LLM returned no content -> append a fallback/template question
+                    print(f"⚠️ LLM 응답 없음, 템플릿 문제로 대체합니다. (index={i})")
+                    template_question = self._create_template_question(topic, difficulty, i)
+                    if template_question:
+                        generated_questions.append(template_question)
                     
                 # API 호출 간격 조절
                 if i < count - 1:
@@ -238,27 +244,44 @@ class AIQuestionGenerator:
         return generated_questions
 
     async def _generate_single_question(
-        self, 
-        provider, 
-        topic: str, 
-        difficulty: str, 
+        self,
+        provider,
+        topic: str,
+        difficulty: str,
         learning_objectives: List[str],
         student_weaknesses: List[str] = None
     ) -> Optional[Dict[str, Any]]:
         """단일 문제 생성"""
-        
+
         system_prompt = self._create_question_generation_system_prompt()
         user_prompt = self._create_question_generation_user_prompt(
             topic, difficulty, learning_objectives, student_weaknesses
         )
-        
+
+        # 통합 프롬프트 생성 (system + user)
+        full_prompt = f"{system_prompt}\n\n{user_prompt}"
+
         try:
-            content = await provider.generate(system_prompt, user_prompt, max_tokens=300)
-            if content:
+            # AIProviderManager의 generate_completion 메소드 사용
+            request = AIRequest(
+                prompt=full_prompt,
+                max_tokens=300,
+                temperature=0.7,
+                task_type="coding",
+                model_preference=ModelTier.FREE
+            )
+
+            response = await provider.generate_completion(request)
+
+            if response['success']:
+                content = response['response']
                 return self._parse_generated_question(content, topic, difficulty)
+            else:
+                print(f"AI API 호출 실패: {response.get('error', 'Unknown error')}")
+
         except Exception as e:
             print(f"AI 문제 생성 실패: {e}")
-            
+
         return None
 
     def _create_question_generation_system_prompt(self) -> str:
@@ -552,19 +575,26 @@ class AIQuestionGenerator:
             
             print(f"🔧 LLM 제공자 확인됨, AI 호출 중...")
             
-            # OpenRouter API는 system_prompt와 user_prompt를 구분
-            response = await llm.generate(
-                system_prompt="당신은 파이썬 프로그래밍 교육 전문가입니다. JSON 형식으로만 응답해주세요.",
-                user_prompt=prompt,
-                max_tokens=1500
+            # AIProviderManager의 generate_completion 메소드 사용
+            full_prompt = f"당신은 파이썬 프로그래밍 교육 전문가입니다. JSON 형식으로만 응답해주세요.\n\n{prompt}"
+
+            request = AIRequest(
+                prompt=full_prompt,
+                max_tokens=1500,
+                temperature=0.7,
+                task_type="coding",
+                model_preference=ModelTier.FREE
             )
-            
-            if not response:
-                print("❌ AI 응답이 비어있습니다")
-                raise Exception("AI 응답이 비어있습니다")
-            
-            print(f"✅ AI API 호출 성공, 응답 길이: {len(response)}")
-            return response
+
+            response = await llm.generate_completion(request)
+
+            if response and response.get('success'):
+                print(f"✅ AI API 호출 성공, 응답 길이: {len(response.get('response', ''))}")
+                return response.get('response', '')
+            else:
+                error_msg = response.get('error', 'Unknown error') if response else 'No response'
+                print(f"❌ AI 응답 실패: {error_msg}")
+                raise Exception(f"AI 응답 실패: {error_msg}")
         except Exception as e:
             print(f"❌ AI API 호출 실패: {e}")
             raise

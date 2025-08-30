@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .api.v1 import questions, submit, dashboard, student, auth, admin, results_guard, teacher_dashboard, taxonomy, teacher_groups, feedback, ai_learning, curriculum, personalization, monitoring, ai_features, beta_testing
+from .api.v1 import questions, submit, dashboard, student, auth, admin, results_guard, teacher_dashboard, taxonomy, teacher_groups, feedback, ai_learning, curriculum, personalization, monitoring, ai_features, beta_testing, subjects
 from .core.config import settings
 from sqlalchemy import create_engine
 from .models.orm import Base
@@ -18,10 +18,22 @@ app = FastAPI(
 # CORS 미들웨어 추가 - 등록은 다른 커스텀 미들웨어보다 먼저 해야 함
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_origins,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "http://192.168.0.104:5174",  # 네트워크 인터페이스 추가
+        "http://172.25.64.1:5174",
+        "http://172.31.80.1:5174"
+    ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=86400,  # 24시간
 )
 # Request ID
 app.add_middleware(RequestIDMiddleware)
@@ -68,6 +80,7 @@ app.include_router(personalization.router, prefix="/api/v1/personalization", tag
 app.include_router(monitoring.router, prefix="/api/v1/monitoring", tags=["monitoring"])
 app.include_router(ai_features.router, prefix="/api/v1/ai-features", tags=["ai-features"])
 app.include_router(beta_testing.router, prefix="/api/v1/beta", tags=["beta-testing"])
+app.include_router(subjects.router, prefix="/api/v1", tags=["subjects"])
 
 @app.get("/", tags=["root"])
 def read_root():

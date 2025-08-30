@@ -11,8 +11,7 @@ from app.models.question_types import (
     QuestionGenerationRequest, MixedQuestionRequest, 
     QuestionGenerationResponse, QuestionType, DifficultyLevel
 )
-# from app.services.ai_question_generator import ai_question_generator
-# from app.services.curriculum_manager import curriculum_manager
+from app.services import curriculum_manager, ai_question_generator, scoring_service
 
 # 새로운 피드백 관련 모델들
 class AnswerSubmissionRequest(BaseModel):
@@ -48,10 +47,6 @@ async def get_daily_learning_plan(
     print("=" * 50)
 
     try:
-        # 동적 import로 순환 import 문제 해결
-        import app.services.curriculum_manager as cm_module
-        curriculum_manager = cm_module.curriculum_manager
-        
         # AI 실제 기능 활성화
         daily_plan = await curriculum_manager.get_daily_learning_plan(
             user_id=current_user.id,
@@ -126,10 +121,6 @@ async def generate_questions_for_topic(
 
     try:
         print(f"🚀 AI Question Generation 요청 - User: {current_user.id}")
-        
-        # 동적 import
-        import app.services.ai_question_generator as aq_module
-        ai_question_generator = aq_module.ai_question_generator
 
         questions = await ai_question_generator.generate_questions_for_daily_curriculum(
             subject=request.get("subject", "python_basics"),
@@ -234,9 +225,6 @@ async def generate_adaptive_questions(
             difficulty = preferred_difficulty
 
         # AI 문제 생성기를 사용하여 문제 생성
-        import app.services.ai_question_generator as aq_module
-        ai_question_generator = aq_module.ai_question_generator
-        
         questions = await ai_question_generator.generate_questions_for_daily_curriculum(
             subject=subject,
             topic=request.get("topic", "기초"),
@@ -350,9 +338,6 @@ async def get_learning_recommendations(
         print(f"🚀 AI Learning Recommendations 요청 - User: {current_user.id}")
         
         # curriculum_manager 사용하여 실제 추천 생성
-        import app.services.curriculum_manager as cm_module
-        curriculum_manager = cm_module.curriculum_manager
-        
         recommendations = await curriculum_manager.track_learning_progress(
             user_id=current_user.id,
             subject=subject,
@@ -397,11 +382,8 @@ async def analyze_student_weaknesses(
     """학습자 취약점 분석"""
     try:
         print(f"🚀 AI Weakness Analysis 요청 - User: {current_user.id}")
-        
+
         # curriculum_manager를 사용한 실제 진도 분석
-        import app.services.curriculum_manager as cm_module
-        curriculum_manager = cm_module.curriculum_manager
-        
         progress_analysis = await curriculum_manager.track_learning_progress(
             user_id=current_user.id,
             subject=subject,
@@ -494,11 +476,7 @@ async def generate_mixed_question_set(
         print(f"🚀 Mixed Question Generation 요청 - User: {current_user.id}")
         print(f"주제: {topic}, 난이도: {difficulty}")
         print(f"문제 유형 분배: {question_mix}")
-        
-        # 동적 import
-        import app.services.ai_question_generator as aq_module
-        ai_question_generator = aq_module.ai_question_generator
-        
+
         start_time = datetime.now()
         
         questions = await ai_question_generator.generate_mixed_question_set(
@@ -571,11 +549,7 @@ async def generate_single_question_by_type(
     
     try:
         print(f"🚀 Single Question Generation 요청 - Type: {question_type}")
-        
-        # 동적 import
-        import app.services.ai_question_generator as aq_module
-        ai_question_generator = aq_module.ai_question_generator
-        
+
         question = await ai_question_generator.generate_question_by_type(
             question_type=question_type,
             topic=topic,
@@ -584,12 +558,103 @@ async def generate_single_question_by_type(
         
         print(f"✅ Single Question Generation 성공 - {question_type}")
         
+        # DB에 문제 저장 (옵션)
+        save_to_db = request.get("save_to_db", False)
+        saved_question = None
+
+        if save_to_db:
+            try:
+                print("💾 DB에 문제 저장 시도...")
+
+                # AI 생성 데이터를 DB 필드에 매핑
+                db_question_data = {
+                    "subject": "python",  # 기본 과목 설정
+                    "topic": topic,
+                    "question_type": question_type,
+                    "code_snippet": question.get("question", ""),
+                    "correct_answer": question.get("correct_answer", ""),
+                    "difficulty": difficulty,
+                    "rubric": question.get("explanation", ""),
+                    "created_by": current_user.email,
+                    "is_active": True  # 필수 필드 추가
+                }
+
+                # ORM 모델 직접 사용 (더 간단한 방식)
+                from app.models.orm import Question as QuestionORM
+
+                # 가장 간단한 DB 저장 방식
+                from sqlalchemy.orm import Session
+                from app.core.database import get_db
+
+                # 새로운 DB 세션 생성
+                db_session = next(get_db())
+
+                try:
+                    print("📝 새로운 DB 세션 생성됨")
+
+                    db_question = QuestionORM(
+                        subject=db_question_data["subject"],
+                        topic=db_question_data["topic"],
+                        question_type=db_question_data["question_type"],
+                        code_snippet=db_question_data["code_snippet"],
+                        correct_answer=db_question_data["correct_answer"],
+                        difficulty=db_question_data["difficulty"],
+                        rubric=db_question_data["rubric"],
+                        created_by=db_question_data["created_by"],
+                        is_active=db_question_data["is_active"]
+                    )
+
+                    print(f"📝 DB 객체 생성됨: {db_question.subject}")
+
+                    db_session.add(db_question)
+                    print("📝 DB 세션에 추가됨")
+
+                    db_session.commit()
+                    print("📝 DB 세션 커밋됨")
+
+                    db_session.refresh(db_question)
+                    print("📝 DB 세션 리프레시됨")
+
+                    # 새로운 세션 사용했으므로 기존 db는 영향 없음
+                    saved_question = db_question
+
+                except Exception as inner_error:
+                    print(f"📝 DB 세션 오류: {inner_error}")
+                    db_session.rollback()
+                    raise inner_error
+                finally:
+                    db_session.close()
+                    print("📝 DB 세션 종료됨")
+
+                saved_question = {
+                    "id": db_question.id,
+                    "subject": db_question.subject,
+                    "topic": db_question.topic,
+                    "question_type": db_question.question_type,
+                    "code_snippet": db_question.code_snippet,
+                    "correct_answer": db_question.correct_answer,
+                    "difficulty": db_question.difficulty,
+                    "rubric": db_question.rubric,
+                    "created_at": db_question.created_at.isoformat()
+                }
+
+                print("✅ DB에 문제 저장 성공!")
+
+            except Exception as db_error:
+                print(f"❌ DB 저장 실패: {db_error}")
+                print(f"❌ 오류 타입: {type(db_error)}")
+                import traceback
+                print(f"❌ 스택 트레이스: {traceback.format_exc()}")
+                # DB 저장 실패해도 AI 생성 결과는 반환
+
         return {
             "success": True,
             "question": question,
             "type": question_type,
             "topic": topic,
-            "difficulty": difficulty
+            "difficulty": difficulty,
+            "saved_to_db": saved_question is not None,
+            "db_question": saved_question
         }
         
     except Exception as e:
@@ -607,10 +672,7 @@ async def submit_answer_with_enhanced_feedback(
     """5가지 문제 유형별 맞춤 채점 및 AI 피드백"""
     try:
         print(f"🎯 Enhanced Feedback 요청 - User: {current_user.id}, Type: {request.question_type}")
-        
-        # 동적 import
-        from app.services.scoring_service import scoring_service
-        
+
         # 문제 정보 구성 (실제 DB 조회 대신 request 데이터 사용)
         question_data = request.question_data or {}
         question = {
