@@ -5,6 +5,7 @@ import { getTeacherDashboardStats } from '../services/apiClient';
 import { listTeacherGroups, createTeacherGroup, addGroupMember } from '../services/teacherClient';
 import { fetchTaxonomyTopics } from '../services/taxonomyClient';
 import ChartAdapter from '../components/common/charts/ChartAdapter';
+import { SUBJECTS, getSubjectName, getSubjectIcon } from '../constants/subjects';
 
 export default function TeacherDashboard() {
   const { user } = useAuthStore();
@@ -78,7 +79,11 @@ export default function TeacherDashboard() {
         <div>
           <label style={{ marginRight:8 }}>과목</label>
           <select value={subject} onChange={(e)=>setSubject(e.target.value)} style={{ padding:'6px 10px', border:'1px solid #d1d5db', borderRadius:6 }}>
-            <option value="python_basics">Python 기초</option>
+            {Object.entries(SUBJECTS).map(([key, name]) => (
+              <option key={key} value={key}>
+                {getSubjectIcon(key)} {name}
+              </option>
+            ))}
           </select>
           <label style={{ margin: '0 8px 0 16px' }}>그룹</label>
           <select value={groupId} onChange={(e)=>setGroupId(e.target.value)} style={{ padding:'6px 10px', border:'1px solid #d1d5db', borderRadius:6 }}>

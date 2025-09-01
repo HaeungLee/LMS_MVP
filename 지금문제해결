@@ -1,0 +1,42 @@
+이 오류는 import/export 문법이 잘못 사용되어 발생하는 문제다.
+즉, /src/components/ai/AIMentorChatImproved.jsx 파일에서 default export가 정의되어 있지 않은데,
+AIFeaturesPage2.jsx에서 이를 default import 방식으로 가져오려 해서 생긴다.
+
+원인 설명
+만약 AIMentorChatImproved.jsx가 아래 형태라면(named export만 있음):
+
+jsx
+export function AIMentorChatImproved() { ... }
+그리고 불러올 때 아래처럼 사용했다면:
+
+jsx
+import AIMentorChatImproved from '/src/components/ai/AIMentorChatImproved.jsx'
+오류가 발생한다.
+
+해결 방법
+파일에 default export를 추가해주거나
+
+혹은 named import 방식으로 불러와야 한다.
+
+1. default export 추가
+jsx
+// AIMentorChatImproved.jsx
+function AIMentorChatImproved() { ... }
+export default AIMentorChatImproved;
+그리고 가져오는 쪽은 그대로:
+
+jsx
+import AIMentorChatImproved from '/src/components/ai/AIMentorChatImproved.jsx';
+2. named export/import 방식 사용
+이미 아래와 같이 내보내고 있다면:
+
+jsx
+export function AIMentorChatImproved() { ... }
+가져오는 곳도 이렇게:
+
+jsx
+import { AIMentorChatImproved } from '/src/components/ai/AIMentorChatImproved.jsx';
+정리
+default export가 없는데 default import로 불러오면 해당 에러 발생.
+
+export/import 문법을 맞춰주면 해결된다.

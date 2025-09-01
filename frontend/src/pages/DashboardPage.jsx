@@ -7,6 +7,7 @@ import ChartAdapter from '../components/common/charts/ChartAdapter';
 import AILearningDashboard from '../components/dashboard/AILearningDashboard';
 import QuestionTypeGenerator from '../components/dashboard/QuestionTypeGenerator';
 import EnhancedFeedbackTester from '../components/dashboard/EnhancedFeedbackTester';
+import { SUBJECTS, getSubjectName, getSubjectIcon } from '../constants/subjects';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -139,8 +140,11 @@ const DashboardPage = () => {
           <div style={{ marginTop: '12px' }}>
             <label style={{ marginRight: 8, color: '#6b7280' }}>과목</label>
             <select value={subject} onChange={(e) => setSubject(e.target.value)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #d1d5db' }}>
-              <option value="python_basics">Python 기초</option>
-              {/* 향후 data_analysis, ml_dl 등 확장 */}
+              {Object.entries(SUBJECTS).map(([key, name]) => (
+                <option key={key} value={key}>
+                  {getSubjectIcon(key)} {name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -249,7 +253,7 @@ const DashboardPage = () => {
               <p style={{ color: '#1d4ed8', fontSize: '14px' }}>총 {total_questions}개의 문제가 준비되어 있습니다</p>
             </div>
             <button
-              onClick={() => navigate('/quiz')}
+              onClick={() => navigate(`/quiz/${subject}`)}
               style={{
                 width: '100%',
                 backgroundColor: '#3b82f6',
@@ -281,7 +285,7 @@ const DashboardPage = () => {
               ))}
             </div>
             <button
-              onClick={() => navigate('/quiz')}
+              onClick={() => navigate(`/quiz?subject=${subject}`)}
               style={{
                 width: '100%',
                 backgroundColor: '#f97316',

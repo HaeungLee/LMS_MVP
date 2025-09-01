@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/authStore';
 import { adminListQuestions, adminCreateQuestion, adminUpdateQuestion, adminDeleteQuestion, adminImportQuestions } from '../services/apiClient';
 import { fetchTaxonomyTopics } from '../services/taxonomyClient';
+import { SUBJECTS, getSubjectName, getSubjectIcon } from '../constants/subjects';
 
 export default function AdminQuestions() {
   const { user } = useAuthStore();
@@ -150,7 +151,11 @@ export default function AdminQuestions() {
         <div>
           <label>과목</label>
           <select name="subject" value={form.subject} onChange={onChange} style={{ width:'100%', padding:8, border:'1px solid #d1d5db', borderRadius:6 }}>
-            <option value="python_basics">Python 기초</option>
+            {Object.entries(SUBJECTS).map(([key, name]) => (
+              <option key={key} value={key}>
+                {getSubjectIcon(key)} {name}
+              </option>
+            ))}
           </select>
         </div>
         <div>

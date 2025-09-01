@@ -19,6 +19,7 @@ import apiClient from '../services/apiClient';
 import AIAnalysisDashboard from '../components/ai/AIAnalysisDashboard';
 import AdaptiveDifficultyWidget from '../components/ai/AdaptiveDifficultyWidget';
 import AIMentorChatImproved from '../components/ai/AIMentorChatImproved';
+import LearningStatsWidget from '../components/dashboard/LearningStatsWidget';
 
 // --- Mock Components ---
 const Card = ({ children, className = '' }) => (
@@ -147,26 +148,7 @@ const AIFeaturesPage = () => {
                 <CardTitle className="text-base">학습 통계</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">오늘 학습 시간</span>
-                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                      2.5시간
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">완료한 문제</span>
-                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                      45개
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">현재 레벨</span>
-                    <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                      중급
-                    </Badge>
-                  </div>
-                </div>
+                <LearningStatsWidget userId={userId} />
               </CardContent>
             </Card>
           </div>

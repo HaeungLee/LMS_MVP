@@ -1,13 +1,17 @@
 import React, { useEffect } from 'react';
 import { getQuestions, submitAnswers } from '../services/apiClient';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import QuestionRenderer from '../components/quiz/QuestionRenderer';
 import ProgressBar from '../components/quiz/ProgressBar';
 import FeedbackModal from '../components/feedback/FeedbackModal';
 import useQuizStore from '../stores/quizStore';
+import { SUBJECTS, getSubjectName, getSubjectIcon } from '../constants/subjects';
 
 function QuizPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { subject: urlSubject } = useParams();
+  const subject = urlSubject || searchParams.get('subject') || 'python_basics';
   // Zustand store에서 상태와 액션 가져오기
   const {
     questions,
@@ -43,7 +47,7 @@ function QuizPage() {
     try {
       setLoading(true);
       setError(null);
-      const data = await getQuestions('python_basics', settings);
+      const data = await getQuestions(subject, settings);
       setQuestions(data);
     } catch (err) {
       setError('문제를 불러오는데 실패했습니다.');
@@ -53,7 +57,7 @@ function QuizPage() {
 
   useEffect(() => {
     loadQuestions();
-  }, []);
+  }, [subject]);
 
   const handleAnswerChange = (value) => {
     if (questions[currentQuestion]) {
@@ -105,7 +109,7 @@ function QuizPage() {
       }
 
       const submissionData = {
-        subject: 'python_basics',
+        subject: subject,
         user_answers: questions.map(question => ({
           question_id: question.id,
           user_answer: answers[question.id] || '',
@@ -300,7 +304,9 @@ function QuizPage() {
         alignItems: 'center',
         marginBottom: '20px'
       }}>
-        <h1 style={{ color: '#1976d2' }}>Python 기초 퀴즈</h1>
+        <h1 style={{ color: '#1976d2' }}>
+          {getSubjectIcon(subject)} {getSubjectName(subject)} 퀴즈
+        </h1>
         <button
           onClick={() => toggleModal('showSettings', true)}
           style={{
