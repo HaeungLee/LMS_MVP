@@ -116,7 +116,7 @@ const AIMentorChatImproved = ({ userId }) => {
   const [textStyle, setTextStyle] = useState('default');
   const [lineHeight, setLineHeight] = useState('comfortable');
   const [showSettings, setShowSettings] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(true);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [showFollowUps, setShowFollowUps] = useState(false);
 
   const [dailyMotivation, setDailyMotivation] = useState('');
@@ -263,8 +263,7 @@ const AIMentorChatImproved = ({ userId }) => {
           `**안녕하세요!** ${data.session.user_name || '학습자'}님. AI 학습 멘토입니다. 무엇을 도와드릴까요?\n\n**주요 기능:**\n• 프로그래밍 질문 답변\n• 학습 방향 가이드\n• 코드 리뷰 및 개선 제안`,
           textStyle
         ),
-        timestamp: new Date(),
-        suggestions: data.session.suggested_topics || []
+        timestamp: new Date()
       };
 
       setMessages([welcomeMessage]);

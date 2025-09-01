@@ -3,6 +3,9 @@ import './index.css';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import DashboardPage from './pages/DashboardPage';
 import QuizPage from './pages/QuizPage';
+import QuizModeSelectionPage from './pages/QuizModeSelectionPage';
+import CodeExecutionPage from './pages/CodeExecutionPage';
+import CodeProblemsPage from './pages/CodeProblemsPage';
 import ResultsPage from './pages/ResultsPage';
 import AuthLogin from './pages/AuthLogin';
 import AuthRegister from './pages/AuthRegister';
@@ -87,6 +90,11 @@ function Navigation() {
             </Link>
           </li>
           <li>
+            <Link to="/code" className={getLinkClass('/code')}>
+              코딩 테스트
+            </Link>
+          </li>
+          <li>
             <Link to="/ai-features" className={getLinkClass('/ai-features')}>
               AI 기능
             </Link>
@@ -144,8 +152,12 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<DashboardPage />} />
-            <Route path="/quiz" element={<Protected><QuizPage /></Protected>} />
+            <Route path="/quiz" element={<Protected><QuizModeSelectionPage /></Protected>} />
+            <Route path="/quiz/mixed" element={<Protected><QuizPage /></Protected>} />
             <Route path="/quiz/:subject" element={<Protected><QuizPage /></Protected>} />
+            <Route path="/code/problems" element={<Protected><CodeProblemsPage /></Protected>} />
+            <Route path="/code/:problemId" element={<Protected><CodeExecutionPage /></Protected>} />
+            <Route path="/code" element={<Protected><CodeExecutionPage /></Protected>} />
             <Route path="/results/:submission_id" element={<ResultsPage />} />
             <Route path="/ai-features" element={<AIFeaturesPage2 />} />
             <Route path="/beta-onboarding2" element={<BetaOnboarding2 userId={1} onComplete={() => alert('온보딩 완료!')} />} />

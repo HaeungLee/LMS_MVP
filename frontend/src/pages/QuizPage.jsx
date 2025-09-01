@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
 import { getQuestions, submitAnswers } from '../services/apiClient';
-import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom';
 import QuestionRenderer from '../components/quiz/QuestionRenderer';
 import ProgressBar from '../components/quiz/ProgressBar';
 import FeedbackModal from '../components/feedback/FeedbackModal';
+import MixedModeProgress from '../components/quiz/MixedModeProgress';
 import useQuizStore from '../stores/quizStore';
 import { SUBJECTS, getSubjectName, getSubjectIcon } from '../constants/subjects';
 
@@ -11,7 +12,13 @@ function QuizPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { subject: urlSubject } = useParams();
-  const subject = urlSubject || searchParams.get('subject') || 'python_basics';
+  const location = useLocation();
+  
+  // 혼합 모드 감지
+  const isMixedMode = location.pathname === '/quiz/mixed';
+  const mixedSubjects = isMixedMode ? searchParams.get('subjects')?.split(',') || ['python_basics', 'web_crawling'] : [];
+  const subject = isMixedMode ? 'mixed' : (urlSubject || searchParams.get('subject') || 'python_basics');
+  
   // Zustand store에서 상태와 액션 가져오기
   const {
     questions,
@@ -27,6 +34,12 @@ function QuizPage() {
     feedbackData,
     showFeedback,
     quizSettings,
+    // 혼합 모드 상태
+    quizMode,
+    activeSubjects,
+    setQuizMode,
+    getCurrentQuestionSubjects,
+    getSubjectStats,
     // Actions
     setQuestions,
     setLoading,
@@ -43,12 +56,57 @@ function QuizPage() {
 
   const totalTime = 2400; // 40분
 
+  // 혼합 모드 초기화
+  useEffect(() => {
+    if (isMixedMode) {
+      setQuizMode('mixed', {
+        subjects: mixedSubjects,
+        integration_level: 'basic'
+      });
+    } else {
+      setQuizMode('single');
+    }
+  }, [isMixedMode, mixedSubjects, setQuizMode]);
+
   const loadQuestions = async (settings = quizSettings) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getQuestions(subject, settings);
-      setQuestions(data);
+      
+      if (isMixedMode) {
+        // 혼합 모드: 여러 과목에서 문제 로드
+        const allQuestions = [];
+        for (const subjectKey of mixedSubjects) {
+          try {
+            const data = await getQuestions(subjectKey, {
+              ...settings,
+              easy_count: Math.ceil(settings.easy_count / mixedSubjects.length),
+              medium_count: Math.ceil(settings.medium_count / mixedSubjects.length),
+              hard_count: Math.ceil(settings.hard_count / mixedSubjects.length)
+            });
+            // 각 문제에 과목 정보 추가
+            const subjectQuestions = data.map(q => ({
+              ...q,
+              subject: subjectKey,
+              subjects: [subjectKey] // 향후 교차 과목 문제를 위한 배열
+            }));
+            allQuestions.push(...subjectQuestions);
+          } catch (error) {
+            console.warn(`Failed to load questions for ${subjectKey}:`, error);
+          }
+        }
+        
+        // 문제 셔플링
+        if (settings.shuffle) {
+          allQuestions.sort(() => Math.random() - 0.5);
+        }
+        
+        setQuestions(allQuestions);
+      } else {
+        // 단일 모드: 기존 로직
+        const data = await getQuestions(subject, settings);
+        setQuestions(data);
+      }
     } catch (err) {
       setError('문제를 불러오는데 실패했습니다.');
       console.error('Error loading questions:', err);
@@ -57,7 +115,7 @@ function QuizPage() {
 
   useEffect(() => {
     loadQuestions();
-  }, [subject]);
+  }, [subject, isMixedMode, mixedSubjects]);
 
   const handleAnswerChange = (value) => {
     if (questions[currentQuestion]) {
@@ -305,7 +363,21 @@ function QuizPage() {
         marginBottom: '20px'
       }}>
         <h1 style={{ color: '#1976d2' }}>
-          {getSubjectIcon(subject)} {getSubjectName(subject)} 퀴즈
+          {isMixedMode ? (
+            <>
+              혼합 모드 퀴즈
+              <div style={{ 
+                fontSize: '14px', 
+                color: '#6b7280', 
+                fontWeight: 'normal',
+                marginTop: '4px'
+              }}>
+                {mixedSubjects.map(s => getSubjectIcon(s) + ' ' + getSubjectName(s)).join(' + ')}
+              </div>
+            </>
+          ) : (
+            `${getSubjectIcon(subject)} ${getSubjectName(subject)} 퀴즈`
+          )}
         </h1>
         <button
           onClick={() => toggleModal('showSettings', true)}
@@ -318,9 +390,17 @@ function QuizPage() {
             cursor: 'pointer'
           }}
         >
-          ⚙️ 설정
+          설정
         </button>
       </div>
+
+      {/* 혼합 모드 진행률 (혼합 모드일 때만 표시) */}
+      {isMixedMode && (
+        <MixedModeProgress 
+          subjectStats={getSubjectStats()}
+          currentSubjects={getCurrentQuestionSubjects()}
+        />
+      )}
 
       {/* 진행률 표시 */}
       <ProgressBar totalSeconds={totalTime} onTimeUp={handleTimeUp} />

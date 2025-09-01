@@ -13,6 +13,12 @@ const useQuizStore = create(
       quizComplete: false,
       skippedQuestions: new Set(),
       
+      // 혼합 모드 상태 (NEW)
+      quizMode: 'single', // 'single' | 'mixed' | 'adaptive'
+      activeSubjects: [], // 현재 활성 과목들
+      mixedModeConfig: null,
+      subjectProgress: {}, // 과목별 진행률 추적
+      
       // 모달 상태
       showConfirmModal: false,
       showSkipModal: false,
@@ -106,6 +112,50 @@ const useQuizStore = create(
         };
         
         get().addRecentActivity(activity);
+      },
+
+      // 혼합 모드 액션들 (NEW)
+      setQuizMode: (mode, config = null) => set({
+        quizMode: mode,
+        mixedModeConfig: config,
+        activeSubjects: mode === 'mixed' ? config?.subjects || [] : []
+      }),
+      
+      updateSubjectProgress: (subject, progress) => set((state) => ({
+        subjectProgress: {
+          ...state.subjectProgress,
+          [subject]: progress
+        }
+      })),
+      
+      // 현재 문제의 과목 정보 추가
+      getCurrentQuestionSubjects: () => {
+        const state = get();
+        const current = state.questions[state.currentQuestion];
+        return current?.subjects || [current?.subject];
+      },
+      
+      // 과목별 통계 계산
+      getSubjectStats: () => {
+        const state = get();
+        const stats = {};
+        
+        state.activeSubjects.forEach(subject => {
+          const subjectQuestions = state.questions.filter(q => 
+            q.subjects?.includes(subject) || q.subject === subject
+          );
+          const answered = subjectQuestions.filter(q => 
+            state.answers[q.id]
+          ).length;
+          
+          stats[subject] = {
+            total: subjectQuestions.length,
+            answered,
+            progress: subjectQuestions.length > 0 ? answered / subjectQuestions.length : 0
+          };
+        });
+        
+        return stats;
       }
     }),
     {

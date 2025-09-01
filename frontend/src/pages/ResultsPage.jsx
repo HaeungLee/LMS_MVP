@@ -247,7 +247,7 @@ function ResultsPage() {
 
       {/* 주제별 분석 */}
       <div style={sectionStyle}>
-        <h2 style={sectionTitleStyle}>📊 주제별 분석</h2>
+        <h2 style={sectionTitleStyle}>주제별 분석</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
           {Object.entries(topic_analysis).map(([topic, stats]) => (
             <div key={topic} style={{
@@ -278,7 +278,7 @@ function ResultsPage() {
       {/* 약점 기반 추천 */}
       {sortedWeakTopics.length > 0 && (
         <div style={sectionStyle}>
-          <h2 style={sectionTitleStyle}>🎯 약점 기반 추천</h2>
+          <h2 style={sectionTitleStyle}>약점 기반 추천</h2>
           <div style={{ display:'flex', flexWrap:'wrap', gap:12 }}>
             {sortedWeakTopics.map((w, idx) => (
               <div key={idx} style={{ padding:12, border:'1px solid #e5e7eb', borderRadius:6 }}>
@@ -295,7 +295,7 @@ function ResultsPage() {
 
       {/* 문제별 상세 결과 */}
       <div style={sectionStyle}>
-        <h2 style={sectionTitleStyle}>📝 문제별 결과</h2>
+        <h2 style={sectionTitleStyle}>문제별 결과</h2>
         <div style={{ overflow: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -381,7 +381,7 @@ function ResultsPage() {
       {/* 추천 학습 */}
       {Array.isArray(recommendations) && recommendations.length > 0 && (
         <div style={sectionStyle}>
-          <h2 style={sectionTitleStyle}>🎯 추천 학습</h2>
+          <h2 style={sectionTitleStyle}>추천 학습</h2>
           <ul style={{ margin: 0, paddingLeft: '20px' }}>
             {recommendations.map((rec, idx) => (
               <li key={idx} style={{ marginBottom: '8px', color: '#374151' }}>{rec}</li>

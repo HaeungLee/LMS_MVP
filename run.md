@@ -50,6 +50,14 @@ npm run dev
 
 - API: http://localhost:8000
 - Web: http://localhost:5174
+- 코딩 테스트: http://localhost:5174/code
+
+**주요 페이지:**
+- `/` - 메인 대시보드
+- `/quiz` - 퀴즈 모드 선택
+- `/code` - 코딩 테스트 (샘플 문제)
+- `/code/problems` - 코딩 문제 목록
+- `/admin/questions` - 관리자 문제 관리
 
 ---
 

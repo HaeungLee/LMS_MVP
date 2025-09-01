@@ -20,12 +20,13 @@ import {
   Settings
 } from 'lucide-react';
 
-// Bold체 자동 적용 함수
+// Bold체 자동 적용 함수 - 중요한 키워드만 강조
 const formatBoldText = (text) => {
   if (!text) return '';
   
-  // **텍스트** 형태를 <strong> 태그로 변환
-  return text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>');
+  // 중요한 프로그래밍 키워드나 짧은 단어에만 bold 적용
+  // **단어** 또는 **짧은 구문** (20자 이하)만 bold로 변환
+  return text.replace(/\*\*([^*]{1,20}?)\*\*/g, '<strong class="font-semibold text-blue-700">$1</strong>');
 };
 
 // 메시지 컨텐츠 컴포넌트
@@ -60,7 +61,6 @@ const AIMentorChat = ({ userId }) => {
   // 사용자 설정 상태
   const [settings, setSettings] = useState({
     textSize: 'base',
-    showSuggestions: false, // 기본적으로 비활성화
     showFollowUps: false,   // 기본적으로 비활성화
     showSessionInfo: false  // 기본적으로 비활성화
   });
@@ -140,7 +140,6 @@ const AIMentorChat = ({ userId }) => {
           type: 'mentor',
           content: data.response, // 직접 response 사용
           timestamp: new Date(),
-          suggestions: data.suggestions || [],
           follow_up_questions: data.follow_up_questions || [],
           tone: data.tone
         };
@@ -276,16 +275,6 @@ const AIMentorChat = ({ userId }) => {
                 <label className="flex items-center space-x-2">
                   <input 
                     type="checkbox" 
-                    checked={settings.showSuggestions}
-                    onChange={(e) => setSettings(prev => ({ ...prev, showSuggestions: e.target.checked }))}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm">💡 제안사항 표시</span>
-                </label>
-                
-                <label className="flex items-center space-x-2">
-                  <input 
-                    type="checkbox" 
                     checked={settings.showFollowUps}
                     onChange={(e) => setSettings(prev => ({ ...prev, showFollowUps: e.target.checked }))}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
@@ -415,20 +404,6 @@ const AIMentorChat = ({ userId }) => {
                         {/* 멘토 추가 정보 - 설정에 따라 표시 */}
                         {message.type === 'mentor' && (
                           <div className="mt-4 space-y-3">
-                            {/* 제안사항 - 설정에서 활성화된 경우만 표시 */}
-                            {settings.showSuggestions && message.suggestions && message.suggestions.length > 0 && (
-                              <div>
-                                <p className="text-xs font-medium mb-2 text-gray-600">💡 제안사항:</p>
-                                <div className="space-y-2">
-                                  {message.suggestions.map((suggestion, index) => (
-                                    <div key={index} className="text-sm bg-blue-50 text-blue-800 p-2 rounded-md">
-                                      {suggestion}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            
                             {/* 후속 질문 - 설정에서 활성화된 경우만 표시 */}
                             {settings.showFollowUps && message.follow_up_questions && message.follow_up_questions.length > 0 && (
                               <div>

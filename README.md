@@ -116,7 +116,69 @@ docker exec -it lms_mvp_db_container psql -U lms_user -d lms_mvp_db
 - 출제 관리 UI: `/admin/questions` (등록/검색/페이징/택소노미/간단 수정/삭제)
 - 교사용 대시보드: `/teacher/dashboard` (주제별 문제 수/정답률, 최근 제출 10건)
 
-## 9) 테스트 계정
+## 9) 코딩 테스트 기능 (Phase 7A)
+
+### 9.1 개요
+실제 코드를 작성하고 실행할 수 있는 Programmers 스타일의 코딩 테스트 환경을 제공합니다.
+
+### 9.2 주요 기능
+- **코드 에디터**: 좌측 문제 설명, 우측 코드 에디터 및 실행 결과
+- **언어 지원**: Python, JavaScript, SQL (확장 가능)
+- **문제 관리**: 문제 목록, 검색/필터링, 난이도별 분류
+- **코드 실행**: 실시간 코드 실행 및 결과 확인
+- **보안**: subprocess를 통한 안전한 코드 실행 환경
+
+### 9.3 URL 구조
+- `/code` - 샘플 문제로 바로 시작
+- `/code/problems` - 문제 목록 페이지
+- `/code/:problemId` - 특정 문제 풀이
+
+### 9.4 구현된 컴포넌트
+```
+frontend/src/
+├── components/code/
+│   └── CodeExecutionLayout.jsx    # 메인 UI 레이아웃
+├── pages/
+│   ├── CodeExecutionPage.jsx      # 코드 실행 페이지
+│   └── CodeProblemsPage.jsx       # 문제 목록 페이지
+└── services/
+    └── codeExecutionApi.js        # API 클라이언트
+
+backend/app/
+├── api/v1/
+│   └── code_execution.py          # REST API 엔드포인트
+└── services/
+    └── code_execution_service.py  # 코드 실행 엔진
+```
+
+### 9.5 API 엔드포인트
+- `POST /api/v1/code/execute` - 코드 실행
+- `GET /api/v1/code/problems` - 문제 목록 조회
+- `GET /api/v1/code/problems/{id}` - 특정 문제 조회
+- `POST /api/v1/code/submit` - 코드 제출
+- `GET /api/v1/code/languages` - 지원 언어 목록
+
+### 9.6 보안 기능
+- subprocess를 통한 격리된 코드 실행
+- 실행 시간 제한 (기본 10초)
+- 메모리 사용량 제한
+- 위험한 모듈 import 차단 (향후 확장)
+
+### 9.7 샘플 문제
+현재 5개의 샘플 문제가 포함되어 있습니다:
+1. 두 수의 합 (Easy)
+2. 리스트 최댓값 찾기 (Easy)  
+3. 문자열 뒤집기 (Medium)
+4. 피보나치 수열 (Medium)
+5. 데이터 분석 - 평균 계산 (Hard)
+
+### 9.8 향후 계획 (Phase 7B)
+- Monaco Editor 통합 (VS Code 스타일 에디터)
+- Docker 컨테이너 기반 보안 강화
+- 테스트 케이스 자동 채점 시스템
+- 실시간 코드 힌트 및 오류 분석
+
+## 10) 테스트 계정
 
 - 교사: `test@test.com` / `test`
 - 관리자: `admin@admin.com` / `admin`

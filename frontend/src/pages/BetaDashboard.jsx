@@ -363,7 +363,7 @@ const BetaDashboard = () => {
       {/* 베타 테스트 진행률 */}
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>🎯 베타 테스트 진행률</CardTitle>
+          <CardTitle>베타 테스트 진행률</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">

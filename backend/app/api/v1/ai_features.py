@@ -496,8 +496,7 @@ async def start_mentoring_session(
                 "user_name": f"학습자 {user_id}",
                 "mentor_personality": session.mentor_personality.value if hasattr(session, 'mentor_personality') else "friendly",
                 "session_goals": session.session_goals if hasattr(session, 'session_goals') else ["학습 지원"],
-                "greeting": greeting,
-                "suggested_topics": ["프로그래밍 기초", "알고리즘", "데이터 구조"]
+                "greeting": greeting
             },
             "started_at": session.start_time.isoformat()
         }
@@ -518,8 +517,7 @@ async def start_mentoring_session(
                 "user_name": f"학습자 {user_id}",
                 "mentor_personality": "friendly",
                 "session_goals": ["학습 지원", "프로그래밍 실력 향상"],
-                "greeting": "**안녕하세요!** AI 학습 멘토입니다. 무엇을 도와드릴까요? **핵심** 개념부터 실무 활용까지 함께 배워봅시다! (현재 오프라인 모드)",
-                "suggested_topics": ["프로그래밍 기초", "알고리즘", "데이터 구조", "객체 지향 프로그래밍"]
+                "greeting": "**안녕하세요!** AI 학습 멘토입니다. 무엇을 도와드릴까요? **핵심** 개념부터 실무 활용까지 함께 배워봅시다! (현재 오프라인 모드)"
             },
             "started_at": datetime.utcnow().isoformat(),
             "fallback_mode": True
@@ -557,7 +555,6 @@ async def continue_mentoring_conversation(
         return {
             "success": True,
             "response": response.content,
-            "suggestions": response.suggestions if hasattr(response, 'suggestions') else [],
             "follow_up_questions": response.follow_up_questions if hasattr(response, 'follow_up_questions') else [],
             "timestamp": datetime.utcnow().isoformat()
         }
@@ -571,16 +568,12 @@ async def continue_mentoring_conversation(
 
         if "파이썬" in user_message or "python" in user_message:
             response_text = "**파이썬**은 초보자에게 아주 좋은 프로그래밍 언어입니다! **핵심**은 변수, 조건문, 반복문부터 시작하는 것입니다. **중요한** 건 실습을 통해 익히는 거예요. (현재 오프라인 모드)"
-            suggestions = ["변수와 데이터 타입", "if문 사용법", "for 반복문"]
         elif "알고리즘" in user_message:
             response_text = "**알고리즘**은 문제 해결의 **핵심**입니다. 정렬, 검색부터 시작해서 점진적으로 어려운 문제에 도전해보세요. **팁**: 작은 문제부터 차근차근! (현재 오프라인 모드)"
-            suggestions = ["버블 정렬", "이진 검색", "재귀 알고리즘"]
         elif "자료구조" in user_message:
             response_text = "**자료구조**는 데이터를 효율적으로 다루는 방법입니다. 배열, 리스트, 스택, 큐부터 공부해보는 걸 **추천**합니다. **핵심**은 각각의 특징을 이해하는 것! (현재 오프라인 모드)"
-            suggestions = ["배열과 리스트", "스택과 큐", "연결 리스트"]
         else:
             response_text = "**좋은 질문**이네요! 구체적인 주제나 어려움을 말씀해주시면 더 자세히 도와드리겠습니다. **중요한** 건 포기하지 않는 마음가짐이에요! (현재 오프라인 모드)"
-            suggestions = ["프로그래밍 기초", "알고리즘 문제", "코딩 테스트 준비"]
 
         follow_up_questions = [
             "어떤 부분이 가장 어려우신가요?",
@@ -591,7 +584,6 @@ async def continue_mentoring_conversation(
         return {
             "success": True,
             "response": response_text,
-            "suggestions": suggestions,
             "follow_up_questions": follow_up_questions,
             "timestamp": datetime.utcnow().isoformat(),
             "fallback_mode": True

@@ -272,17 +272,24 @@ const DashboardPage = () => {
 
           {/* 나의 약점 */}
           <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '24px' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>나의 약점 📊</h2>
-            <div style={{ marginBottom: '16px' }}>
-              {weaknesses.length === 0 && (
-                <div style={{ color: '#6b7280', fontSize: '14px' }}>충분한 데이터가 없어 약점이 없습니다.</div>
-              )}
-              {weaknesses.map((w, index) => (
-                <div key={index} style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '4px', padding: '8px', marginBottom: '8px', display:'flex', justifyContent:'space-between' }}>
-                  <span style={{ color: '#b91c1c', fontSize: '14px' }}>{w.title}</span>
-                  <span style={{ color: '#b91c1c', fontSize: '14px' }}>{Math.round(w.accuracy*100)}%</span>
+            <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>보완점</h2>
+            <div style={{ backgroundColor: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+              {weaknesses.length === 0 ? (
+                <div>
+                  <h3 style={{ fontWeight: '500', color: '#9a3412' }}>개인화된 약점 분석</h3>
+                  <p style={{ color: '#c2410c', fontSize: '14px' }}>더 정확한 분석을 위해 퀴즈를 풀어주세요</p>
                 </div>
-              ))}
+              ) : (
+                <div>
+                  <h3 style={{ fontWeight: '500', color: '#9a3412', marginBottom: '8px' }}>약점 보완 퀴즈</h3>
+                  {weaknesses.map((w, index) => (
+                    <div key={index} style={{ marginBottom: '4px', display:'flex', justifyContent:'space-between' }}>
+                      <span style={{ color: '#c2410c', fontSize: '14px' }}>{w.title}</span>
+                      <span style={{ color: '#c2410c', fontSize: '14px' }}>{Math.round(w.accuracy*100)}%</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <button
               onClick={() => navigate(`/quiz?subject=${subject}`)}
@@ -290,14 +297,59 @@ const DashboardPage = () => {
                 width: '100%',
                 backgroundColor: '#f97316',
                 color: 'white',
-                padding: '8px 16px',
-                borderRadius: '6px',
+                padding: '12px 16px',
+                borderRadius: '8px',
                 border: 'none',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                fontWeight: '500',
+                fontSize: '16px'
               }}
             >
               약점 보완 퀴즈
             </button>
+          </div>
+
+          {/* 코딩 테스트 */}
+          <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '24px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>코딩 테스트</h2>
+            <div style={{ backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+              <h3 style={{ fontWeight: '500', color: '#0c4a6e' }}>실전 코딩 연습</h3>
+              <p style={{ color: '#0369a1', fontSize: '14px' }}>실제 코드를 작성하고 실행해보세요</p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => navigate('/code')}
+                style={{
+                  flex: 1,
+                  backgroundColor: '#06b6d4',
+                  color: 'white',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  fontSize: '14px'
+                }}
+              >
+                바로 시작하기
+              </button>
+              <button
+                onClick={() => navigate('/code/problems')}
+                style={{
+                  flex: 1,
+                  backgroundColor: 'white',
+                  color: '#06b6d4',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid #06b6d4',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  fontSize: '14px'
+                }}
+              >
+                문제 목록
+              </button>
+            </div>
           </div>
         </div>
 

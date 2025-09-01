@@ -72,7 +72,7 @@ const AILearningDashboard = () => {
 
   return (
     <div style={styles.container}>
-      <h2 style={styles.title}>🤖 AI 맞춤 학습 계획</h2>
+      <h2 style={styles.title}>AI 맞춤 학습 계획</h2>
       
       {/* 오늘의 학습 계획 */}
       {dailyPlan && (

@@ -155,13 +155,13 @@ const AIQuestionGenerator = () => {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h2 style={styles.title}>🤖 AI 문제 생성기</h2>
+        <h2 style={styles.title}>AI 문제 생성기</h2>
         <p style={styles.subtitle}>수업 진도에 맞는 맞춤형 문제를 AI로 자동 생성하세요</p>
       </div>
 
       {/* 문제 생성 폼 */}
       <div style={styles.card}>
-        <h3 style={styles.cardTitle}>📝 문제 생성 설정</h3>
+        <h3 style={styles.cardTitle}>문제 생성 설정</h3>
         
         <div style={styles.formGrid}>
           <div style={styles.formGroup}>
@@ -275,7 +275,7 @@ const AIQuestionGenerator = () => {
         <div style={styles.card}>
           <div style={styles.resultHeader}>
             <h3 style={styles.cardTitle}>
-              📋 생성된 문제 ({generatedQuestions.length}개)
+              생성된 문제 ({generatedQuestions.length}개)
             </h3>
             <div style={styles.resultActions}>
               <button 
