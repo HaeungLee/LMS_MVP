@@ -18,7 +18,6 @@ import lmsLogo from './image/LMS.png';
 function Navigation() {
   const location = useLocation();
   const { user, logout } = useAuthStore();
-  const [showQuizDropdown, setShowQuizDropdown] = React.useState(false);
   
   const navStyle = {
     backgroundColor: '#1f2937',
@@ -83,72 +82,9 @@ function Navigation() {
             </Link>
           </li>
           <li>
-            <div 
-              style={{ 
-                position: 'relative',
-                display: 'inline-block'
-              }}
-              onMouseLeave={() => setShowQuizDropdown(false)}
-            >
-              <button
-                onClick={() => setShowQuizDropdown(!showQuizDropdown)}
-                onMouseEnter={() => setShowQuizDropdown(true)}
-                style={{
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  color: location.pathname.includes('/quiz') ? '#3b82f6' : '#d1d5db',
-                  fontSize: '16px',
-                  cursor: 'pointer',
-                  padding: '8px 12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  height: '40px', // 고정 높이
-                  minWidth: '80px' // 최소 너비
-                }}
-              >
-                퀴즈 ▼
-              </button>
-              {showQuizDropdown && (
-                <div style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 2px)', // 버튼 바로 아래
-                  left: '0',
-                  backgroundColor: '#374151',
-                  border: '1px solid #4b5563',
-                  borderRadius: '8px',
-                  padding: '8px 0',
-                  minWidth: '200px',
-                  zIndex: 9999, // 높은 z-index
-                  boxShadow: '0 8px 16px rgba(0, 0, 0, 0.2)',
-                  // 레이아웃에 영향을 주지 않도록 완전히 격리
-                  transform: 'translateZ(0)', // 하드웨어 가속
-                  willChange: 'transform' // 성능 최적화
-                }}>
-                  {Object.entries(SUBJECTS).map(([key, name]) => (
-                    <Link
-                      key={key}
-                      to={`/quiz/${key}`}
-                      onClick={() => setShowQuizDropdown(false)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 16px',
-                        color: '#d1d5db',
-                        textDecoration: 'none',
-                        fontSize: '14px',
-                        transition: 'background-color 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#4b5563'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                    >
-                      {getSubjectIcon(key)} {name}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+            <Link to="/quiz" className={getLinkClass('/quiz')}>
+              퀴즈
+            </Link>
           </li>
           <li>
             <Link to="/ai-features" className={getLinkClass('/ai-features')}>
