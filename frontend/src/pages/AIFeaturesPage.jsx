@@ -17,7 +17,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import AIAnalysisDashboard from '@/components/ai/AIAnalysisDashboard';
-import AIMentorChat from '@/components/ai/AIMentorChat';
+import AIMentorChatImproved from '@/components/ai/AIMentorChatImproved';
 import AdaptiveDifficultyWidget from '@/components/ai/AdaptiveDifficultyWidget';
 
 const AIFeaturesPage = () => {
@@ -37,7 +37,7 @@ const AIFeaturesPage = () => {
       title: 'AI 멘토링',
       description: '24/7 개인 학습 코치와 실시간으로 대화하세요.',
       icon: MessageCircle,
-      component: AIMentorChat
+      component: AIMentorChatImproved
     },
     {
       id: 'difficulty',

@@ -1,0 +1,93 @@
+{
+  "server_status": "running",
+  "database_status": "connected",
+  "api_endpoints": [
+    {
+      "endpoint": "/docs",
+      "description": "API 문서",
+      "status_code": 200,
+      "response_time": 0.01547,
+      "status": "success"
+    },
+    {
+      "endpoint": "/openapi.json",
+      "description": "OpenAPI 스키마",
+      "status_code": 200,
+      "response_time": 0.059146,
+      "status": "success"
+    },
+    {
+      "endpoint": "/api/v1/dashboard/stats",
+      "description": "대시보드 통계",
+      "status_code": 200,
+      "response_time": 0.013414,
+      "status": "success"
+    },
+    {
+      "endpoint": "/api/v1/questions/python_basics",
+      "description": "문제 목록",
+      "status_code": 200,
+      "response_time": 0.006354,
+      "status": "success"
+    },
+    {
+      "endpoint": "/api/v1/auth/me",
+      "description": "인증 상태",
+      "status_code": 401,
+      "response_time": 0.001954,
+      "status": "error"
+    }
+  ],
+  "environment_check": [
+    {
+      "variable": "DATABASE_URL",
+      "value": "postgresql://lms_user:1234@localhost:15432/lms_mvp...",
+      "description": "데이터베이스 연결 문자열",
+      "status": "ok"
+    },
+    {
+      "variable": "ENVIRONMENT",
+      "value": "development",
+      "description": "실행 환경",
+      "status": "ok"
+    },
+    {
+      "variable": "POSTGRES_HOST",
+      "value": "localhost",
+      "description": "PostgreSQL 호스트",
+      "status": "ok"
+    },
+    {
+      "variable": "POSTGRES_PORT",
+      "value": "15432",
+      "description": "PostgreSQL 포트",
+      "status": "ok"
+    },
+    {
+      "variable": "POSTGRES_USER",
+      "value": "lms_user",
+      "description": "PostgreSQL 사용자",
+      "status": "ok"
+    },
+    {
+      "variable": "POSTGRES_DB",
+      "value": "lms_mvp_db",
+      "description": "PostgreSQL 데이터베이스",
+      "status": "ok"
+    },
+    {
+      "variable": "OPENROUTER_API_KEY",
+      "value": "설정됨",
+      "description": "OpenRouter API 키",
+      "status": "ok"
+    },
+    {
+      "variable": "LLM_PROVIDER",
+      "value": "openrouter",
+      "description": "LLM 제공자",
+      "status": "ok"
+    }
+  ],
+  "overall_status": "healthy",
+  "timestamp": "2025-09-01T12:47:24.950377"
+}

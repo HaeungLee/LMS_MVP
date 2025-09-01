@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { getQuestions, submitAnswers } from '../services/apiClient';
 import { useNavigate } from 'react-router-dom';
-import QuestionCard from '../components/quiz/QuestionCard';
+import QuestionRenderer from '../components/quiz/QuestionRenderer';
 import ProgressBar from '../components/quiz/ProgressBar';
 import FeedbackModal from '../components/feedback/FeedbackModal';
 import useQuizStore from '../stores/quizStore';
@@ -320,9 +320,147 @@ function QuizPage() {
       <ProgressBar totalSeconds={totalTime} onTimeUp={handleTimeUp} />
 
       {/* 문제 카드 */}
-      <QuestionCard
+      <QuestionRenderer
         question={questions[currentQuestion]}
+        onAnswerChange={(answer) => setAnswer(questions[currentQuestion]?.id, answer)}
+        currentAnswer={answers[questions[currentQuestion]?.id] || ''}
       />
+
+      {/* 네비게이션 버튼 */}
+      <div style={{
+        display: 'flex',
+        flexDirection: window.innerWidth < 640 ? 'column' : 'row',
+        justifyContent: 'space-between',
+        alignItems: window.innerWidth < 640 ? 'stretch' : 'center',
+        gap: window.innerWidth < 640 ? '15px' : '0',
+        marginTop: '30px',
+        padding: '20px',
+        backgroundColor: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+        border: '1px solid #e5e7eb'
+      }}>
+        <div style={{ 
+          display: 'flex', 
+          gap: '12px',
+          justifyContent: window.innerWidth < 640 ? 'center' : 'flex-start',
+          flexWrap: 'wrap'
+        }}>
+          {currentQuestion > 0 && (
+            <button
+              onClick={handlePrevious}
+              style={{
+                backgroundColor: '#6b7280',
+                color: 'white',
+                padding: '12px 20px',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '15px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                minWidth: '100px'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#4b5563';
+                e.target.style.transform = 'translateY(-1px)';
+                e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#6b7280';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              }}
+            >
+              ← 이전
+            </button>
+          )}
+          <button
+            onClick={handleSkip}
+            style={{
+              backgroundColor: '#f97316',
+              color: 'white',
+              padding: '12px 20px',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '15px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              minWidth: '100px'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#ea580c';
+              e.target.style.transform = 'translateY(-1px)';
+              e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#f97316';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            }}
+          >
+            건너뛰기
+          </button>
+        </div>
+
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '20px',
+          justifyContent: window.innerWidth < 640 ? 'center' : 'flex-end',
+          flexWrap: 'wrap'
+        }}>
+          <span style={{ 
+            fontSize: '15px', 
+            color: '#374151',
+            fontWeight: '600',
+            padding: '8px 16px',
+            backgroundColor: '#f3f4f6',
+            borderRadius: '20px',
+            border: '1px solid #d1d5db',
+            whiteSpace: 'nowrap'
+          }}>
+            {currentQuestion + 1} / {questions.length}
+          </span>
+          <button
+            onClick={handleNext}
+            style={{
+              backgroundColor: currentQuestion < questions.length - 1 ? '#3b82f6' : '#10b981',
+              color: 'white',
+              padding: '14px 28px',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              whiteSpace: 'nowrap'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = currentQuestion < questions.length - 1 ? '#2563eb' : '#059669';
+              e.target.style.transform = 'translateY(-1px)';
+              e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = currentQuestion < questions.length - 1 ? '#3b82f6' : '#10b981';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            }}
+          >
+            {currentQuestion < questions.length - 1 ? '다음 →' : '🎯 퀴즈 제출'}
+          </button>
+        </div>
+      </div>
 
       {/* 설정 모달 */}
       {showSettings && (

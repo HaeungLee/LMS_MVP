@@ -16,8 +16,37 @@ import {
   BookOpen,
   Target,
   Lightbulb,
-  RefreshCw
+  RefreshCw,
+  Settings
 } from 'lucide-react';
+
+// Bold체 자동 적용 함수
+const formatBoldText = (text) => {
+  if (!text) return '';
+  
+  // **텍스트** 형태를 <strong> 태그로 변환
+  return text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>');
+};
+
+// 메시지 컨텐츠 컴포넌트
+const MessageContent = ({ content, isBot, textSize = 'base' }) => {
+  const sizeClasses = {
+    'sm': 'text-sm',
+    'base': 'text-base', 
+    'lg': 'text-lg'
+  };
+
+  return (
+    <div className={`${sizeClasses[textSize]} leading-relaxed space-y-2`}>
+      <div 
+        dangerouslySetInnerHTML={{
+          __html: formatBoldText(content)
+        }} 
+        className="prose prose-sm max-w-none"
+      />
+    </div>
+  );
+};
 
 const AIMentorChat = ({ userId }) => {
   const [session, setSession] = useState(null);
@@ -27,6 +56,15 @@ const AIMentorChat = ({ userId }) => {
   const [conversationMode, setConversationMode] = useState('help_seeking');
   const [dailyMotivation, setDailyMotivation] = useState('');
   const scrollAreaRef = useRef(null);
+
+  // 사용자 설정 상태
+  const [settings, setSettings] = useState({
+    textSize: 'base',
+    showSuggestions: false, // 기본적으로 비활성화
+    showFollowUps: false,   // 기본적으로 비활성화
+    showSessionInfo: false  // 기본적으로 비활성화
+  });
+  const [showSettings, setShowSettings] = useState(false);
 
   const conversationModes = [
     { id: 'help_seeking', label: '도움 요청', icon: HelpCircle, color: 'blue' },
@@ -84,13 +122,12 @@ const AIMentorChat = ({ userId }) => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/ai-features/mentoring/continue`, {
+      const response = await fetch(`${API_BASE_URL}/ai-features/mentoring/chat/${session.session_id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          session_id: session.session_id,
           message: inputMessage,
           conversation_mode: conversationMode
         })
@@ -101,11 +138,11 @@ const AIMentorChat = ({ userId }) => {
         const mentorMessage = {
           id: Date.now() + 1,
           type: 'mentor',
-          content: data.mentor_response.content,
+          content: data.response, // 직접 response 사용
           timestamp: new Date(),
-          suggestions: data.mentor_response.suggestions,
-          follow_up_questions: data.mentor_response.follow_up_questions,
-          tone: data.mentor_response.tone
+          suggestions: data.suggestions || [],
+          follow_up_questions: data.follow_up_questions || [],
+          tone: data.tone
         };
         
         setMessages(prev => [...prev, mentorMessage]);
@@ -168,17 +205,108 @@ const AIMentorChat = ({ userId }) => {
   return (
     <div className="space-y-6">
       {/* 헤더 */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold">AI 멘토링</h2>
           <p className="text-gray-600">24/7 개인 학습 코치와 대화하세요</p>
         </div>
-        {session && (
-          <Badge variant="secondary">
-            {getMentorPersonalityLabel(session.mentor_personality)}
-          </Badge>
-        )}
+        
+        <div className="flex items-center space-x-2">
+          {/* 설정 버튼 */}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowSettings(!showSettings)}
+            className="flex items-center space-x-1"
+          >
+            <Settings className="w-4 h-4" />
+            <span>설정</span>
+          </Button>
+          
+          {/* 새 세션 버튼 */}
+          {session && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => startMentorSession()}
+              className="flex items-center space-x-1"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>새 세션</span>
+            </Button>
+          )}
+          
+          {/* 멘토 성격 배지 */}
+          {session && settings.showSessionInfo && (
+            <Badge variant="secondary">
+              {getMentorPersonalityLabel(session.mentor_personality)}
+            </Badge>
+          )}
+        </div>
       </div>
+
+      {/* 설정 패널 */}
+      {showSettings && (
+        <Card className="bg-gray-50 border-gray-200">
+          <CardHeader>
+            <CardTitle className="text-lg">멘토링 설정</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* 텍스트 크기 설정 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                텍스트 크기
+              </label>
+              <select 
+                value={settings.textSize}
+                onChange={(e) => setSettings(prev => ({ ...prev, textSize: e.target.value }))}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="sm">작게</option>
+                <option value="base">보통</option>
+                <option value="lg">크게</option>
+              </select>
+            </div>
+            
+            {/* 표시 옵션 */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">표시 옵션</label>
+              
+              <div className="space-y-2">
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={settings.showSuggestions}
+                    onChange={(e) => setSettings(prev => ({ ...prev, showSuggestions: e.target.checked }))}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm">💡 제안사항 표시</span>
+                </label>
+                
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={settings.showFollowUps}
+                    onChange={(e) => setSettings(prev => ({ ...prev, showFollowUps: e.target.checked }))}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm">❓ 후속 질문 표시</span>
+                </label>
+                
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={settings.showSessionInfo}
+                    onChange={(e) => setSettings(prev => ({ ...prev, showSessionInfo: e.target.checked }))}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm">📊 세션 정보 표시</span>
+                </label>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 일일 동기부여 */}
       {dailyMotivation && (
@@ -195,41 +323,43 @@ const AIMentorChat = ({ userId }) => {
         </Card>
       )}
 
-      {/* 대화 모드 선택 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">대화 모드</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {conversationModes.map((mode) => {
-              const Icon = mode.icon;
-              return (
-                <Button
-                  key={mode.id}
-                  variant={conversationMode === mode.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setConversationMode(mode.id)}
-                  className="flex items-center space-x-1"
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{mode.label}</span>
-                </Button>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      {/* 대화 모드 선택 - 설정에서 활성화된 경우만 표시 */}
+      {settings.showSessionInfo && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">대화 모드</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {conversationModes.map((mode) => {
+                const Icon = mode.icon;
+                return (
+                  <Button
+                    key={mode.id}
+                    variant={conversationMode === mode.id ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setConversationMode(mode.id)}
+                    className="flex items-center space-x-1"
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{mode.label}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 채팅 영역 */}
-      <Card className="h-96">
+      <Card className="h-[600px]"> {/* 높이 확장 */}
         <CardHeader>
           <CardTitle className="flex items-center">
             <MessageCircle className="w-5 h-5 mr-2" />
             멘토링 채팅
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-full flex flex-col">
+        <CardContent className="h-full flex flex-col p-6"> {/* 패딩 증가 */}
           {!session ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
@@ -270,39 +400,46 @@ const AIMentorChat = ({ userId }) => {
                             <User className="w-4 h-4 mt-1" />
                           )}
                           <div className="flex-1">
-                            <p className="text-sm">{message.content}</p>
-                            <p className="text-xs opacity-70 mt-1">
+                            {/* 새로운 메시지 컨텐츠 컴포넌트 사용 */}
+                            <MessageContent 
+                              content={message.content} 
+                              isBot={message.type === 'mentor'} 
+                              textSize={settings.textSize}
+                            />
+                            <p className="text-xs opacity-70 mt-2">
                               {message.timestamp.toLocaleTimeString()}
                             </p>
                           </div>
                         </div>
                         
-                        {/* 멘토 추가 정보 */}
+                        {/* 멘토 추가 정보 - 설정에 따라 표시 */}
                         {message.type === 'mentor' && (
-                          <div className="mt-3 space-y-2">
-                            {message.suggestions && message.suggestions.length > 0 && (
+                          <div className="mt-4 space-y-3">
+                            {/* 제안사항 - 설정에서 활성화된 경우만 표시 */}
+                            {settings.showSuggestions && message.suggestions && message.suggestions.length > 0 && (
                               <div>
-                                <p className="text-xs font-medium mb-1">💡 제안사항:</p>
-                                <div className="space-y-1">
+                                <p className="text-xs font-medium mb-2 text-gray-600">💡 제안사항:</p>
+                                <div className="space-y-2">
                                   {message.suggestions.map((suggestion, index) => (
-                                    <p key={index} className="text-xs bg-blue-50 text-blue-800 p-1 rounded">
+                                    <div key={index} className="text-sm bg-blue-50 text-blue-800 p-2 rounded-md">
                                       {suggestion}
-                                    </p>
+                                    </div>
                                   ))}
                                 </div>
                               </div>
                             )}
                             
-                            {message.follow_up_questions && message.follow_up_questions.length > 0 && (
+                            {/* 후속 질문 - 설정에서 활성화된 경우만 표시 */}
+                            {settings.showFollowUps && message.follow_up_questions && message.follow_up_questions.length > 0 && (
                               <div>
-                                <p className="text-xs font-medium mb-1">❓ 후속 질문:</p>
-                                <div className="space-y-1">
+                                <p className="text-xs font-medium mb-2 text-gray-600">❓ 후속 질문:</p>
+                                <div className="space-y-2">
                                   {message.follow_up_questions.map((question, index) => (
                                     <Button
                                       key={index}
                                       variant="ghost"
                                       size="sm"
-                                      className="text-xs h-auto p-1 text-blue-600 hover:text-blue-800"
+                                      className="text-sm h-auto p-2 text-blue-600 hover:text-blue-800 border border-blue-200 hover:bg-blue-50"
                                       onClick={() => setInputMessage(question)}
                                     >
                                       {question}

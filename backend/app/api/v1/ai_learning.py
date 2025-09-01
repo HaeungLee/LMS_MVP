@@ -129,73 +129,80 @@ async def generate_questions_for_topic(
             count=count
         )
 
-        # Persist generated questions to DB so students can take them
+        # Persist generated questions to DB with enhanced schema
         import os as _os
         print(f"[ai_learning] DATABASE_URL={_os.getenv('DATABASE_URL')}")
         print(f"[ai_learning] Generated questions count: {len(questions)} - attempting DB insert")
+
         inserted = []
+        failed_inserts = []
+        db_transaction_success = False
+
         try:
-            for q in questions:
-                # Normalize keys and map to ORM fields
-                qtype = q.get('question_type') or q.get('type') or q.get('question_type')
-                subject_val = request.get('subject', 'python_basics')
-                topic_val = q.get('topic') or topic
-                difficulty_val = q.get('difficulty') or difficulty
-
-                # code_snippet: prefer explicit fields, fall back to question text or concatenated content
-                code_snippet = q.get('code_snippet') or q.get('code_template') or q.get('question') or q.get('statement') or q.get('buggy_code') or ''
-
-                # correct_answer: many formats - attempt common keys
-                correct_answer = q.get('correct_answer') or q.get('answer') or q.get('sample_answer') or ''
-
-                # rubric: explanation or rubric or serialized scoring_criteria
-                rubric = q.get('rubric') or q.get('explanation') or None
-                if rubric is None and 'scoring_criteria' in q:
-                    try:
-                        rubric = str(q.get('scoring_criteria'))
-                    except Exception:
-                        rubric = None
-
-                created_by = f"ai:{current_user.id}" if hasattr(current_user, 'id') else 'ai'
-
-                rec = Question(
-                    subject=subject_val,
-                    topic=topic_val,
-                    question_type=qtype or 'generated',
-                    code_snippet=code_snippet,
-                    correct_answer=str(correct_answer),
-                    difficulty=difficulty_val,
-                    rubric=rubric,
-                    created_by=created_by,
-                    is_active=True,
-                )
-                db.add(rec)
+            for i, q in enumerate(questions):
                 try:
-                    db.flush()  # get id without committing yet
-                    inserted.append(rec.id)
-                    print(f"[ai_learning] staged question id={rec.id} topic={topic_val} type={qtype}")
-                except Exception as _e:
-                    print(f"[ai_learning] flush failed for record (topic={topic_val}): {_e}")
-                    raise
+                    # Enhanced question data processing using new schema fields
+                    question_record = _process_ai_question_for_db(
+                        q, request, topic, difficulty, current_user, i
+                    )
 
+                    db.add(question_record)
+                    db.flush()  # Get ID without committing yet
+                    inserted.append(question_record.id)
+                    print(f"[ai_learning] ✅ Question {i+1} staged: id={question_record.id}, type={question_record.question_type}")
+
+                except Exception as question_error:
+                    error_detail = f"Question {i+1} processing failed: {str(question_error)}"
+                    print(f"[ai_learning] ❌ {error_detail}")
+                    failed_inserts.append({
+                        'index': i,
+                        'question_data': q,
+                        'error': str(question_error)
+                    })
+                    continue  # Continue with next question
+
+            # Commit all successful inserts
             db.commit()
-            print(f"[ai_learning] DB commit successful, inserted ids: {inserted}")
-        except Exception as e:
-            # rollback on any DB error but still return generated content
+            db_transaction_success = True
+            print(f"[ai_learning] ✅ DB commit successful: {len(inserted)} questions inserted")
+
+        except Exception as db_error:
+            # Rollback on any critical DB error
             try:
                 db.rollback()
-            except Exception:
-                pass
-            print(f"문제 DB 저장 실패: {e}")
+                print(f"[ai_learning] 🔄 DB rollback performed due to: {str(db_error)}")
+            except Exception as rollback_error:
+                print(f"[ai_learning] ❌ DB rollback failed: {str(rollback_error)}")
 
-        return {
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error during question insertion: {str(db_error)}"
+            )
+
+        # 응답에 DB 저장 결과 포함
+        response_data = {
             "success": True,
             "questions": questions,
             "topic": topic,
             "difficulty": difficulty,
             "generated_count": len(questions),
-            "inserted_question_ids": inserted,
+            "db_insertion": {
+                "successful_inserts": len(inserted),
+                "inserted_question_ids": inserted,
+                "failed_inserts": len(failed_inserts),
+                "failed_details": failed_inserts if failed_inserts else None,
+                "transaction_success": db_transaction_success
+            }
         }
+
+        # 실패한 삽입이 있으면 경고 포함
+        if failed_inserts:
+            response_data["warnings"] = [
+                f"{len(failed_inserts)}개의 문제가 DB 저장에 실패했지만, 생성된 문제는 반환됩니다.",
+                "실패한 문제들은 나중에 재시도하거나 수동으로 추가할 수 있습니다."
+            ]
+
+        return response_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"문제 생성 실패: {str(e)}")
 
@@ -881,5 +888,152 @@ def _generate_study_recommendations(type_scores: Dict[str, List[float]]) -> List
         else:
             recommendations.append("현재 수준을 유지하며 심화 문제에 도전하세요")
             recommendations.append("다른 주제 영역으로 확장 학습하세요")
-    
+
     return recommendations
+
+
+# === 헬퍼 함수들 ===
+
+def _process_ai_question_for_db(q: Dict[str, Any], request: Dict[str, Any], topic: str, difficulty: str, current_user, index: int) -> Question:
+    """AI 생성 질문을 DB 레코드로 변환 (향상된 스키마 활용)"""
+
+    # 기본 필드 추출
+    subject_val = request.get('subject', 'python_basics')
+    topic_val = q.get('topic') or topic
+    difficulty_val = q.get('difficulty') or difficulty
+    qtype = q.get('question_type') or q.get('type') or 'generated'
+
+    # 코드 스니펫 결정 (여러 필드에서 우선순위대로 선택)
+    code_snippet = (
+        q.get('code_snippet') or
+        q.get('code_template') or
+        q.get('question') or
+        q.get('statement') or
+        q.get('buggy_code') or
+        ''
+    )
+
+    # 정답 추출 (다양한 키 지원)
+    correct_answer = (
+        q.get('correct_answer') or
+        q.get('answer') or
+        q.get('sample_answer') or
+        ''
+    )
+
+    # 기본 메타데이터 생성
+    base_metadata = {
+        'ai_generated': True,
+        'generation_timestamp': datetime.now().isoformat(),
+        'generator_version': 'v2.0',
+        'original_prompt': request,
+        'difficulty_level': difficulty_val,
+        'estimated_time': q.get('estimated_time', 300),  # 기본 5분
+        'learning_objectives': q.get('learning_objectives', [])
+    }
+
+    # 문제 유형별 추가 데이터 처리
+    question_data = {}
+    enhanced_metadata = dict(base_metadata)
+
+    if qtype == 'multiple_choice':
+        question_data = {
+            'type': 'multiple_choice',
+            'question': q.get('question', ''),
+            'options': q.get('options', q.get('choices', [])),
+            'correct_answer': correct_answer,
+            'explanation': q.get('explanation', ''),
+            'distractor_analysis': q.get('distractor_analysis', {})
+        }
+        enhanced_metadata.update({
+            'question_format': 'multiple_choice',
+            'option_count': len(question_data.get('options', [])),
+            'has_explanation': bool(q.get('explanation'))
+        })
+
+    elif qtype == 'short_answer':
+        question_data = {
+            'type': 'short_answer',
+            'question': q.get('question', ''),
+            'expected_keywords': q.get('expected_keywords', []),
+            'sample_answer': q.get('sample_answer', ''),
+            'scoring_criteria': q.get('scoring_criteria', {}),
+            'min_length': q.get('min_length', 50),
+            'max_length': q.get('max_length', 200)
+        }
+        enhanced_metadata.update({
+            'question_format': 'short_answer',
+            'keyword_count': len(question_data.get('expected_keywords', [])),
+            'min_length': q.get('min_length', 50),
+            'max_length': q.get('max_length', 200)
+        })
+
+    elif qtype == 'code_completion':
+        question_data = {
+            'type': 'code_completion',
+            'question': q.get('question', ''),
+            'code_template': q.get('code_template', ''),
+            'blanks': q.get('blanks', []),
+            'blank_hints': q.get('blank_hints', []),
+            'test_cases': q.get('test_cases', [])
+        }
+        enhanced_metadata.update({
+            'question_format': 'code_completion',
+            'blank_count': len(question_data.get('blanks', [])),
+            'test_case_count': len(question_data.get('test_cases', []))
+        })
+
+    elif qtype == 'debug_code':
+        question_data = {
+            'type': 'debug_code',
+            'question': q.get('question', ''),
+            'buggy_code': q.get('buggy_code', ''),
+            'errors': q.get('errors', []),
+            'corrected_code': q.get('corrected_code', ''),
+            'bug_types': q.get('bug_types', [])
+        }
+        enhanced_metadata.update({
+            'question_format': 'debug_code',
+            'error_count': len(question_data.get('errors', [])),
+            'bug_types': question_data.get('bug_types', [])
+        })
+
+    elif qtype == 'true_false':
+        question_data = {
+            'type': 'true_false',
+            'statement': q.get('statement', ''),
+            'correct_answer': q.get('correct_answer', False),
+            'explanation': q.get('explanation', ''),
+            'common_misconception': q.get('common_misconception', '')
+        }
+        enhanced_metadata.update({
+            'question_format': 'true_false',
+            'has_misconception': bool(q.get('common_misconception'))
+        })
+
+    else:
+        # 기본 fill_in_the_blank 형식
+        question_data = {
+            'type': 'fill_in_the_blank',
+            'template': code_snippet,
+            'answer': correct_answer
+        }
+        enhanced_metadata['question_format'] = 'fill_in_the_blank'
+
+    # DB 레코드 생성
+    created_by = f"ai:{current_user.id}" if hasattr(current_user, 'id') else 'ai'
+
+    return Question(
+        subject=subject_val,
+        topic=topic_val,
+        question_type=qtype,
+        code_snippet=code_snippet,
+        correct_answer=str(correct_answer),
+        difficulty=difficulty_val,
+        rubric=q.get('rubric') or q.get('explanation') or None,
+        created_by=created_by,
+        is_active=True,
+        question_data=question_data,  # 새로운 JSONB 필드
+        question_metadata=enhanced_metadata,  # 새로운 JSONB 필드
+        ai_generated=True  # 새로운 boolean 필드
+    )

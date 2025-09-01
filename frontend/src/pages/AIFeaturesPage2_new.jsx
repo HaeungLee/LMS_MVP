@@ -18,7 +18,6 @@ import {
 import apiClient from '../services/apiClient';
 import AIAnalysisDashboard from '../components/ai/AIAnalysisDashboard';
 import AdaptiveDifficultyWidget from '../components/ai/AdaptiveDifficultyWidget';
-import AIMentorChatImproved from '../components/ai/AIMentorChatImproved';
 
 // --- Mock Components ---
 const Card = ({ children, className = '' }) => (
@@ -57,7 +56,28 @@ const Badge = ({ children, className = '' }) => (
   </span>
 );
 
-// AIMentorChatImproved 컴포넌트는 상단에서 import됨
+// Simple placeholder for AIMentorChatImproved
+const AIMentorChatImproved = ({ userId }) => (
+  <Card className="h-full">
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <MessageCircle className="w-5 h-5" />
+        AI 멘토링 (준비 중)
+      </CardTitle>
+      <CardDescription>
+        새로운 AI 멘토링 기능이 곧 제공될 예정입니다.
+      </CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div className="text-center py-8">
+        <Brain className="w-12 h-12 mx-auto mb-4 text-blue-500" />
+        <p className="text-gray-600">
+          AI 멘토와의 대화 기능을 통해 실시간 학습 지원을 받으세요.
+        </p>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 const AIFeaturesPage = () => {
   const [activeFeatureId, setActiveFeatureId] = useState('analysis');

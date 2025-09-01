@@ -39,11 +39,14 @@ class DifficultyRequest(BaseModel):
 
 class MentorSessionRequest(BaseModel):
     initial_question: Optional[str] = None
+    text_style: str = "default"
+    line_height: str = "comfortable"
 
 class MentorMessageRequest(BaseModel):
-    session_id: str
     message: str
     conversation_mode: str = "help_seeking"
+    text_style: str = "default"
+    line_height: str = "comfortable"
 
 class LearningPathRequest(BaseModel):
     goal_type: str
@@ -241,77 +244,136 @@ async def start_mentoring_session(
     db: Session = Depends(get_db)
 ):
     """멘토링 세션 시작"""
-    
+
     try:
-        mentoring_system = get_ai_mentoring_system(db)
-        
-        session = await mentoring_system.start_mentoring_session(
-            user_id=user_id,
-            initial_question=request.initial_question
-        )
-        
-        # 인사말 추출
-        greeting = ""
-        if session.conversation_history:
-            greeting = session.conversation_history[0].get('content', '')
-        
-        return {
-            "success": True,
-            "session": {
-                "session_id": session.session_id,
-                "mentor_personality": session.mentor_personality.value,
-                "session_goals": session.session_goals,
-                "greeting": greeting
-            },
-            "started_at": session.start_time.isoformat()
-        }
-        
+        # 실제 AI 멘토링 시스템 사용 (OpenRouter API 연동)
+        try:
+            mentoring_system = get_ai_mentoring_system(db)
+
+            session = await mentoring_system.start_mentoring_session(
+                user_id=user_id,
+                initial_question=request.initial_question
+            )
+
+            # 인사말 추출
+            greeting = ""
+            if session.conversation_history:
+                greeting = session.conversation_history[0].get('content', '')
+
+            return {
+                "success": True,
+                "session": {
+                    "id": session.session_id,
+                    "session_id": session.session_id,
+                    "user_id": user_id,
+                    "user_name": f"학습자 {user_id}",
+                    "mentor_personality": session.mentor_personality.value if hasattr(session, 'mentor_personality') else "friendly",
+                    "session_goals": session.session_goals if hasattr(session, 'session_goals') else ["학습 지원"],
+                    "greeting": greeting,
+                    "suggested_topics": ["프로그래밍 기초", "알고리즘", "데이터 구조"]
+                },
+                "started_at": session.start_time.isoformat()
+            }
+        except Exception as ai_error:
+            # OpenRouter API 실패 시 폴백 - 기본 더미 응답
+            logger.warning(f"AI 멘토링 시스템 실패, 폴백 모드 사용: {ai_error}")
+            import uuid
+            session_id = str(uuid.uuid4())
+
+            return {
+                "success": True,
+                "session": {
+                    "id": session_id,
+                    "session_id": session_id,
+                    "user_id": user_id,
+                    "user_name": f"학습자 {user_id}",
+                    "mentor_personality": "friendly",
+                    "session_goals": ["학습 지원", "프로그래밍 실력 향상"],
+                    "greeting": "안녕하세요! AI 학습 멘토입니다. 무엇을 도와드릴까요? (현재 오프라인 모드)",
+                    "suggested_topics": ["프로그래밍 기초", "알고리즘", "데이터 구조", "객체 지향 프로그래밍"]
+                },
+                "started_at": datetime.utcnow().isoformat(),
+                "fallback_mode": True
+            }
+
     except Exception as e:
         logger.error(f"멘토링 세션 시작 실패 user {user_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"멘토링 세션 시작 실패: {str(e)}")
 
-@router.post("/mentoring/continue", response_model=Dict[str, Any])
+@router.post("/mentoring/chat/{session_id}", response_model=Dict[str, Any])
 async def continue_mentoring_conversation(
+    session_id: str,
     request: MentorMessageRequest = Body(...),
     db: Session = Depends(get_db)
 ):
     """멘토링 대화 계속하기"""
-    
+
     try:
-        mentoring_system = get_ai_mentoring_system(db)
-        
-        # ConversationMode 변환
-        mode_mapping = {
-            "help_seeking": ConversationMode.HELP_SEEKING,
-            "motivation": ConversationMode.MOTIVATION,
-            "explanation": ConversationMode.EXPLANATION,
-            "guidance": ConversationMode.GUIDANCE,
-            "reflection": ConversationMode.REFLECTION
-        }
-        
-        conversation_mode = mode_mapping.get(request.conversation_mode, ConversationMode.HELP_SEEKING)
-        
-        response = await mentoring_system.continue_conversation(
-            session_id=request.session_id,
-            user_message=request.message,
-            conversation_mode=conversation_mode
-        )
-        
-        return {
-            "success": True,
-            "mentor_response": {
-                "content": response.content,
-                "tone": response.tone,
-                "suggestions": response.suggestions,
-                "follow_up_questions": response.follow_up_questions,
-                "resources": response.resources,
-                "confidence": response.confidence
-            },
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        
+        # 실제 AI 멘토링 시스템 사용 (OpenRouter API 연동)
+        try:
+            mentoring_system = get_ai_mentoring_system(db)
+
+            # ConversationMode 변환
+            mode_mapping = {
+                "help_seeking": ConversationMode.HELP_SEEKING,
+                "motivation": ConversationMode.MOTIVATION,
+                "explanation": ConversationMode.EXPLANATION,
+                "guidance": ConversationMode.GUIDANCE,
+                "reflection": ConversationMode.REFLECTION
+            }
+
+            conversation_mode = mode_mapping.get(request.conversation_mode, ConversationMode.HELP_SEEKING)
+
+            response = await mentoring_system.continue_conversation(
+                session_id=session_id,
+                user_message=request.message,
+                conversation_mode=conversation_mode
+            )
+
+            return {
+                "success": True,
+                "response": response.content,
+                "suggestions": response.suggestions if hasattr(response, 'suggestions') else [],
+                "follow_up_questions": response.follow_up_questions if hasattr(response, 'follow_up_questions') else [],
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        except Exception as ai_error:
+            # OpenRouter API 실패 시 폴백 - 기본 응답 생성
+            logger.warning(f"AI 멘토링 시스템 실패, 폴백 모드 사용: {ai_error}")
+            
+            # 간단한 응답 생성 로직 (사용자 메시지에 기반한 응답)
+            user_message = request.message.lower()
+
+            if "파이썬" in user_message or "python" in user_message:
+                response_text = "파이썬은 초보자에게 아주 좋은 프로그래밍 언어입니다! 변수, 조건문, 반복문부터 시작해보는 건 어떨까요? (현재 오프라인 모드)"
+                suggestions = ["변수와 데이터 타입", "if문 사용법", "for 반복문"]
+            elif "알고리즘" in user_message:
+                response_text = "알고리즘은 문제 해결의 핵심입니다. 정렬, 검색부터 시작해서 점진적으로 어려운 문제에 도전해보세요. (현재 오프라인 모드)"
+                suggestions = ["버블 정렬", "이진 검색", "재귀 알고리즘"]
+            elif "자료구조" in user_message:
+                response_text = "자료구조는 데이터를 효율적으로 다루는 방법입니다. 배열, 리스트, 스택, 큐부터 공부해보는 걸 추천합니다. (현재 오프라인 모드)"
+                suggestions = ["배열과 리스트", "스택과 큐", "연결 리스트"]
+            else:
+                response_text = "좋은 질문이네요! 구체적인 주제나 어려움을 말씀해주시면 더 자세히 도와드리겠습니다. (현재 오프라인 모드)"
+                suggestions = ["프로그래밍 기초", "알고리즘 문제", "코딩 테스트 준비"]
+
+            follow_up_questions = [
+                "어떤 부분이 가장 어려우신가요?",
+                "어떤 목표를 가지고 계신가요?",
+                "어떤 프로그래밍 언어를 선호하시나요?"
+            ]
+
+            return {
+                "success": True,
+                "response": response_text,
+                "suggestions": suggestions,
+                "follow_up_questions": follow_up_questions,
+                "timestamp": datetime.utcnow().isoformat(),
+                "fallback_mode": True
+            }
+
     except Exception as e:
-        logger.error(f"멘토링 대화 실패 session {request.session_id}: {str(e)}")
+        logger.error(f"멘토링 대화 실패 session {session_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"멘토링 대화 실패: {str(e)}")
 
 @router.get("/mentoring/daily-motivation/{user_id}", response_model=Dict[str, Any])
