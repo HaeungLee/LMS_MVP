@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import MonacoCodeEditor from './MonacoCodeEditor';
 import { 
   Play, 
   Square, 
@@ -220,22 +221,21 @@ const CodeExecutionLayout = ({
 
         {/* 코드 에디터 영역 */}
         <div className="flex-1 p-4">
-          <Card className="h-full">
-            <CardHeader className="py-3">
-              <CardTitle className="text-sm">코드 작성</CardTitle>
-            </CardHeader>
-            <CardContent className="h-full p-0">
-              <textarea
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder={`${selectedLanguage === 'python' ? '# 여기에 Python 코드를 작성하세요' : 
-                             selectedLanguage === 'javascript' ? '// 여기에 JavaScript 코드를 작성하세요' :
-                             '-- 여기에 SQL 쿼리를 작성하세요'}`}
-                className="w-full h-full p-4 font-mono text-sm border-0 resize-none focus:outline-none"
-                style={{ minHeight: '300px' }}
-              />
-            </CardContent>
-          </Card>
+          <MonacoCodeEditor
+            value={code}
+            onChange={setCode}
+            language={selectedLanguage}
+            onRun={handleRunCode}
+            isRunning={isRunning}
+            height="calc(100vh - 300px)"
+            showRunButton={true}
+            placeholder={
+              selectedLanguage === 'python' ? '# 여기에 Python 코드를 작성하세요\n\ndef solution():\n    # 구현하세요\n    pass' : 
+              selectedLanguage === 'javascript' ? '// 여기에 JavaScript 코드를 작성하세요\n\nfunction solution() {\n    // 구현하세요\n    return null;\n}' :
+              '-- 여기에 SQL 쿼리를 작성하세요\n\nSELECT \n    -- 컬럼 선택\nFROM \n    -- 테이블 지정'
+            }
+            className="h-full"
+          />
         </div>
 
         {/* 실행 결과 영역 */}
