@@ -4,6 +4,7 @@ from .api.v1 import questions, submit, dashboard, student, auth, admin, results_
 from .core.config import settings
 from sqlalchemy import create_engine
 from .models.orm import Base
+from .models.code_problem import CodeProblem, CodeTestCase, CodeSubmission, ProblemTag, ProblemTagAssociation  # 새 모델 import
 import os
 from .middleware.request_id import RequestIDMiddleware
 from .middleware.rate_limit import RateLimitMiddleware

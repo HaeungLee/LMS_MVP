@@ -1,6 +1,7 @@
 import React from 'react';
 import './index.css';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import DashboardPage from './pages/DashboardPage';
 import QuizPage from './pages/QuizPage';
 import QuizModeSelectionPage from './pages/QuizModeSelectionPage';
@@ -9,7 +10,9 @@ import CodeProblemsPage from './pages/CodeProblemsPage';
 import ResultsPage from './pages/ResultsPage';
 import AuthLogin from './pages/AuthLogin';
 import AuthRegister from './pages/AuthRegister';
+import UnifiedRegistration from './components/registration/UnifiedRegistration';
 import AdminQuestions from './pages/AdminQuestions';
+import AdminCodeProblems from './pages/AdminCodeProblems';
 import TeacherDashboard from './pages/TeacherDashboard';
 import AIFeaturesPage2 from './pages/AIFeaturesPage2';
 import BetaDashboard from './pages/BetaDashboard';
@@ -99,11 +102,6 @@ function Navigation() {
               AI 기능
             </Link>
           </li>
-          <li>
-            <Link to="/beta-onboarding2" className={getLinkClass('/beta-onboarding2')}>
-              베타 온보딩
-            </Link>
-          </li>
           {(user && (user.role === 'teacher' || user.role === 'admin')) && (
             <>
               <li>
@@ -124,7 +122,10 @@ function Navigation() {
           {user ? (
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               {(user.role === 'teacher' || user.role === 'admin') && (
-                <Link to="/admin/questions" style={{ color:'#d1d5db', textDecoration:'none', fontSize:'13px', marginRight: 6 }}>문항 출제</Link>
+                <>
+                  <Link to="/admin/questions" style={{ color:'#d1d5db', textDecoration:'none', fontSize:'13px', marginRight: 6 }}>문항 출제</Link>
+                  <Link to="/admin/code-problems" style={{ color:'#d1d5db', textDecoration:'none', fontSize:'13px', marginRight: 6 }}>코딩 문제</Link>
+                </>
               )}
               <span style={{ color:'#d1d5db', fontSize:'13px', maxWidth:'120px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                 {user.display_name || user.email.split('@')[0]}
@@ -164,10 +165,33 @@ function App() {
             <Route path="/beta-dashboard" element={<Protected><BetaDashboard /></Protected>} />
             <Route path="/teacher/dashboard" element={<Protected><TeacherDashboard /></Protected>} />
             <Route path="/admin/questions" element={<Protected><AdminQuestions /></Protected>} />
+            <Route path="/admin/code-problems" element={<Protected><AdminCodeProblems /></Protected>} />
             <Route path="/login" element={<AuthLogin />} />
-            <Route path="/register" element={<AuthRegister />} />
+            <Route path="/register" element={<UnifiedRegistration />} />
           </Routes>
         </main>
+        
+        {/* Toast 알림 */}
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+            success: {
+              duration: 3000,
+              theme: {
+                primary: 'green',
+                secondary: 'black',
+              },
+            },
+            error: {
+              duration: 5000,
+            },
+          }}
+        />
       </div>
     </Router>
   );

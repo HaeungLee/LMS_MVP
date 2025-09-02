@@ -48,6 +48,12 @@ def after_cursor_execute(conn, cursor, statement, parameters, context, executema
 # 세션 로컬 클래스
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
+def get_database_url() -> str:
+    """데이터베이스 URL 반환"""
+    return DATABASE_URL
+
+
 # 데이터베이스 세션 의존성
 def get_db():
     db = SessionLocal()

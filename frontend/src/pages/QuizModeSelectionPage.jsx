@@ -145,7 +145,6 @@ const QuizModeSelectionPage = () => {
                     fontSize: '40px',
                     margin: '0 auto 20px'
                   }}>
-                    {/* 아이콘 제거됨 */}
                   </div>
                   <h3 style={{ 
                     fontSize: '20px', 
