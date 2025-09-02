@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { 
   SUBJECTS, 
-  SUBJECT_ICONS, 
   SUBJECT_COLORS, 
   SUBJECT_DESCRIPTIONS,
   SUBJECT_TOPICS,
@@ -25,7 +24,6 @@ import {
 
 const SubjectCard = ({ subjectKey, subjectData, onSelect, userProgress = {} }) => {
   const navigate = useNavigate();
-  const icon = SUBJECT_ICONS[subjectKey];
   const colors = SUBJECT_COLORS[subjectKey];
   const topics = SUBJECT_TOPICS[subjectKey] || {};
   const topicCount = Object.keys(topics).length;
@@ -51,7 +49,7 @@ const SubjectCard = ({ subjectKey, subjectData, onSelect, userProgress = {} }) =
               className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
               style={{ backgroundColor: colors.background }}
             >
-              {icon}
+              {/* 아이콘 제거됨 */}
             </div>
             <div>
               <CardTitle className="text-lg">{SUBJECTS[subjectKey]}</CardTitle>
@@ -134,7 +132,6 @@ const SubjectDetailModal = ({ subjectKey, onClose }) => {
   const subjectName = SUBJECTS[subjectKey];
   const topics = SUBJECT_TOPICS[subjectKey] || {};
   const colors = SUBJECT_COLORS[subjectKey];
-  const icon = SUBJECT_ICONS[subjectKey];
   const learningPath = RECOMMENDED_LEARNING_PATH[subjectKey] || [];
   
   const handleStartLearning = () => {
@@ -152,7 +149,7 @@ const SubjectDetailModal = ({ subjectKey, onClose }) => {
                 className="w-16 h-16 rounded-xl flex items-center justify-center text-3xl"
                 style={{ backgroundColor: colors.background }}
               >
-                {icon}
+                {/* 아이콘 제거됨 */}
               </div>
               <div>
                 <h2 className="text-2xl font-bold">{subjectName}</h2>

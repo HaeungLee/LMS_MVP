@@ -25,8 +25,16 @@ class Settings(BaseSettings):
         "http://localhost:5174",  # 새로운 포트 추가
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174"   # 새로운 포트 추가
+        "http://127.0.0.1:5174",   # 새로운 포트 추가
+        "http://192.168.0.104:5174",
+        "http://172.25.64.1:5174",
+        "http://172.31.80.1:5174",
+        "https://localhost:5174",
+        "https://127.0.0.1:5174"
     ]
+    
+    # 개발 환경에서는 더 관대한 CORS 설정
+    development_mode: bool = True
     
     # 데이터베이스 경로 (기존 JSON 파일)
     database_path: str = "data/db.json"

@@ -15,28 +15,67 @@ app = FastAPI(
     description="AI 기반 코딩 학습 플랫폼 API",
     version="1.0.0"
 )
-# CORS 미들웨어 추가 - 등록은 다른 커스텀 미들웨어보다 먼저 해야 함
+
+# CORS 미들웨어 추가 - 가장 먼저 등록 (개발환경용 강화 설정)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "http://localhost:5173",
+        "http://localhost:5173", 
         "http://localhost:5174",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",
-        "http://192.168.0.104:5174",  # 네트워크 인터페이스 추가
-        "http://172.25.64.1:5174",
-        "http://172.31.80.1:5174"
+        "http://192.168.0.104:5174",
+        "http://172.25.64.1:5174", 
+        "http://172.31.80.1:5174",
+        "https://localhost:5174",
+        "https://127.0.0.1:5174"
     ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
-    max_age=86400,  # 24시간
+    max_age=86400
 )
+
 # Request ID
 app.add_middleware(RequestIDMiddleware)
+
+# 추가 CORS 헤더 처리를 위한 커스텀 미들웨어
+from fastapi import Request, Response
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class CustomCORSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        origin = request.headers.get('origin')
+        
+        # OPTIONS 요청 처리
+        if request.method == "OPTIONS":
+            response = Response()
+            if origin:
+                response.headers["Access-Control-Allow-Origin"] = origin
+            else:
+                response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Max-Age"] = "86400"
+            return response
+        
+        response = await call_next(request)
+        
+        # 모든 응답에 CORS 헤더 추가
+        if origin:
+            response.headers["Access-Control-Allow-Origin"] = origin
+        else:
+            response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Expose-Headers"] = "*"
+        
+        return response
+
+app.add_middleware(CustomCORSMiddleware)
 
 # Rate limit (basic quotas)
 app.add_middleware(
@@ -97,6 +136,42 @@ def read_root():
         }
     }
 
-@app.get("/health", tags=["health"])
+@app.get("/api/v1", tags=["api"])
+@app.get("/api/v1/", tags=["api"])
+@app.post("/api/v1", tags=["api"])
+@app.post("/api/v1/", tags=["api"])
+def api_root():
+    return {
+        "message": "LMS MVP API v1",
+        "version": "1.0.0",
+        "available_endpoints": [
+            "/api/v1/questions/{subject}",
+            "/api/v1/submit",
+            "/api/v1/feedback",
+            "/api/v1/dashboard/stats",
+            "/api/v1/auth/me",
+            "/api/v1/health"
+        ]
+    }
+
+@app.get("/api/status", tags=["health"])
+@app.get("/status", tags=["health"])
 def health_check():
     return {"status": "healthy", "service": "LMS MVP Backend"}
+
+# OPTIONS 요청 처리를 위한 글로벌 핸들러
+from fastapi import Request, Response
+
+@app.options("/{path:path}")
+async def options_handler(path: str, request: Request):
+    """모든 경로에 대한 OPTIONS 요청 처리"""
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": request.headers.get("Origin", "*"),
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD",
+            "Access-Control-Allow-Headers": "Accept, Accept-Language, Content-Language, Content-Type, Authorization, X-Requested-With, X-CSRF-Token, X-Request-ID, Origin, Referer, User-Agent",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Max-Age": "86400"
+        }
+    )

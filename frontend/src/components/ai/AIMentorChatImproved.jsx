@@ -64,11 +64,11 @@ const Badge = ({ children, variant = 'default', className = '' }) => (
   </span>
 );
 
-const ScrollArea = ({ children, className = '', ...props }) => (
-  <div className={`overflow-auto ${className}`} {...props}>
+const ScrollArea = React.forwardRef(({ children, className = '', ...props }, ref) => (
+  <div ref={ref} className={`overflow-auto ${className}`} {...props}>
     {children}
   </div>
-);
+));
 
 const Select = ({ children, value, onValueChange }) => (
   <div className="relative">
@@ -103,7 +103,7 @@ const SelectItem = ({ children, value, onValueChange }) => (
   </div>
 );
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000') + '/api/v1';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '') + '/api/v1';
 
 const AIMentorChatImproved = ({ userId }) => {
   const [session, setSession] = useState(null);
@@ -167,25 +167,31 @@ const AIMentorChatImproved = ({ userId }) => {
   const applyTextStyle = (content, style) => {
     let formattedContent = content;
     
+    // 연속된 줄바꿈을 하나로 줄임 (\n\n -> \n)
+    formattedContent = formattedContent.replace(/\n\n+/g, '\n');
+    
+    // 줄바꿈 처리
+    formattedContent = formattedContent.replace(/\n/g, '<br>');
+    
     // Bold체 마크다운 적용 (** ** 형태)
     formattedContent = formattedContent.replace(
       /\*\*(.*?)\*\*/g, 
-      '<strong class="font-semibold text-gray-900 dark:text-white">$1</strong>'
+      '<strong class="font-bold text-gray-900 dark:text-white">$1</strong>'
     );
     
     // 콜론으로 끝나는 라벨들 Bold 처리
     formattedContent = formattedContent.replace(
       /^([^:]+):/gm, 
-      '<strong class="font-semibold text-gray-900 dark:text-white">$1:</strong>'
+      '<strong class="font-bold text-gray-900 dark:text-white">$1:</strong>'
     );
     
-    // 번호 리스트 Bold 처리
+    // 번호 리스트 Bold 처리 (줄바꿈 포함)
     formattedContent = formattedContent.replace(
-      /^(\d+\.\s)/gm, 
-      '<strong class="font-semibold text-blue-600">$1</strong>'
+      /(\d+\.\s)/g, 
+      '<br><strong class="font-bold text-blue-600">$1</strong>'
     );
     
-    // 중요한 키워드들 자동 Bold 처리
+    // 중요한 키워드들 Bold 처리 (빨간색 대신 Bold체)
     const importantKeywords = [
       '중요', '핵심', '주의', '기억', '꼭', '반드시', '필수',
       '정답', '오답', '실수', '주의사항', '팁', 'TIP'
@@ -195,7 +201,7 @@ const AIMentorChatImproved = ({ userId }) => {
       const regex = new RegExp(`(${keyword})`, 'gi');
       formattedContent = formattedContent.replace(
         regex, 
-        '<strong class="font-semibold text-red-600 dark:text-red-400">$1</strong>'
+        '<strong class="font-bold text-gray-900 dark:text-white">$1</strong>'
       );
     });
 
@@ -260,7 +266,7 @@ const AIMentorChatImproved = ({ userId }) => {
         id: Date.now(),
         type: 'mentor',
         content: applyTextStyle(
-          `**안녕하세요!** ${data.session.user_name || '학습자'}님. AI 학습 멘토입니다. 무엇을 도와드릴까요?\n\n**주요 기능:**\n• 프로그래밍 질문 답변\n• 학습 방향 가이드\n• 코드 리뷰 및 개선 제안`,
+          `**안녕하세요!** ${data.session.user_name || '학습자'}님. AI 학습 멘토입니다. 무엇을 도와드릴까요?\n**주요 기능:**\n• 프로그래밍 질문 답변\n• 학습 방향 가이드\n• 코드 리뷰 및 개선 제안`,
           textStyle
         ),
         timestamp: new Date()
@@ -374,7 +380,7 @@ const AIMentorChatImproved = ({ userId }) => {
         </div>
       </div>
 
-      {/* 설정 패널 */}
+      {/* 설정 패널 - 간소화 */}
       {showSettings && (
         <Card>
           <CardHeader>
@@ -387,21 +393,17 @@ const AIMentorChatImproved = ({ userId }) => {
                 <Type className="w-4 h-4 mr-1" />
                 텍스트 스타일
               </label>
-              <Select value={textStyle} onValueChange={setTextStyle}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {textStyleOptions.map((style) => (
-                    <SelectItem key={style.id} value={style.id}>
-                      <div>
-                        <div className="font-medium">{style.label}</div>
-                        <div className="text-xs text-gray-500">{style.description}</div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select 
+                value={textStyle} 
+                onChange={(e) => setTextStyle(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              >
+                {textStyleOptions.map((style) => (
+                  <option key={style.id} value={style.id}>
+                    {style.label} - {style.description}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* 행간 설정 */}
@@ -410,71 +412,21 @@ const AIMentorChatImproved = ({ userId }) => {
                 <Eye className="w-4 h-4 mr-1" />
                 행간 설정
               </label>
-              <Select value={lineHeight} onValueChange={setLineHeight}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {lineHeightOptions.map((option) => (
-                    <SelectItem key={option.id} value={option.id}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* 표시 옵션 */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">표시 옵션</label>
-              <div className="flex flex-col space-y-2">
-                <label className="flex items-center space-x-2">
-                  <input 
-                    type="checkbox" 
-                    checked={showSuggestions}
-                    onChange={(e) => setShowSuggestions(e.target.checked)}
-                  />
-                  <span className="text-sm">💡 제안사항 표시</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <input 
-                    type="checkbox" 
-                    checked={showFollowUps}
-                    onChange={(e) => setShowFollowUps(e.target.checked)}
-                  />
-                  <span className="text-sm">❓ 후속 질문 표시</span>
-                </label>
-              </div>
+              <select 
+                value={lineHeight} 
+                onChange={(e) => setLineHeight(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              >
+                {lineHeightOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </CardContent>
         </Card>
       )}
-
-      {/* 대화 모드 선택 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">대화 모드</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {conversationModes.map((mode) => {
-              const Icon = mode.icon;
-              return (
-                <Button
-                  key={mode.id}
-                  variant={conversationMode === mode.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setConversationMode(mode.id)}
-                  className="flex items-center space-x-1"
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{mode.label}</span>
-                </Button>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* 채팅 영역 - 확장된 크기 */}
       <Card className="h-[600px]">

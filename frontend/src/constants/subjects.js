@@ -47,12 +47,7 @@ export const SUBJECT_TOPICS = {
   }
 };
 
-// 과목별 아이콘
-export const SUBJECT_ICONS = {
-  python_basics: '🐍',
-  data_analysis: '📊',
-  web_crawling: '🕷️'
-};
+// 과목별 아이콘 (제거됨 - 아이콘 없이 사용)
 
 // 과목별 색상 테마
 export const SUBJECT_COLORS = {
@@ -155,7 +150,7 @@ export const getTopicName = (subjectKey, topicKey) => {
 };
 
 export const getSubjectIcon = (subjectKey) => {
-  return SUBJECT_ICONS[subjectKey] || '📚';
+  return ''; // 아이콘 제거
 };
 
 export const getSubjectColor = (subjectKey) => {

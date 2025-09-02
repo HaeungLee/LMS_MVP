@@ -229,7 +229,7 @@ const AIQuestionGenerator = () => {
           </div>
           {lastGenerationSummary && (
             <div style={styles.generationSummary}>
-              <h4 style={styles.summaryTitle}>📊 생성 요약</h4>
+              <h4 style={styles.summaryTitle}>생성 요약</h4>
               <div style={styles.summaryGrid}>
                 <div style={styles.summaryItem}>
                   <span style={styles.summaryLabel}>주제:</span>

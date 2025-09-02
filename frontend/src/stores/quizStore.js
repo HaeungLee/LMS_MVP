@@ -165,3 +165,4 @@ const useQuizStore = create(
 );
 
 export default useQuizStore;
+export { useQuizStore };

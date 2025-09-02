@@ -1,7 +1,7 @@
 // Resolve VITE_API_BASE_URL and normalize common malformed values (e.g. ':8000')
-const rawBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const rawBase = import.meta.env.VITE_API_BASE_URL || '';
 function normalizeBase(url) {
-  if (!url) return 'http://localhost:8000';
+  if (!url) return ''; // 개발환경에서는 프록시 사용을 위해 빈 문자열
   // If value is like ':8000' -> prepend localhost
   if (/^:\d+$/.test(url)) return `http://localhost${url}`;
   // If value is like 'localhost:8000' -> add scheme
@@ -22,8 +22,17 @@ async function fetchWithTimeout(resource, options = {}) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    // CSRF: 더블 서브밋 - 쿠키의 csrf_token을 헤더로 동봉 (가능하면)
+    // CORS 요청을 위한 기본 헤더 설정
     const headers = new Headers(rest.headers || {});
+    
+    // 기본 CORS 헤더 설정
+    if (!headers.has('Content-Type') && rest.method && ['POST', 'PUT', 'PATCH'].includes(rest.method.toUpperCase())) {
+      headers.set('Content-Type', 'application/json');
+    }
+    
+    // Origin 헤더는 브라우저가 자동으로 설정하므로 명시적으로 설정하지 않음
+    
+    // CSRF: 더블 서브밋 - 쿠키의 csrf_token을 헤더로 동봉 (가능하면)
     try {
       const method = (rest.method || 'GET').toUpperCase();
       const needsCsrf = !['GET', 'HEAD', 'OPTIONS'].includes(method);
@@ -32,19 +41,36 @@ async function fetchWithTimeout(resource, options = {}) {
         if (csrf) headers.set('x-csrf-token', csrf);
       }
     } catch {}
-    const res = await fetch(resource, { ...rest, headers, signal: controller.signal, credentials: rest.credentials });
+    
+    // credentials 설정을 명시적으로 처리
+    const fetchOptions = { 
+      ...rest, 
+      headers, 
+      signal: controller.signal,
+      credentials: rest.credentials || 'include', // 기본적으로 credentials 포함
+      mode: 'cors' // CORS 모드 명시적 설정
+    };
+    
+    const res = await fetch(resource, fetchOptions);
     if (res.status !== 401) return res;
     // 401 처리: auth 엔드포인트가 아니고, refresh 쿠키가 있으면 1회 자동 갱신 후 재시도
     const isAuthPath = typeof resource === 'string' && (/\/auth\//.test(resource));
     if (!isAuthPath) {
       try {
-        const hasRes = await fetch(`${API_BASE_URL}/auth/has-refresh`, { credentials: 'include' });
+        const hasRes = await fetch(`${API_BASE_URL}/auth/has-refresh`, { 
+          credentials: 'include',
+          mode: 'cors'
+        });
         if (hasRes.ok) {
           const { has } = await hasRes.json();
           if (has) {
-            const r = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST', credentials: 'include' });
+            const r = await fetch(`${API_BASE_URL}/auth/refresh`, { 
+              method: 'POST', 
+              credentials: 'include',
+              mode: 'cors'
+            });
             if (r.ok) {
-              return await fetch(resource, { ...rest, headers, signal: controller.signal, credentials: rest.credentials });
+              return await fetch(resource, fetchOptions);
             }
           }
         }

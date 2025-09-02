@@ -26,11 +26,11 @@ class RedisService:
                 port=getattr(settings, 'redis_port', 6379),
                 db=0,
                 decode_responses=True,
-                socket_timeout=5,
-                socket_connect_timeout=5,
-                retry_on_timeout=True
+                socket_timeout=1,  # 빠른 타임아웃
+                socket_connect_timeout=1,  # 빠른 연결 타임아웃
+                retry_on_timeout=False  # 재시도 비활성화
             )
-            # 연결 테스트
+            # 연결 테스트 (더 안전하게)
             self.redis_client.ping()
             logger.info("Redis 연결 성공")
         except Exception as e:

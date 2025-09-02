@@ -142,7 +142,7 @@ const DashboardPage = () => {
             <select value={subject} onChange={(e) => setSubject(e.target.value)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #d1d5db' }}>
               {Object.entries(SUBJECTS).map(([key, name]) => (
                 <option key={key} value={key}>
-                  {getSubjectIcon(key)} {name}
+                  {name}
                 </option>
               ))}
             </select>

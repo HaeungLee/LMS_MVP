@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   SUBJECTS, 
-  SUBJECT_ICONS, 
   SUBJECT_COLORS, 
   SUBJECT_DESCRIPTIONS,
   getSubjectName,
@@ -109,7 +108,6 @@ const QuizModeSelectionPage = () => {
           }}>
             {Object.entries(SUBJECTS).map(([subjectKey, subjectName]) => {
               const colors = SUBJECT_COLORS[subjectKey];
-              const icon = SUBJECT_ICONS[subjectKey];
               
               return (
                 <div
@@ -147,7 +145,7 @@ const QuizModeSelectionPage = () => {
                     fontSize: '40px',
                     margin: '0 auto 20px'
                   }}>
-                    {icon}
+                    {/* 아이콘 제거됨 */}
                   </div>
                   <h3 style={{ 
                     fontSize: '20px', 
