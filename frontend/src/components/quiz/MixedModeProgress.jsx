@@ -1,11 +1,8 @@
 import React from 'react';
 import { 
-  getSubjectName, 
-  getSubjectIcon, 
-  getSubjectColor 
-} from '../../constants/subjects';
-
-const MixedModeProgress = ({ 
+  getSubjectName,
+  getSubjectColor
+} from '../../constants/subjects';const MixedModeProgress = ({ 
   subjectStats, 
   currentSubjects = [], 
   className = '' 
@@ -57,7 +54,6 @@ const MixedModeProgress = ({
       }}>
         {Object.entries(subjectStats).map(([subject, stats]) => {
           const colors = getSubjectColor(subject);
-          const icon = getSubjectIcon(subject);
           const isActive = currentSubjects.includes(subject);
           
           return (
@@ -77,9 +73,6 @@ const MixedModeProgress = ({
                 alignItems: 'center',
                 marginBottom: '8px'
               }}>
-                <span style={{ fontSize: '18px', marginRight: '6px' }}>
-                  {icon}
-                </span>
                 <span style={{
                   fontSize: '14px',
                   fontWeight: '600',

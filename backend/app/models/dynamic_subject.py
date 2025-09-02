@@ -110,31 +110,31 @@ class DynamicSubjectPrerequisite(DynamicSubjectBase):
     prerequisite_subject = relationship("DynamicSubject", foreign_keys=[prerequisite_subject_id])
 
 
-class DynamicUserSubjectProgress(DynamicSubjectBase):
-    """사용자별 동적 과목 진도 테이블"""
-    __tablename__ = "dynamic_user_subject_progress"
+# class DynamicUserSubjectProgress(DynamicSubjectBase):
+#     """사용자별 동적 과목 진도 테이블"""
+#     __tablename__ = "user_progress_dynamic"  # 삭제된 테이블과 이름 구분
     
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, nullable=False, index=True)
-    subject_id = Column(Integer, ForeignKey("dynamic_subjects.id"), nullable=False)
+#     id = Column(Integer, primary_key=True, index=True)
+#     user_id = Column(Integer, nullable=False, index=True)
+#     subject_id = Column(Integer, ForeignKey("dynamic_subjects.id"), nullable=False)
     
-    # 진도 정보
-    current_topic_id = Column(Integer, ForeignKey("dynamic_subject_topics.id"), nullable=True)
-    completed_topics = Column(JSON, default=list)  # 완료한 토픽 ID 리스트
-    progress_percentage = Column(Float, default=0.0)
+#     # 진도 정보
+#     current_topic_id = Column(Integer, ForeignKey("dynamic_subject_topics.id"), nullable=True)
+#     completed_topics = Column(JSON, default=list)  # 완료한 토픽 ID 리스트
+#     progress_percentage = Column(Float, default=0.0)
     
-    # 학습 통계
-    total_study_time = Column(Integer, default=0)  # 분 단위
-    problems_solved = Column(Integer, default=0)
-    problems_correct = Column(Integer, default=0)
-    current_streak = Column(Integer, default=0)
-    best_streak = Column(Integer, default=0)
+#     # 학습 통계
+#     total_study_time = Column(Integer, default=0)  # 분 단위
+#     problems_solved = Column(Integer, default=0)
+#     problems_correct = Column(Integer, default=0)
+#     current_streak = Column(Integer, default=0)
+#     best_streak = Column(Integer, default=0)
     
-    # 타임스탬프
-    started_at = Column(DateTime, default=datetime.utcnow)
-    last_studied_at = Column(DateTime, nullable=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+#     # 타임스탬프
+#     started_at = Column(DateTime, default=datetime.utcnow)
+#     last_studied_at = Column(DateTime, nullable=True)
+#     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # 관계
-    subject = relationship("DynamicSubject")
-    current_topic = relationship("DynamicSubjectTopic")
+#     # 관계
+#     subject = relationship("DynamicSubject")
+#     current_topic = relationship("DynamicSubjectTopic")

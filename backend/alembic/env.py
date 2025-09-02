@@ -21,7 +21,12 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.models.orm import Base
-target_metadata = Base.metadata
+from app.models.dynamic_subject import DynamicSubjectBase
+# 코딩 테스트 모델 import (같은 Base 사용)
+from app.models.code_problem import CodeProblem, CodeTestCase, CodeSubmission
+
+# 모든 모델의 메타데이터를 포함
+target_metadata = [Base.metadata, DynamicSubjectBase.metadata]
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

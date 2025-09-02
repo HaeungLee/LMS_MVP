@@ -7,7 +7,7 @@ import ChartAdapter from '../components/common/charts/ChartAdapter';
 import AILearningDashboard from '../components/dashboard/AILearningDashboard';
 import QuestionTypeGenerator from '../components/dashboard/QuestionTypeGenerator';
 import EnhancedFeedbackTester from '../components/dashboard/EnhancedFeedbackTester';
-import { SUBJECTS, getSubjectName, getSubjectIcon } from '../constants/subjects';
+import { SUBJECTS, getSubjectName } from '../constants/subjects';
 
 const DashboardPage = () => {
   const navigate = useNavigate();

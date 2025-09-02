@@ -5,7 +5,7 @@ import { getTeacherDashboardStats } from '../services/apiClient';
 import { listTeacherGroups, createTeacherGroup, addGroupMember } from '../services/teacherClient';
 import { fetchTaxonomyTopics } from '../services/taxonomyClient';
 import ChartAdapter from '../components/common/charts/ChartAdapter';
-import { SUBJECTS, getSubjectName, getSubjectIcon } from '../constants/subjects';
+import { SUBJECTS, getSubjectName } from '../constants/subjects';
 
 export default function TeacherDashboard() {
   const { user } = useAuthStore();
@@ -81,7 +81,7 @@ export default function TeacherDashboard() {
           <select value={subject} onChange={(e)=>setSubject(e.target.value)} style={{ padding:'6px 10px', border:'1px solid #d1d5db', borderRadius:6 }}>
             {Object.entries(SUBJECTS).map(([key, name]) => (
               <option key={key} value={key}>
-                {getSubjectIcon(key)} {name}
+                {name}
               </option>
             ))}
           </select>

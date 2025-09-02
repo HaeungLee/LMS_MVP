@@ -6,7 +6,7 @@ import QuestionRenderer from '../components/quiz/QuestionRenderer';
 import ProgressBar from '../components/quiz/ProgressBar';
 import FeedbackModal from '../components/feedback/FeedbackModal';
 import MixedModeProgress from '../components/quiz/MixedModeProgress';
-import { SUBJECTS, getSubjectName, getSubjectIcon } from '../constants/subjects';
+import { SUBJECTS, getSubjectName } from '../constants/subjects';
 
 function QuizPage() {
   const navigate = useNavigate();
@@ -387,11 +387,11 @@ function QuizPage() {
                 fontWeight: 'normal',
                 marginTop: '4px'
               }}>
-                {mixedSubjects.map(s => getSubjectIcon(s) + ' ' + getSubjectName(s)).join(' + ')}
+                {mixedSubjects.map(s => getSubjectName(s)).join(' + ')}
               </div>
             </>
           ) : (
-            `${getSubjectIcon(subject)} ${getSubjectName(subject)} 퀴즈`
+            `${getSubjectName(subject)} 퀴즈`
           )}
         </h1>
         <button

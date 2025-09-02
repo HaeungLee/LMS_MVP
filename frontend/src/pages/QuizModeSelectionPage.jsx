@@ -4,8 +4,7 @@ import {
   SUBJECTS, 
   SUBJECT_COLORS, 
   SUBJECT_DESCRIPTIONS,
-  getSubjectName,
-  getSubjectIcon
+  getSubjectName
 } from '../constants/subjects';
 
 const QuizModeSelectionPage = () => {
@@ -134,23 +133,12 @@ const QuizModeSelectionPage = () => {
                     e.currentTarget.style.borderColor = '#e5e7eb';
                   }}
                 >
-                  <div style={{
-                    width: '80px',
-                    height: '80px',
-                    borderRadius: '16px',
-                    backgroundColor: colors.background,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '40px',
-                    margin: '0 auto 20px'
-                  }}>
-                  </div>
                   <h3 style={{ 
                     fontSize: '20px', 
                     fontWeight: 'bold',
                     marginBottom: '12px',
-                    color: '#374151'
+                    color: '#374151',
+                    marginTop: '20px'
                   }}>
                     {subjectName}
                   </h3>
@@ -228,11 +216,6 @@ const QuizModeSelectionPage = () => {
                 e.currentTarget.style.borderColor = '#e5e7eb';
               }}
             >
-              <div style={{ marginBottom: '16px' }}>
-                <span style={{ fontSize: '24px', marginRight: '8px' }}>🐍</span>
-                <span style={{ fontSize: '20px', marginRight: '8px' }}>+</span>
-                <span style={{ fontSize: '24px' }}>🕷️</span>
-              </div>
               <h3 style={{ 
                 fontSize: '18px', 
                 fontWeight: 'bold',
@@ -272,7 +255,6 @@ const QuizModeSelectionPage = () => {
               textAlign: 'center',
               opacity: 0.7
             }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>🚧</div>
               <h3 style={{ 
                 fontSize: '18px', 
                 fontWeight: 'bold',
@@ -302,7 +284,7 @@ const QuizModeSelectionPage = () => {
         borderRadius: '12px'
       }}>
         <p style={{ color: '#6b7280', fontSize: '14px' }}>
-          💡 <strong>팁:</strong> 혼합 모드는 실제 업무와 같은 통합적 사고를 기를 수 있도록 설계되었습니다.<br/>
+          <strong>팁:</strong> 혼합 모드는 실제 업무와 같은 통합적 사고를 기를 수 있도록 설계되었습니다.<br/>
           각 과목을 개별로 학습한 후 혼합 모드로 실력을 검증해보세요!
         </p>
       </div>

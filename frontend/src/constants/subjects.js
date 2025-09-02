@@ -149,10 +149,6 @@ export const getTopicName = (subjectKey, topicKey) => {
   return SUBJECT_TOPICS[subjectKey]?.[topicKey] || topicKey;
 };
 
-export const getSubjectIcon = (subjectKey) => {
-  return ''; // 아이콘 제거
-};
-
 export const getSubjectColor = (subjectKey) => {
   return SUBJECT_COLORS[subjectKey] || SUBJECT_COLORS.python_basics;
 };
