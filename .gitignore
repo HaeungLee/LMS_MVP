@@ -98,6 +98,13 @@ test_*.py
 
 # Temporary files
 *.tmp
+
+# === Scripts ===
+# Migration scripts (one-time use)
+backend/scripts/migrate_*.py
+
+# Admin seed script (contains hardcoded passwords)
+backend/scripts/seed_admin.py
 *.temp
 
 # Docker

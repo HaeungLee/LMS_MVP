@@ -1,92 +1,46 @@
+# LMS MVP Backend - Complete Dependencies
+# Generated: 2025-09-02
+# Phase 8 동적 과목 관리 시스템 포함 최종 버전
+
+# ========================================
 # Core FastAPI 및 웹 프레임워크
+# ========================================
 fastapi==0.104.1
 uvicorn==0.24.0
 python-dotenv==1.0.0
 pydantic==2.11.7
+pydantic-core==2.33.2
 pydantic-settings==2.10.1
 starlette==0.27.0
 
-# 데이터베이스
+# ========================================
+# 데이터베이스 (PostgreSQL + SQLAlchemy)
+# ========================================
 sqlalchemy==2.0.23
 psycopg2-binary==2.9.9
 alembic==1.13.0
 
+# ========================================
 # 인증 및 보안
+# ========================================
 pyjwt==2.9.0
 bcrypt==4.1.3
 email-validator==2.2.0
 python-multipart==0.0.6
 
-# HTTP 클라이언트
+# ========================================
+# HTTP 클라이언트 및 네트워크
+# ========================================
 httpx==0.28.1
+requests==2.31.0
 aiohttp==3.12.15
 httpcore==1.0.9
+h11==0.16.0
+httptools==0.6.4
+websockets==15.0.1
+aiohappyeyeballs==2.6.1
 
-# 텍스트 처리
-rapidfuzz==3.5.2
-
-# Phase 3: 확장성 인프라
-redis==5.0.1
-celery==5.3.4
-flower==2.0.1
-psutil==7.0.0
-
-# Phase 4: AI 고도화
-openai==1.101.0
-anthropic==0.64.0
-
-# 과학 계산 및 데이터 분석
-numpy>=1.24,<2.3
-pandas==2.3.2
-scipy==1.16.1
-scikit-learn==1.7.1
-joblib==1.5.1
-threadpoolctl==3.6.0
-
-# 데이터 시각화
-matplotlib==3.10.5
-seaborn==0.13.2
-contourpy==1.3.3
-cycler==0.12.1
-fonttools==4.59.1
-kiwisolver==1.4.9
-packaging==25.0
-pillow==11.3.0
-pyparsing==3.2.3
-
-# Core 의존성
-annotated-types==0.7.0
-anyio==3.7.1
-certifi==2025.8.3
-click==8.2.1
-idna==3.10
-sniffio==1.3.1
-typing-extensions==4.14.1
-
-# 비동기 및 동시성
-greenlet==3.2.4
-async-timeout==5.0.1
-
-# Celery 관련
-amqp==5.3.1
-billiard==4.2.1
-kombu==5.5.4
-vine==5.1.0
-click-didyoumean==0.3.1
-click-plugins==1.1.1.2
-click-repl==0.3.0
-
-# 날짜 및 시간
-python-dateutil==2.9.0.post0
-pytz==2025.2
-tzdata==2025.2
-
-# 템플릿 및 마크업
-Mako==1.3.10
-MarkupSafe==3.0.2
-PyYAML==6.0.2
-
-# 네트워크 및 프로토콜
+# 네트워크 프로토콜
 aiosignal==1.4.0
 attrs==25.3.0
 distro==1.9.0
@@ -95,15 +49,98 @@ frozenlist==1.7.0
 multidict==6.6.4
 propcache==0.3.2
 yarl==1.20.1
-websockets==15.0.1
-h11==0.16.0
-httptools==0.6.4
 
+# ========================================
+# Phase 3: 확장성 인프라 (Redis + Celery)
+# ========================================
+redis==5.0.1
+celery==5.3.4
+flower==2.0.1
+psutil==7.0.0
+
+# Celery 의존성
+amqp==5.3.1
+billiard==4.2.1
+kombu==5.5.4
+vine==5.1.0
+click-didyoumean==0.3.1
+click-plugins==1.1.1.2
+click-repl==0.3.0
+
+# ========================================
+# Phase 4: AI 고도화 (OpenRouter + Anthropic)
+# ========================================
+openai==1.101.0
+anthropic==0.64.0
+
+# ========================================
+# 과학 계산 및 데이터 분석
+# ========================================
+numpy==2.3.2
+pandas==2.3.2
+scipy==1.16.1
+scikit-learn==1.7.1
+joblib==1.5.1
+threadpoolctl==3.6.0
+
+# ========================================
+# 데이터 시각화
+# ========================================
+matplotlib==3.10.5
+seaborn==0.13.2
+contourpy==1.3.3
+cycler==0.12.1
+fonttools==4.59.1
+kiwisolver==1.4.9
+pillow==11.3.0
+pyparsing==3.2.3
+
+# ========================================
+# 텍스트 처리
+# ========================================
+rapidfuzz==3.5.2
+
+# ========================================
+# 날짜 및 시간 처리
+# ========================================
+python-dateutil==2.9.0.post0
+pytz==2025.2
+tzdata==2025.2
+
+# ========================================
+# 템플릿 및 마크업
+# ========================================
+Mako==1.3.10
+MarkupSafe==3.0.2
+PyYAML==6.0.2
+
+# ========================================
 # 모니터링 및 메트릭
+# ========================================
 prometheus-client==0.22.1
 tornado==6.5.2
 
-# 유틸리티
+# ========================================
+# Core 시스템 의존성
+# ========================================
+annotated-types==0.7.0
+anyio==3.7.1
+certifi==2025.8.3
+click==8.2.1
+idna==3.10
+sniffio==1.3.1
+typing-extensions==4.14.1
+packaging==25.0
+
+# ========================================
+# 비동기 및 동시성
+# ========================================
+greenlet==3.2.4
+async-timeout==5.0.1
+
+# ========================================
+# 개발 도구 및 유틸리티
+# ========================================
 colorama==0.4.6
 humanize==4.12.3
 jiter==0.10.0
@@ -113,4 +150,8 @@ tqdm==4.67.1
 wcwidth==0.2.13
 typing-inspection==0.4.1
 watchfiles==1.1.0
-aiohappyeyeballs==2.6.1
+
+# ========================================
+# Phase 8: 동적 과목 관리 시스템
+# 추가 의존성 없음 (기존 FastAPI + SQLAlchemy 활용)
+# ========================================

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .api.v1 import questions, submit, dashboard, student, auth, admin, results_guard, teacher_dashboard, taxonomy, teacher_groups, feedback, ai_learning, curriculum, personalization, monitoring, ai_features, beta_testing, subjects, stats, code_execution
+from .api.v1 import questions, submit, dashboard, student, auth, admin, results_guard, teacher_dashboard, taxonomy, teacher_groups, feedback, ai_learning, curriculum, personalization, monitoring, ai_features, beta_testing, subjects, stats, code_execution, dynamic_subjects_simple
 from .core.config import settings
 from sqlalchemy import create_engine
 from .models.orm import Base
@@ -121,6 +121,7 @@ app.include_router(monitoring.router, prefix="/api/v1/monitoring", tags=["monito
 app.include_router(ai_features.router, prefix="/api/v1/ai-features", tags=["ai-features"])
 app.include_router(beta_testing.router, prefix="/api/v1/beta", tags=["beta-testing"])
 app.include_router(subjects.router, prefix="/api/v1", tags=["subjects"])
+app.include_router(dynamic_subjects_simple.router, prefix="/api/v1/dynamic-subjects", tags=["dynamic-subjects"])
 app.include_router(stats.router, prefix="/api/v1/stats", tags=["stats"])
 app.include_router(code_execution.router, prefix="/api/v1", tags=["code-execution"])
 
