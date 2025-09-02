@@ -171,50 +171,20 @@ const CodeExecutionLayout = ({
         {/* 상단 툴바 */}
         <div className="p-4 border-b border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              {/* 언어 선택 */}
-              <div className="flex items-center space-x-2">
-                <label className="text-sm font-medium text-gray-700">언어:</label>
-                <select
-                  value={selectedLanguage}
-                  onChange={(e) => setSelectedLanguage(e.target.value)}
-                  className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {languages.map((lang) => (
-                    <option key={lang.id} value={lang.id}>
-                      {lang.name} ({lang.version})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* 실행/제출 버튼 */}
+            {/* 언어 선택 */}
             <div className="flex items-center space-x-2">
-              <Button
-                onClick={handleRunCode}
-                disabled={isRunning}
-                size="sm"
-                className="flex items-center space-x-2"
+              <label className="text-sm font-medium text-gray-700">언어:</label>
+              <select
+                value={selectedLanguage}
+                onChange={(e) => setSelectedLanguage(e.target.value)}
+                className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {isRunning ? (
-                  <Square className="w-4 h-4" />
-                ) : (
-                  <Play className="w-4 h-4" />
-                )}
-                <span>{isRunning ? '실행 중...' : '실행'}</span>
-              </Button>
-              
-              <Button
-                onClick={handleSubmitCode}
-                disabled={isRunning}
-                size="sm"
-                variant="outline"
-                className="flex items-center space-x-2"
-              >
-                <Code className="w-4 h-4" />
-                <span>제출</span>
-              </Button>
+                {languages.map((lang) => (
+                  <option key={lang.id} value={lang.id}>
+                    {lang.name} ({lang.version})
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -226,9 +196,11 @@ const CodeExecutionLayout = ({
             onChange={setCode}
             language={selectedLanguage}
             onRun={handleRunCode}
+            onSubmit={handleSubmitCode}
             isRunning={isRunning}
             height="calc(100vh - 300px)"
             showRunButton={true}
+            showSubmitButton={true}
             placeholder={
               selectedLanguage === 'python' ? '# 여기에 Python 코드를 작성하세요\n\ndef solution():\n    # 구현하세요\n    pass' : 
               selectedLanguage === 'javascript' ? '// 여기에 JavaScript 코드를 작성하세요\n\nfunction solution() {\n    // 구현하세요\n    return null;\n}' :

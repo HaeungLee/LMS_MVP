@@ -1,19 +1,21 @@
 import React, { useState, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Play, Square, Settings } from 'lucide-react';
+import { Play, Square, Settings, Code } from 'lucide-react';
 
 const MonacoCodeEditor = ({
   value = '',
   onChange,
   language = 'python',
   onRun,
+  onSubmit,
   isRunning = false,
   height = '400px',
   showRunButton = true,
+  showSubmitButton = true,
   className = ''
 }) => {
-  const [editorTheme, setEditorTheme] = useState('vs-dark');
+  const [editorTheme, setEditorTheme] = useState('light');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const editorRef = useRef(null);
 
@@ -95,6 +97,23 @@ const MonacoCodeEditor = ({
               </button>
             )}
 
+            {/* 제출 버튼 */}
+            {showSubmitButton && onSubmit && (
+              <button
+                onClick={onSubmit}
+                disabled={isRunning}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                  isRunning 
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+                title="제출"
+              >
+                <Code className="w-4 h-4" />
+                제출
+              </button>
+            )}
+
             {/* 설정 버튼 */}
             <button
               onClick={() => setSettingsOpen(!settingsOpen)}
@@ -117,8 +136,8 @@ const MonacoCodeEditor = ({
                   onChange={(e) => setEditorTheme(e.target.value)}
                   className="p-1 border rounded text-sm"
                 >
-                  <option value="vs-dark">다크</option>
                   <option value="light">라이트</option>
+                  <option value="vs-dark">다크</option>
                   <option value="hc-black">고대비</option>
                 </select>
               </div>
