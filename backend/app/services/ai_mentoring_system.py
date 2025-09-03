@@ -37,6 +37,7 @@ class ConversationMode(Enum):
     EXPLANATION = "explanation"    # 설명 요청
     GUIDANCE = "guidance"          # 학습 가이드
     REFLECTION = "reflection"      # 학습 성찰
+    STRUCTURED_TEACHING = "structured_teaching"  # Phase 9: 구조화된 교육 모드
 
 @dataclass
 class MentorResponse:
@@ -638,6 +639,248 @@ class AIMentoringSystem:
                 "이해되지 않는 부분은 반복 학습하세요",
                 "실습과 이론을 균형있게 학습하세요"
             ]
+
+    # Phase 9: 구조화된 교육 모드 확장
+    async def enter_structured_teaching_mode(
+        self, 
+        session: MentorSession, 
+        curriculum_id: int,
+        teaching_session_id: int
+    ) -> MentorResponse:
+        """구조화된 교육 모드 진입"""
+        
+        try:
+            logger.info(f"구조화된 교육 모드 진입: session={session.session_id}, curriculum={curriculum_id}")
+            
+            # 세션에 구조화된 교육 정보 추가
+            session.conversation_mode = ConversationMode.STRUCTURED_TEACHING
+            session.structured_teaching_info = {
+                'curriculum_id': curriculum_id,
+                'teaching_session_id': teaching_session_id,
+                'started_at': datetime.utcnow().isoformat(),
+                'integration_mode': 'mentor_support'  # 멘토가 교육 세션을 지원하는 모드
+            }
+            
+            # 구조화된 교육 안내 메시지 생성
+            guidance_prompt = f"""당신은 이제 구조화된 AI 교육 세션을 지원하는 멘토입니다.
+
+역할 변화:
+- 기존: 일반적인 학습 멘토링
+- 현재: 체계적인 커리큘럼 기반 교육 지원
+
+지원 방식:
+1. 학습자가 교육 중 막히는 부분에 대한 추가 설명 제공
+2. 동기 부여 및 격려를 통한 학습 지속성 향상  
+3. 교육 내용에 대한 보충 자료나 예시 제안
+4. 학습자의 이해도 체크 및 복습 가이드
+
+현재 학습자가 구조화된 AI 교육 세션을 시작했습니다.
+멘토로서 이 새로운 학습 방식을 격려하고, 필요시 언제든 도움을 요청하라고 안내해주세요.
+따뜻하고 지원적인 톤으로 200자 이내로 작성해주세요."""
+
+            response = await generate_ai_response(
+                prompt=guidance_prompt,
+                task_type="mentoring",
+                model_preference=ModelTier.STANDARD,
+                user_id=session.user_id,
+                temperature=0.7
+            )
+            
+            mentor_response = MentorResponse(
+                content=response.get('response', '구조화된 학습 세션을 시작하시는군요! 체계적인 커리큘럼으로 더욱 효과적인 학습이 될 것입니다. 궁금한 점이나 추가 설명이 필요하면 언제든 말씀해주세요!'),
+                tone="supportive",
+                suggestions=[
+                    "교육 중 이해가 안 되는 부분이 있으면 바로 질문하세요",
+                    "각 단계별로 충분히 이해한 후 다음으로 넘어가세요",
+                    "실습할 때 막히면 힌트를 요청해보세요"
+                ],
+                follow_up_questions=[
+                    "현재 학습하고 있는 주제에 대해 이전에 경험이 있으신가요?",
+                    "특별히 중점적으로 배우고 싶은 부분이 있나요?"
+                ],
+                resources=[
+                    {
+                        "type": "tip",
+                        "title": "구조화된 학습 팁",
+                        "content": "각 단계의 학습 목표를 명확히 파악하고 진행하세요"
+                    }
+                ],
+                confidence=0.9
+            )
+            
+            # 대화 기록 업데이트
+            session.conversation_history.append({
+                'timestamp': datetime.utcnow().isoformat(),
+                'type': 'structured_teaching_entry',
+                'content': mentor_response.content,
+                'tone': mentor_response.tone,
+                'curriculum_id': curriculum_id,
+                'teaching_session_id': teaching_session_id
+            })
+            
+            await self._cache_session(session)
+            
+            return mentor_response
+            
+        except Exception as e:
+            logger.error(f"구조화된 교육 모드 진입 실패: {str(e)}")
+            return await self._generate_fallback_response("구조화된 학습을 시작하겠습니다.")
+
+    async def support_structured_teaching(
+        self, 
+        session: MentorSession, 
+        user_question: str,
+        current_step_info: Dict[str, Any] = None
+    ) -> MentorResponse:
+        """구조화된 교육 중 멘토 지원"""
+        
+        try:
+            if not hasattr(session, 'structured_teaching_info') or not session.structured_teaching_info:
+                # 구조화된 교육 모드가 아닌 경우 일반 모드로 처리
+                return await self.continue_conversation(session, user_question, ConversationMode.HELP_SEEKING)
+            
+            teaching_info = session.structured_teaching_info
+            
+            # 현재 교육 단계 정보 포함한 프롬프트 생성
+            support_prompt = f"""당신은 구조화된 AI 교육을 지원하는 멘토입니다.
+
+현재 교육 상황:
+- 커리큘럼 ID: {teaching_info.get('curriculum_id')}
+- 교육 세션 ID: {teaching_info.get('teaching_session_id')}
+{f"- 현재 단계: {current_step_info.get('title')}" if current_step_info else ""}
+{f"- 학습 목표: {', '.join(current_step_info.get('learning_objectives', []))}" if current_step_info else ""}
+
+학습자 질문: {user_question}
+
+멘토 역할:
+1. AI 교육 강사를 보완하는 추가 설명 제공
+2. 다른 관점에서의 설명이나 예시 제공
+3. 학습자의 이해도 향상을 위한 맞춤형 가이드
+4. 동기 부여 및 격려
+
+AI 교육 강사와 겹치지 않으면서도 도움이 되는 멘토링을 제공해주세요.
+친근하고 격려하는 톤으로 300자 이내로 작성해주세요."""
+
+            response = await generate_ai_response(
+                prompt=support_prompt,
+                task_type="mentoring",
+                model_preference=ModelTier.STANDARD,
+                user_id=session.user_id,
+                temperature=0.7
+            )
+            
+            mentor_response = MentorResponse(
+                content=response.get('response', '좋은 질문이네요! 이 부분을 다른 방식으로 설명드려볼게요.'),
+                tone="supportive",
+                suggestions=[
+                    "이해되지 않으면 더 자세히 설명드릴게요",
+                    "비슷한 예시를 더 들어드릴까요?",
+                    "다른 접근 방법도 시도해보세요"
+                ],
+                follow_up_questions=[
+                    "이 설명이 도움이 되셨나요?",
+                    "추가로 궁금한 부분이 있으신가요?"
+                ],
+                resources=[],
+                confidence=0.8
+            )
+            
+            # 대화 기록 업데이트
+            session.conversation_history.append({
+                'timestamp': datetime.utcnow().isoformat(),
+                'type': 'structured_teaching_support',
+                'user_question': user_question,
+                'mentor_response': mentor_response.content,
+                'current_step': current_step_info.get('title') if current_step_info else None
+            })
+            
+            await self._cache_session(session)
+            
+            return mentor_response
+            
+        except Exception as e:
+            logger.error(f"구조화된 교육 지원 실패: {str(e)}")
+            return await self._generate_fallback_response(user_question)
+
+    async def exit_structured_teaching_mode(self, session: MentorSession) -> MentorResponse:
+        """구조화된 교육 모드 종료"""
+        
+        try:
+            if hasattr(session, 'structured_teaching_info') and session.structured_teaching_info:
+                teaching_duration = datetime.utcnow() - datetime.fromisoformat(
+                    session.structured_teaching_info['started_at']
+                )
+                
+                # 구조화된 교육 완료 격려 메시지
+                completion_prompt = f"""학습자가 구조화된 AI 교육 세션을 완료했습니다.
+
+교육 정보:
+- 소요 시간: {str(teaching_duration)}
+- 교육 모드: 체계적 커리큘럼 기반 학습
+
+멘토로서:
+1. 구조화된 학습 완료를 축하
+2. 학습 성과에 대한 격려
+3. 향후 학습 방향 제안
+4. 언제든 멘토링 지원 가능함을 안내
+
+따뜻하고 축하하는 톤으로 250자 이내로 작성해주세요."""
+
+                response = await generate_ai_response(
+                    prompt=completion_prompt,
+                    task_type="mentoring",
+                    model_preference=ModelTier.STANDARD,
+                    user_id=session.user_id,
+                    temperature=0.8
+                )
+                
+                # 구조화된 교육 정보 제거
+                session.structured_teaching_info = None
+                session.conversation_mode = ConversationMode.MOTIVATION
+                
+                mentor_response = MentorResponse(
+                    content=response.get('response', '구조화된 학습 세션을 완료하신 것을 축하합니다! 체계적으로 학습하신 모습이 인상적이었어요. 앞으로도 꾸준히 학습하시길 응원하며, 언제든 도움이 필요하면 말씀해주세요!'),
+                    tone="celebratory",
+                    suggestions=[
+                        "학습한 내용을 복습해보세요",
+                        "다음 단계 학습을 계획해보세요",
+                        "배운 내용을 실제 프로젝트에 적용해보세요"
+                    ],
+                    follow_up_questions=[
+                        "이번 학습에서 가장 인상깊었던 부분은 무엇인가요?",
+                        "다음에는 어떤 주제를 학습하고 싶으신가요?"
+                    ],
+                    resources=[],
+                    confidence=0.9
+                )
+                
+                # 대화 기록 업데이트
+                session.conversation_history.append({
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'type': 'structured_teaching_exit',
+                    'content': mentor_response.content,
+                    'duration': str(teaching_duration)
+                })
+                
+                await self._cache_session(session)
+                
+                return mentor_response
+            
+            else:
+                # 구조화된 교육 모드가 아닌 경우
+                return MentorResponse(
+                    content="현재 구조화된 교육 모드가 아닙니다. 일반 멘토링을 계속 진행하겠습니다.",
+                    tone="neutral",
+                    suggestions=["궁금한 것을 자유롭게 질문해주세요"],
+                    follow_up_questions=["어떤 도움이 필요하신가요?"],
+                    resources=[],
+                    confidence=0.7
+                )
+                
+        except Exception as e:
+            logger.error(f"구조화된 교육 모드 종료 실패: {str(e)}")
+            return await self._generate_fallback_response("학습을 완료하셨군요!")
+
 
 # 전역 인스턴스 생성 함수
 def get_ai_mentoring_system(db: Session) -> AIMentoringSystem:

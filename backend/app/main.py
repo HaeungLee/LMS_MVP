@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .api.v1 import questions, submit, dashboard, student, auth, admin, results_guard, teacher_dashboard, taxonomy, teacher_groups, feedback, ai_learning, curriculum, personalization, monitoring, ai_features, beta_testing, subjects, stats, code_execution, dynamic_subjects_simple, unified_learning, simple_topics, hybrid_ai, ai_curriculum
+from .api.v1 import questions, submit, dashboard, student, auth, admin, results_guard, teacher_dashboard, taxonomy, teacher_groups, feedback, ai_learning, curriculum, personalization, monitoring, ai_features, beta_testing, subjects, stats, code_execution, unified_learning, simple_topics, dynamic_subjects_simple
+# Phase 9 imports
+from app.api.v1 import hybrid_ai, ai_curriculum, ai_teaching
 from .core.config import settings
 from sqlalchemy import create_engine
 from .models.orm import Base
@@ -131,13 +133,14 @@ app.include_router(monitoring.router, prefix="/api/v1/monitoring", tags=["monito
 app.include_router(ai_features.router, prefix="/api/v1/ai-features", tags=["ai-features"])
 app.include_router(beta_testing.router, prefix="/api/v1/beta", tags=["beta-testing"])
 app.include_router(subjects.router, prefix="/api/v1", tags=["subjects"])
-app.include_router(dynamic_subjects_simple.router, prefix="/api/v1/dynamic-subjects", tags=["dynamic-subjects"])
+app.include_router(dynamic_subjects_simple.router, prefix="/api/v1/dynamic-subjects", tags=["dynamic-subjects"])  # Phase 8 - 재활성화
 app.include_router(simple_topics.router, prefix="/api/v1", tags=["simple-topics"])
 app.include_router(unified_learning.router, prefix="/api/v1", tags=["unified-learning"])
 app.include_router(stats.router, prefix="/api/v1/stats", tags=["stats"])
 app.include_router(code_execution.router, prefix="/api/v1", tags=["code-execution"])
-app.include_router(hybrid_ai.router, tags=["hybrid-ai"])  # Phase 9: EduGPT 통합용 하이브리드 AI
-app.include_router(ai_curriculum.router, tags=["ai-curriculum"])  # Phase 9: AI 커리큘럼 생성 및 교육 세션
+# app.include_router(hybrid_ai.router, tags=["hybrid-ai"])  # Phase 9: EduGPT 통합용 하이브리드 AI - 임시 비활성화
+app.include_router(ai_curriculum.router, tags=["ai-curriculum"])  # Phase 9: AI 커리큘럼 생성 및 교육 세션 (prefix 이미 설정됨)
+app.include_router(ai_teaching.router, tags=["ai-teaching"])  # Phase 9: 실라버스 기반 개별화 교육 (prefix 이미 설정됨)
 
 @app.get("/", tags=["root"])
 def read_root():

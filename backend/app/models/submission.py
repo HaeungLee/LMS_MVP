@@ -8,26 +8,31 @@ class UserAnswer(BaseModel):
 
 class Submission(BaseModel):
     user_answers: List[UserAnswer]
-    subject: str
-    time_taken: Optional[int] = None
-
-class FeedbackRequest(BaseModel):
-    question_id: int
-    user_answer: str
 
 class QuestionResult(BaseModel):
     question_id: int
     user_answer: str
     correct_answer: str
-    score: float  # 0, 0.5, 1
-    topic: str
+    is_correct: bool
+    score: float
+    feedback: Optional[str] = None
 
 class SubmissionResult(BaseModel):
-    submission_id: Optional[str] = None
+    submission_id: str
+    user_id: int
     total_score: float
-    max_score: int
-    results: List[QuestionResult]
-    topic_analysis: dict  # 주제별 정답률
-    summary: Optional[str] = None
-    recommendations: Optional[List[str]] = None
-    submitted_at: Optional[str] = None
+    max_score: float
+    percentage: float
+    question_results: List[QuestionResult]
+    ai_feedback: Optional[str] = None
+    submitted_at: str
+
+class FeedbackRequest(BaseModel):
+    submission_id: str
+    question_id: int
+    feedback_type: str = "detailed"  # "detailed", "hint", "explanation"
+    
+class AIFeedbackResponse(BaseModel):
+    feedback: str
+    confidence: float
+    suggestions: List[str] = []

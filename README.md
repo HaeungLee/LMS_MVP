@@ -48,7 +48,7 @@ docker ps | findstr lms_mvp_db_container
 cd backend
 python -m venv venv
 ./venv/Scripts/Activate.ps1
-pip install -r requirements_new.txt
+pip install -r requirements.txt
 
 # (선택) 초기 데이터 시드
 python -m scripts.seed_taxonomy
