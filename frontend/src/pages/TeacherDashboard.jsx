@@ -57,7 +57,15 @@ export default function TeacherDashboard() {
     (async () => {
       try {
         const res = await fetchTaxonomyTopics(subject);
-        setTopics(res.items || []);
+        // 중복 토픽 제거 (topic_key 기준)
+        const uniqueTopics = (res.items || []).reduce((acc, topic) => {
+          const existingIndex = acc.findIndex(t => t.topic_key === topic.topic_key);
+          if (existingIndex === -1) {
+            acc.push(topic);
+          }
+          return acc;
+        }, []);
+        setTopics(uniqueTopics);
         setSelectedTopic('');
       } catch {}
     })();
@@ -99,8 +107,8 @@ export default function TeacherDashboard() {
           <label style={{ margin: '0 8px 0 16px' }}>토픽</label>
           <select value={selectedTopic} onChange={(e)=>setSelectedTopic(e.target.value)} style={{ padding:'6px 10px', border:'1px solid #d1d5db', borderRadius:6 }}>
             <option value="">전체</option>
-            {topics.map(t => (
-              <option key={`topic-${t.topic_key}`} value={t.topic_key}>{t.topic_key}{t.is_core ? '' : ' (ext)'}</option>
+            {topics.map((t, index) => (
+              <option key={`topic-${t.topic_key}-${index}`} value={t.topic_key}>{t.topic_key}{t.is_core ? '' : ' (ext)'}</option>
             ))}
           </select>
         </div>
