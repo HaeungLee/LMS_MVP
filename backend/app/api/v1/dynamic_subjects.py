@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 
 from app.core.database import engine
-from app.models.orm import Subject, Topic  # 기존 ORM 모델 사용
+from app.models.orm import Subject, SubjectTopic, SubjectCategory, UserProgress, Topic  # Topic 추가
 from sqlalchemy.orm import sessionmaker
 
 # 세션 생성
@@ -42,9 +42,9 @@ async def get_subject_categories(
         result = []
         for category in categories:
             # 카테고리별 과목 수 계산
-            subject_count = db.query(SubjectExtended).filter(
-                SubjectExtended.category_id == category.id,
-                SubjectExtended.is_active == True if active_only else True
+            subject_count = db.query(Subject).filter(
+                Subject.category_id == category.id,
+                Subject.is_active == True if active_only else True
             ).count()
             
             result.append({
@@ -125,7 +125,7 @@ async def get_subjects(
 ):
     """과목 목록 조회 (카테고리별 필터링)"""
     try:
-        query = db.query(SubjectExtended).join(SubjectCategory)
+        query = db.query(Subject).join(SubjectCategory)
         
         # 카테고리 필터링
         if category_key:
@@ -133,10 +133,10 @@ async def get_subjects(
         
         # 활성 과목만 필터링
         if active_only:
-            query = query.filter(SubjectExtended.is_active == True)
+            query = query.filter(Subject.is_active == True)
         
         # 정렬
-        query = query.order_by(SubjectCategory.order_index, SubjectExtended.order_index)
+        query = query.order_by(SubjectCategory.order_index, Subject.order_index)
         
         subjects = query.all()
         
@@ -167,12 +167,12 @@ async def get_subjects(
             if include_stats:
                 # 토픽 수
                 topic_count = db.query(SubjectTopic).filter(
-                    SubjectTopic.subject_id == subject.id
+                    SubjectTopic.subject_key == subject.key
                 ).count()
                 
                 # 학습자 수  
-                learner_count = db.query(UserSubjectProgress).filter(
-                    UserSubjectProgress.subject_id == subject.id
+                learner_count = db.query(UserProgress).filter(
+                    UserProgress.subject_key == subject.key
                 ).count()
                 
                 subject_data.update({
@@ -202,7 +202,7 @@ async def get_subject_detail(
 ):
     """과목 상세 정보 조회"""
     try:
-        subject = db.query(SubjectExtended).filter(SubjectExtended.id == subject_id).first()
+        subject = db.query(Subject).filter(Subject.id == subject_id).first()
         
         if not subject:
             raise HTTPException(status_code=404, detail="과목을 찾을 수 없습니다.")
@@ -234,7 +234,7 @@ async def get_subject_detail(
         # 토픽 정보 포함
         if include_topics:
             topics = db.query(SubjectTopic).filter(
-                SubjectTopic.subject_id == subject_id
+                SubjectTopic.subject_key == subject.key
             ).order_by(SubjectTopic.order_index).all()
             
             result["topics"] = [
@@ -418,62 +418,126 @@ async def update_subject(
 
 # ============= 토픽 관리 API =============
 
-@router.get("/subjects/{subject_id}/topics", response_model=Dict[str, Any])
-async def get_subject_topics(
-    subject_id: int,
+@router.get("/test-topics/{subject_key}", response_model=Dict[str, Any])
+async def test_get_subject_topics(
+    subject_key: str,
     db: Session = Depends(get_db)
 ):
-    """과목별 토픽 목록 조회"""
+    """토픽 조회 테스트 API - 문제 해결용"""
     try:
-        # 과목 존재 확인
-        subject = db.query(SubjectExtended).filter(SubjectExtended.id == subject_id).first()
-        if not subject:
-            raise HTTPException(status_code=404, detail="과목을 찾을 수 없습니다.")
+        print(f"🧪 테스트 토픽 조회: {subject_key}")
         
-        topics = db.query(SubjectTopic).filter(
-            SubjectTopic.subject_id == subject_id
-        ).order_by(SubjectTopic.order_index).all()
+        # 1. 직접 SQL 실행
+        from sqlalchemy import text
+        sql = text("SELECT * FROM subject_topics WHERE subject_key = :key ORDER BY display_order")
+        result = db.execute(sql, {"key": subject_key})
+        rows = result.fetchall()
         
-        result = [
-            {
-                "id": topic.id,
-                "topic_key": topic.topic_key,
-                "topic_name": topic.topic_name,
-                "description": topic.description,
-                "order_index": topic.order_index,
-                "parent_topic_id": topic.parent_topic_id,
-                "learning_objectives": topic.learning_objectives,
-                "estimated_duration": topic.estimated_duration,
-                "difficulty_level": topic.difficulty_level,
-                "problem_count": topic.problem_count or 0,
-                "completion_rate": topic.completion_rate or 0.0,
-                "created_at": topic.created_at.isoformat() if topic.created_at else None,
-                "updated_at": topic.updated_at.isoformat() if topic.updated_at else None
+        topics = []
+        for row in rows:
+            # row를 dict로 변환
+            row_dict = dict(row._mapping) if hasattr(row, '_mapping') else dict(zip(result.keys(), row))
+            topics.append(row_dict)
+        
+        return {
+            "success": True,
+            "method": "raw_sql",
+            "subject_key": subject_key,
+            "topic_count": len(topics),
+            "topics": topics
+        }
+        
+    except Exception as e:
+        print(f"❌ 테스트 API 에러: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+@router.get("/subjects/{subject_key}/topics")
+async def get_subject_topics(
+    subject_key: str,
+    db: Session = Depends(get_db)
+):
+    """과목별 토픽 목록 조회 - 수정된 버전 (Raw SQL 사용)"""
+    try:
+        print(f"🔍 토픽 조회: {subject_key}")
+        
+        # Raw SQL을 사용하여 SQLAlchemy ORM 문제 회피
+        from sqlalchemy import text
+        
+        # 1. 과목 확인
+        subject_check = db.execute(
+            text("SELECT key, title FROM subjects WHERE key = :key"), 
+            {"key": subject_key}
+        ).fetchone()
+        
+        if not subject_check:
+            raise HTTPException(status_code=404, detail=f"과목을 찾을 수 없습니다: {subject_key}")
+        
+        # 2. 토픽 조회
+        result = db.execute(
+            text("""
+                SELECT id, subject_key, topic_key, weight, is_core, 
+                       display_order, show_in_coverage, topic_name, 
+                       description, order_index, estimated_duration, difficulty_level
+                FROM subject_topics 
+                WHERE subject_key = :key 
+                ORDER BY display_order
+            """), 
+            {"key": subject_key}
+        )
+        rows = result.fetchall()
+        
+        # 3. 결과 변환
+        topics = []
+        for row in rows:
+            topic = {
+                "id": row[0],
+                "subject_key": row[1], 
+                "topic_key": row[2],
+                "weight": row[3],
+                "is_core": row[4],
+                "display_order": row[5],
+                "show_in_coverage": row[6],
+                "topic_name": row[7],
+                "description": row[8],
+                "order_index": row[9],
+                "estimated_duration": row[10],
+                "difficulty_level": row[11]
             }
-            for topic in topics
-        ]
+            topics.append(topic)
         
-        return {"success": True, "topics": result}
+        return {
+            "success": True,
+            "subject_key": subject_key,
+            "topic_count": len(topics),
+            "topics": topics
+        }
         
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ 토픽 조회 실패: {str(e)}")
+        print(f"❌ 토픽 조회 에러: {e}")
         raise HTTPException(status_code=500, detail=f"토픽 조회 실패: {str(e)}")
 
 
-@router.post("/subjects/{subject_id}/topics", response_model=Dict[str, Any])
+@router.post("/subjects/{subject_key}/topics", response_model=Dict[str, Any])
 async def create_subject_topic(
-    subject_id: int,
+    subject_key: str,  # subject_id 대신 subject_key 사용
     topic_data: Dict[str, Any],
     db: Session = Depends(get_db)
 ):
-    """과목에 새 토픽 추가"""
+    """과목에 새 토픽 추가 (subject_key 기반)"""
     try:
-        # 과목 존재 확인
-        subject = db.query(SubjectExtended).filter(SubjectExtended.id == subject_id).first()
+        # 과목 존재 확인 (key 기반)
+        subject = db.query(Subject).filter(Subject.key == subject_key).first()
         if not subject:
-            raise HTTPException(status_code=404, detail="과목을 찾을 수 없습니다.")
+            raise HTTPException(status_code=404, detail=f"과목을 찾을 수 없습니다: {subject_key}")
+        
+        subject_id = subject.id
         
         # 같은 과목 내에서 토픽 키 중복 확인
         existing = db.query(SubjectTopic).filter(
@@ -533,23 +597,23 @@ async def get_system_overview(db: Session = Depends(get_db)):
     try:
         # 전체 통계
         total_categories = db.query(SubjectCategory).count()
-        total_subjects = db.query(SubjectExtended).count()
-        active_subjects = db.query(SubjectExtended).filter(SubjectExtended.is_active == True).count()
+        total_subjects = db.query(Subject).count()
+        active_subjects = db.query(Subject).filter(Subject.is_active == True).count()
         total_topics = db.query(SubjectTopic).count()
-        total_learners = db.query(UserSubjectProgress).count()
+        total_learners = db.query(UserProgress).count()
         
         # 카테고리별 과목 수
         category_stats = []
         categories = db.query(SubjectCategory).order_by(SubjectCategory.order_index).all()
         
         for category in categories:
-            subject_count = db.query(SubjectExtended).filter(
-                SubjectExtended.category_id == category.id
+            subject_count = db.query(Subject).filter(
+                Subject.category_id == category.id
             ).count()
             
-            active_count = db.query(SubjectExtended).filter(
-                SubjectExtended.category_id == category.id,
-                SubjectExtended.is_active == True
+            active_count = db.query(Subject).filter(
+                Subject.category_id == category.id,
+                Subject.is_active == True
             ).count()
             
             category_stats.append({

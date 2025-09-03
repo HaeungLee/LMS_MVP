@@ -65,13 +65,14 @@ print(result)`
           const problemData = await getProblem(problemId);
           setProblem(problemData);
         } else {
-          // 기본 샘플 문제 (problemId가 없는 경우)
-          setProblem(sampleProblem);
+          // problemId가 없는 경우 오류 처리
+          throw new Error('Problem ID is required');
         }
       } catch (error) {
         console.error('Failed to load problem:', error);
-        // API 실패시 샘플 데이터 사용
-        setProblem(sampleProblem);
+        // API 실패시 에러 상태 설정 (Mock 데이터 제거)
+        setProblem(null);
+        // 에러 토스트나 다른 에러 처리 로직 추가 가능
       } finally {
         setLoading(false);
       }

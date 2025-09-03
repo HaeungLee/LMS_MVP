@@ -116,46 +116,15 @@ async def analyze_user_learning_deeply(
             ).limit(50).all()
             
             if not recent_submissions:
-                # 데이터가 없으면 기본 Mock
-                fallback_analysis = {
-                    "learner_profile": {
-                        "type": "steady_learner",
-                        "phase": "beginner",
-                        "optimal_session_length": 25,
-                        "preferred_difficulty": 2,
-                        "strengths": ["기본 문법", "반복 학습"],
-                        "weaknesses": ["고급 개념", "문제 해결"]
-                    },
-                    "learning_metrics": {
-                        "overall_accuracy": 0.65,
-                        "consistency_score": 0.72,
-                        "improvement_rate": 0.15,
-                        "engagement_level": 0.80
-                    },
-                    "recommendations": [
-                        {
-                            "title": "기초 개념 복습",
-                            "description": "변수와 조건문 개념을 다시 정리해보세요",
-                            "priority": "high"
-                        },
-                        {
-                            "title": "단계별 문제 풀이",
-                            "description": "쉬운 문제부터 차근차근 실력을 쌓아가세요",
-                            "priority": "medium"
-                        }
-                    ],
-                    "next_actions": [
-                        {
-                            "title": "파이썬 기초 문제 10개 풀기",
-                            "description": "변수와 조건문 관련 문제를 중심으로",
-                            "timeframe": "today"
-                        },
-                        {
-                            "title": "반복문 개념 학습",
-                            "description": "for와 while 반복문 문법 정리",
-                            "timeframe": "this_week"
-                        }
-                    ]
+                # 데이터가 없으면 명확한 메시지 반환 (Mock 데이터 제거)
+                return {
+                    "success": False,
+                    "message": "분석을 위한 충분한 학습 데이터가 없습니다. 최소 5개 이상의 문제를 풀어주세요.",
+                    "data_needed": {
+                        "minimum_submissions": 5,
+                        "current_submissions": 0,
+                        "suggestion": "먼저 몇 가지 문제를 풀어보시면 개인화된 분석을 제공해드릴 수 있습니다."
+                    }
                 }
             else:
                 # 실제 데이터 기반 분석

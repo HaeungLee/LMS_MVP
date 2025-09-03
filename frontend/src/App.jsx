@@ -86,7 +86,7 @@ function Navigation() {
             <Link to="/quiz" className={getLinkClass('/quiz')}>퀴즈</Link>
           </li>
           <li>
-            <Link to="/code" className={getLinkClass('/code')}>코딩 테스트</Link>
+            <Link to="/code/problems" className={getLinkClass('/code')}>코딩 테스트</Link>
           </li>
           <li>
             <Link to="/ai-features" className={getLinkClass('/ai-features')}>AI 기능</Link>
@@ -183,7 +183,7 @@ function AppContent() {
             <Route path="/quiz/:subject" element={<Protected><AnimatedPage><QuizPage /></AnimatedPage></Protected>} />
             <Route path="/code/problems" element={<Protected><AnimatedPage><CodeProblemsPage /></AnimatedPage></Protected>} />
             <Route path="/code/:problemId" element={<Protected><AnimatedPage><CodeExecutionPage /></AnimatedPage></Protected>} />
-            <Route path="/code" element={<Protected><AnimatedPage><CodeExecutionPage /></AnimatedPage></Protected>} />
+            <Route path="/code" element={<Navigate to="/code/problems" replace />} />
             <Route path="/results/:submission_id" element={<AnimatedPage><ResultsPage /></AnimatedPage>} />
             <Route path="/ai-features" element={<AnimatedPage><AIFeaturesPage2 /></AnimatedPage>} />
             <Route path="/beta-onboarding2" element={<AnimatedPage><BetaOnboarding2 userId={1} onComplete={() => alert('온보딩 완료!')} /></AnimatedPage>} />

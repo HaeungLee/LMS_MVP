@@ -80,7 +80,7 @@ export default function TeacherDashboard() {
           <label style={{ marginRight:8 }}>과목</label>
           <select value={subject} onChange={(e)=>setSubject(e.target.value)} style={{ padding:'6px 10px', border:'1px solid #d1d5db', borderRadius:6 }}>
             {Object.entries(SUBJECTS).map(([key, name]) => (
-              <option key={key} value={key}>
+              <option key={`subject-${key}`} value={key}>
                 {name}
               </option>
             ))}
@@ -89,7 +89,7 @@ export default function TeacherDashboard() {
           <select value={groupId} onChange={(e)=>setGroupId(e.target.value)} style={{ padding:'6px 10px', border:'1px solid #d1d5db', borderRadius:6 }}>
             <option value="">전체</option>
             {groups.map(g => (
-              <option key={g.id} value={g.id}>{g.name}</option>
+              <option key={`group-${g.id}`} value={g.id}>{g.name}</option>
             ))}
           </select>
           <button onClick={async ()=>{ if(!newGroupName.trim()) return; const res = await createTeacherGroup(newGroupName.trim()); setGroups(g=>[{ id: res.id, name: res.name }, ...g]); setNewGroupName(''); }} style={{ marginLeft:8, padding:'6px 10px', border:'1px solid #d1d5db', borderRadius:6, background:'#fff' }}>그룹 추가</button>
@@ -100,7 +100,7 @@ export default function TeacherDashboard() {
           <select value={selectedTopic} onChange={(e)=>setSelectedTopic(e.target.value)} style={{ padding:'6px 10px', border:'1px solid #d1d5db', borderRadius:6 }}>
             <option value="">전체</option>
             {topics.map(t => (
-              <option key={t.topic_key} value={t.topic_key}>{t.topic_key}{t.is_core ? '' : ' (ext)'}</option>
+              <option key={`topic-${t.topic_key}`} value={t.topic_key}>{t.topic_key}{t.is_core ? '' : ' (ext)'}</option>
             ))}
           </select>
         </div>
@@ -132,7 +132,7 @@ export default function TeacherDashboard() {
             </thead>
             <tbody>
               {(data.recent_submissions || []).map((s, idx) => (
-                <tr key={idx}>
+                <tr key={`submission-${s.submission_id || idx}`}>
                   <td style={{ padding:8, borderBottom:'1px solid #f3f4f6' }}>{s.submission_id}</td>
                   <td style={{ padding:8, borderBottom:'1px solid #f3f4f6' }}>{s.user_id}</td>
                   <td style={{ padding:8, borderBottom:'1px solid #f3f4f6' }}>{s.subject}</td>

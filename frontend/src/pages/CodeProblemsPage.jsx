@@ -53,22 +53,16 @@ const CodeProblemsPage = () => {
     try {
       setLoading(true);
       
-      // 실제 API 호출 시도
-      try {
-        const data = await getProblems({
-          limit: 50,
-          offset: 0
-        });
-        setProblems(data);
-      } catch (apiError) {
-        console.log('API failed, using sample data:', apiError);
-        // API 실패시 샘플 데이터 사용
-        const sampleData = getSampleProblems();
-        setProblems(sampleData);
-      }
+      // 실제 API 호출
+      const data = await getProblems({
+        limit: 50,
+        offset: 0
+      });
+      setProblems(data);
     } catch (error) {
       console.error('Failed to load problems:', error);
       setProblems([]);
+      // 에러 토스트나 다른 에러 처리 로직 추가 가능
     } finally {
       setLoading(false);
     }

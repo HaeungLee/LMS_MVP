@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDashboardStats, getLearningStatus } from '../services/apiClient';
+import { getUnifiedDashboard, transformUnifiedDashboardData } from '../services/unifiedLearningApi';
 import useDashboardStore from '../stores/dashboardStore';
 import useQuizStore from '../stores/quizStore';
+import useAuthStore from '../stores/authStore';
 import ChartAdapter from '../components/common/charts/ChartAdapter';
 import AILearningDashboard from '../components/dashboard/AILearningDashboard';
 import QuestionTypeGenerator from '../components/dashboard/QuestionTypeGenerator';
@@ -11,6 +12,7 @@ import { SUBJECTS, getSubjectName } from '../constants/subjects';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore(); // 사용자 정보 가져오기
   const { 
     dashboardData, 
     loading, 
@@ -30,29 +32,45 @@ const DashboardPage = () => {
   useEffect(() => {
     let cancelled = false;
     const fetchDashboardData = async () => {
+      if (!user?.id) {
+        setError('사용자 정보가 없습니다. 다시 로그인해주세요.');
+        return;
+      }
+
       setLoading(true);
       try {
-        const [dashRes, learnRes] = await Promise.allSettled([
-          getDashboardStats(subject),
-          getLearningStatus(subject)
-        ]);
+        // 새로운 통합 API 사용 (Mock 데이터 없음)
+        const unifiedResponse = await getUnifiedDashboard(user.id);
 
         if (cancelled) return;
 
-        const data = dashRes.status === 'fulfilled' ? dashRes.value : null;
-        const learning = learnRes.status === 'fulfilled' ? learnRes.value : null;
-
-        if (!data && !learning) {
-          setError('대시보드 데이터를 불러오는데 실패했습니다.');
+        if (!unifiedResponse.success) {
+          // 데이터가 없는 경우 사용자에게 안내
+          setDashboardData({
+            hasData: false,
+            message: unifiedResponse.dashboard?.message || '학습 데이터가 부족합니다.',
+            suggestions: unifiedResponse.dashboard?.suggestions
+          });
+          setError(null);
           return;
         }
 
-        const enrichedData = {
-          ...(data || {}),
-          recent_activity: recentActivities.length > 0 ? recentActivities : (data?.recent_activity || []),
-          learning: learning || null,
-        };
-        setDashboardData(enrichedData);
+        // 기존 형식으로 변환
+        const transformedData = transformUnifiedDashboardData(unifiedResponse);
+        
+        if (transformedData) {
+          // 퀴즈 스토어의 최근 활동과 병합
+          const enrichedData = {
+            ...transformedData,
+            recent_activity: recentActivities.length > 0 ? recentActivities : (transformedData.recent_activity || [])
+          };
+          setDashboardData(enrichedData);
+        } else {
+          setDashboardData({
+            hasData: false,
+            message: '변환할 데이터가 없습니다.'
+          });
+        }
         setError(null);
       } catch (err) {
         if (cancelled) return;
@@ -65,7 +83,7 @@ const DashboardPage = () => {
 
     fetchDashboardData();
     return () => { cancelled = true; };
-  }, [setDashboardData, setLoading, setError, recentActivities, subject]);
+  }, [setDashboardData, setLoading, setError, recentActivities, user?.id]);
 
   if (loading) {
     return (
@@ -114,6 +132,57 @@ const DashboardPage = () => {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <p>데이터가 없습니다.</p>
+      </div>
+    );
+  }
+
+  // 데이터가 부족한 경우 안내 UI
+  if (dashboardData.hasData === false) {
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', maxWidth: '500px', padding: '32px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px', color: '#111827' }}>
+            학습을 시작해보세요! 🚀
+          </h2>
+          <p style={{ color: '#6b7280', marginBottom: '24px', lineHeight: '1.6' }}>
+            {dashboardData.message}
+          </p>
+          {dashboardData.suggestions && (
+            <p style={{ color: '#059669', marginBottom: '24px', lineHeight: '1.6' }}>
+              💡 {dashboardData.suggestions}
+            </p>
+          )}
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+            <button 
+              onClick={() => navigate('/admin/dynamic-subjects')}
+              style={{
+                padding: '12px 24px',
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
+            >
+              과목 선택하기
+            </button>
+            <button 
+              onClick={() => navigate('/quiz')}
+              style={{
+                padding: '12px 24px',
+                backgroundColor: '#10b981',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
+            >
+              문제 풀어보기
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '') + '/api/v1';
+import { getUnifiedLearningAnalytics, transformAnalyticsForAIDashboard } from '../../services/unifiedLearningApi';
 
 import { 
   Brain, 
@@ -27,29 +27,27 @@ const AIAnalysisDashboard = ({ userId }) => {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/ai-features/analysis/deep-learning/${userId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          use_ai: useAI,
-          analysis_type: "comprehensive"
-        })
-      });
+      // 새로운 통합 API 사용 (Mock 데이터 없음)
+      const response = await getUnifiedLearningAnalytics(userId);
       
-      if (!response.ok) {
-        throw new Error('분석 요청 실패');
+      if (!response.success) {
+        setError(response.message || '분석에 필요한 데이터가 부족합니다.');
+        setAnalysis(null);
+        return;
       }
       
-      const data = await response.json();
-      if (data.success) {
-        setAnalysis(data.analysis);
+      // AI 대시보드 형식으로 변환
+      const transformedAnalysis = transformAnalyticsForAIDashboard(response);
+      
+      if (transformedAnalysis) {
+        setAnalysis(transformedAnalysis);
       } else {
-        setError(data.message || '분석 실패');
+        setError('분석 데이터 변환에 실패했습니다.');
+        setAnalysis(null);
       }
     } catch (err) {
-      setError(err.message);
+      setError(err.message || '분석 중 오류가 발생했습니다.');
+      setAnalysis(null);
     } finally {
       setLoading(false);
     }

@@ -7,13 +7,38 @@ const API_BASE_URL = 'http://127.0.0.1:8000/api/v1/dynamic-subjects';
 
 class DynamicSubjectsAPI {
   /**
+   * API 요청 헤더 생성 (쿠키 기반 인증 - GET 요청용)
+   * @returns {Object} 헤더 객체
+   */
+  getRequestOptions() {
+    return {
+      credentials: 'include' // 쿠키 포함, Content-Type 제거
+    };
+  }
+
+  /**
+   * API 요청 헤더 생성 (쿠키 기반 인증 - POST/PUT 요청용)
+   * @returns {Object} 헤더 객체
+   */
+  getRequestOptionsWithContentType() {
+    return {
+      credentials: 'include', // 쿠키 포함
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    };
+  }
+
+  /**
    * 과목 목록 조회
    * @param {boolean} activeOnly - 활성 과목만 조회 여부
    * @returns {Promise<Array>} 과목 목록
    */
   async getSubjects(activeOnly = true) {
     try {
-      const response = await fetch(`${API_BASE_URL}/subjects?active_only=${activeOnly}`);
+      const response = await fetch(`${API_BASE_URL}/subjects?active_only=${activeOnly}`, {
+        ...this.getRequestOptions()
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -30,7 +55,9 @@ class DynamicSubjectsAPI {
    */
   async getCategories() {
     try {
-      const response = await fetch(`${API_BASE_URL}/categories`);
+      const response = await fetch(`${API_BASE_URL}/categories`, {
+        ...this.getRequestOptions()
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -42,17 +69,30 @@ class DynamicSubjectsAPI {
   }
 
   /**
-   * 특정 과목의 토픽 목록 조회
+   * 특정 과목의 토픽 목록 조회 (수정된 버전)
    * @param {string} subjectKey - 과목 키
    * @returns {Promise<Array>} 토픽 목록
    */
   async getSubjectTopics(subjectKey) {
     try {
-      const response = await fetch(`${API_BASE_URL}/subjects/${subjectKey}/topics`);
+      // 올바른 API 경로 사용: /api/v1/simple-topics/{subject_key}
+      const response = await fetch(`http://127.0.0.1:8000/api/v1/simple-topics/${subjectKey}`, {
+        ...this.getRequestOptions()
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      return await response.json();
+      const data = await response.json();
+      
+      // 기존 형식과 호환되도록 변환
+      if (data.success) {
+        return {
+          success: true,
+          topics: data.topics || []
+        };
+      } else {
+        throw new Error(data.error || 'Unknown error');
+      }
     } catch (error) {
       console.error('Error fetching subject topics:', error);
       throw error;

@@ -70,20 +70,9 @@ const EnhancedFeedbackTester = () => {
     } catch (error) {
       console.error('❌ 문제 데이터 로드 실패:', error);
       
-      // 실패 시 기본 Mock 데이터 사용
-      const fallbackQuestions = [
-        {
-          id: 1,
-          type: 'short_answer',
-          title: '단답형: 딕셔너리 메서드',
-          question: 'my_dict.____("name") - 딕셔너리에서 "name" 키의 값을 안전하게 가져오는 메서드는?',
-          correct_answer: 'get',
-          topic: '딕셔너리',
-          difficulty: 'medium',
-          required_keywords: ['get']
-        }
-      ];
-      setTestQuestions(fallbackQuestions);
+      // 실패 시 에러 메시지 표시 (Mock 데이터 제거)
+      setError('문제 데이터를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
+      setTestQuestions([]);
     } finally {
       setQuestionsLoading(false);
     }
