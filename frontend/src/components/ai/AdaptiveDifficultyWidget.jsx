@@ -266,7 +266,7 @@ const AdaptiveDifficultyWidget = ({ userId, topic = "general", currentDifficulty
       {/* 난이도 조절 가이드 */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">📚 난이도 가이드</CardTitle>
+          <CardTitle className="text-sm">난이도 가이드</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm">

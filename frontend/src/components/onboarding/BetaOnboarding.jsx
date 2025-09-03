@@ -167,7 +167,7 @@ const WelcomeStep = ({ onNext, stepInfo }) => {
       <CardContent>
         <div className="space-y-4">
           <div className="bg-blue-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-blue-900 mb-2">🎯 베타 테스트 특전</h3>
+            <h3 className="font-semibold text-blue-900 mb-2">베타 테스트 특전</h3>
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• 최신 AI 기능 우선 체험</li>
               <li>• 개인화된 학습 분석 무료 제공</li>
@@ -177,7 +177,7 @@ const WelcomeStep = ({ onNext, stepInfo }) => {
           </div>
           
           <div className="bg-green-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-green-900 mb-2">🚀 AI 기능 미리보기</h3>
+            <h3 className="font-semibold text-green-900 mb-2">AI 기능 미리보기</h3>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="flex items-center space-x-2 text-green-800">
                 <Brain className="w-4 h-4" />

@@ -157,7 +157,7 @@ function FeedbackModal({ question, userAnswer, score, isOpen, onClose, aiFeedbac
           <div style={feedbackContentStyle}>
             <div style={{ marginBottom: '16px' }}>
               <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>
-                🤖 AI 피드백
+                AI 피드백
               </h4>
               <p style={{ margin: 0, color: '#374151', lineHeight: '1.6' }}>{feedback}</p>
             </div>
@@ -168,7 +168,7 @@ function FeedbackModal({ question, userAnswer, score, isOpen, onClose, aiFeedbac
                 {aiFeedback.score !== undefined && (
                   <div style={{ marginBottom: '12px' }}>
                     <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '6px', color: '#374151' }}>
-                      📊 점수
+                      점수
                     </h4>
                     <div style={{
                       padding: '8px 12px',
@@ -186,7 +186,7 @@ function FeedbackModal({ question, userAnswer, score, isOpen, onClose, aiFeedbac
                 {aiFeedback.performance_analysis?.improvement_suggestions && (
                   <div style={{ marginBottom: '12px' }}>
                     <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '6px', color: '#374151' }}>
-                      💡 개선 제안
+                      개선 제안
                     </h4>
                     <ul style={{ 
                       margin: 0, 
@@ -214,7 +214,7 @@ function FeedbackModal({ question, userAnswer, score, isOpen, onClose, aiFeedbac
               alert('이 기능은 곧 구현될 예정입니다!');
             }}
           >
-            🎯 이 주제로 추가 문제 풀기
+            이 주제로 추가 문제 풀기
           </button>
         )}
 

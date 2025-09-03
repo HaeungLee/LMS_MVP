@@ -68,10 +68,17 @@ click-plugins==1.1.1.2
 click-repl==0.3.0
 
 # ========================================
-# Phase 4: AI 고도화 (OpenRouter + Anthropic)
+# Phase 4: AI 고도화 (OpenRouter + Anthropic + LangChain)
 # ========================================
 openai==1.101.0
 anthropic==0.64.0
+
+# LangChain 통합 (EduGPT 호환성)
+langchain==0.3.27
+langchain-openai==0.3.32
+langchain-community==0.3.29
+langchain-core==0.3.75
+langchain-text-splitters==0.3.11
 
 # ========================================
 # 과학 계산 및 데이터 분석

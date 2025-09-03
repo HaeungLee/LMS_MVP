@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .api.v1 import questions, submit, dashboard, student, auth, admin, results_guard, teacher_dashboard, taxonomy, teacher_groups, feedback, ai_learning, curriculum, personalization, monitoring, ai_features, beta_testing, subjects, stats, code_execution, dynamic_subjects_simple, unified_learning, simple_topics
+from .api.v1 import questions, submit, dashboard, student, auth, admin, results_guard, teacher_dashboard, taxonomy, teacher_groups, feedback, ai_learning, curriculum, personalization, monitoring, ai_features, beta_testing, subjects, stats, code_execution, dynamic_subjects_simple, unified_learning, simple_topics, hybrid_ai
 from .core.config import settings
 from sqlalchemy import create_engine
 from .models.orm import Base
@@ -136,6 +136,7 @@ app.include_router(simple_topics.router, prefix="/api/v1", tags=["simple-topics"
 app.include_router(unified_learning.router, prefix="/api/v1", tags=["unified-learning"])
 app.include_router(stats.router, prefix="/api/v1/stats", tags=["stats"])
 app.include_router(code_execution.router, prefix="/api/v1", tags=["code-execution"])
+app.include_router(hybrid_ai.router, tags=["hybrid-ai"])  # Phase 9: EduGPT 통합용 하이브리드 AI
 
 @app.get("/", tags=["root"])
 def read_root():

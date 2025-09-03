@@ -512,7 +512,7 @@ const AIMentorChatImproved = ({ userId }) => {
 
                             {showFollowUps && message.follow_up_questions && message.follow_up_questions.length > 0 && (
                               <div>
-                                <p className="text-sm font-medium mb-2">❓ 후속 질문:</p>
+                                <p className="text-sm font-medium mb-2">후속 질문:</p>
                                 <div className="space-y-2">
                                   {message.follow_up_questions.map((question, index) => (
                                     <button

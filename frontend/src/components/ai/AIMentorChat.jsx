@@ -279,7 +279,7 @@ const AIMentorChat = ({ userId }) => {
                     onChange={(e) => setSettings(prev => ({ ...prev, showFollowUps: e.target.checked }))}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm">❓ 후속 질문 표시</span>
+                  <span className="text-sm">후속 질문 표시</span>
                 </label>
                 
                 <label className="flex items-center space-x-2">
@@ -289,7 +289,7 @@ const AIMentorChat = ({ userId }) => {
                     onChange={(e) => setSettings(prev => ({ ...prev, showSessionInfo: e.target.checked }))}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm">📊 세션 정보 표시</span>
+                  <span className="text-sm">세션 정보 표시</span>
                 </label>
               </div>
             </div>
@@ -407,7 +407,7 @@ const AIMentorChat = ({ userId }) => {
                             {/* 후속 질문 - 설정에서 활성화된 경우만 표시 */}
                             {settings.showFollowUps && message.follow_up_questions && message.follow_up_questions.length > 0 && (
                               <div>
-                                <p className="text-xs font-medium mb-2 text-gray-600">❓ 후속 질문:</p>
+                                <p className="text-xs font-medium mb-2 text-gray-600">후속 질문:</p>
                                 <div className="space-y-2">
                                   {message.follow_up_questions.map((question, index) => (
                                     <Button

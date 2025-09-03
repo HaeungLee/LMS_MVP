@@ -22,6 +22,7 @@ from app.services.adaptive_difficulty_engine import get_adaptive_difficulty_engi
 from app.services.ai_mentoring_system import get_ai_mentoring_system, ConversationMode, MentorPersonality
 from app.services.personalized_learning_path import get_personalized_learning_path_generator, LearningGoalType
 from app.services.advanced_ai_features import get_advanced_ai_features, ReviewType
+from app.services.enhanced_curriculum_generator import EnhancedCurriculumManager
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +63,83 @@ class CodeReviewRequest(BaseModel):
 
 class ProjectAnalysisRequest(BaseModel):
     project_data: Dict[str, Any]
+
+class CurriculumGenerationRequest(BaseModel):
+    subject_key: str
+    user_goals: List[str]
+    difficulty_level: str = "beginner"
+    duration_weeks: int = 8
+
+# === Enhanced Curriculum Generation API (Phase 9) ===
+
+@router.post("/curriculum/generate/{user_id}", response_model=Dict[str, Any])
+async def generate_dynamic_curriculum(
+    user_id: int,
+    request: CurriculumGenerationRequest = Body(...),
+    db: Session = Depends(get_db)
+):
+    """EduGPT 2-Agent 모델을 활용한 동적 커리큘럼 생성"""
+    
+    try:
+        logger.info(f"동적 커리큘럼 생성 요청: user {user_id}, subject {request.subject_key}")
+        
+        # Enhanced Curriculum Manager 사용
+        curriculum_manager = EnhancedCurriculumManager()
+        
+        # 2-Agent 모델로 커리큘럼 생성
+        curriculum = await curriculum_manager.generate_dynamic_curriculum(
+            subject_key=request.subject_key,
+            user_goals=request.user_goals,
+            difficulty_level=request.difficulty_level,
+            duration_weeks=request.duration_weeks,
+            user_id=user_id
+        )
+        
+        return {
+            "success": True,
+            "message": "EduGPT 2-Agent 모델로 커리큘럼이 성공적으로 생성되었습니다",
+            "curriculum": curriculum,
+            "generation_method": "two_agent_collaboration",
+            "ai_provider": curriculum_manager.two_agent_generator.ai_provider.current_provider,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"동적 커리큘럼 생성 실패 user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"커리큘럼 생성 중 오류가 발생했습니다: {str(e)}"
+        )
+
+@router.get("/curriculum/test-generation", response_model=Dict[str, Any])
+async def test_curriculum_generation():
+    """커리큘럼 생성 기능 테스트"""
+    
+    try:
+        curriculum_manager = EnhancedCurriculumManager()
+        
+        # 간단한 테스트 생성
+        test_curriculum = await curriculum_manager.generate_dynamic_curriculum(
+            subject_key="python_basics",
+            user_goals=["파이썬 기초 문법 이해", "간단한 프로그램 작성"],
+            difficulty_level="beginner",
+            duration_weeks=4
+        )
+        
+        return {
+            "success": True,
+            "message": "커리큘럼 생성 테스트 성공",
+            "test_curriculum": test_curriculum,
+            "ai_provider_status": "operational"
+        }
+        
+    except Exception as e:
+        logger.error(f"커리큘럼 생성 테스트 실패: {str(e)}")
+        return {
+            "success": False,
+            "message": f"테스트 실패: {str(e)}",
+            "ai_provider_status": "error"
+        }
 
 # === 심층 학습 분석 API ===
 

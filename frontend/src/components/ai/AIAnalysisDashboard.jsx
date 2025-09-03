@@ -287,7 +287,7 @@ const AIAnalysisDashboard = ({ userId }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-green-600">🎯 당신의 강점</CardTitle>
+            <CardTitle className="text-green-600">당신의 강점</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -302,7 +302,7 @@ const AIAnalysisDashboard = ({ userId }) => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-orange-600">🔧 개선할 점</CardTitle>
+            <CardTitle className="text-orange-600">개선할 점</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -348,7 +348,7 @@ const AIAnalysisDashboard = ({ userId }) => {
       {/* 다음 액션 */}
       <Card>
         <CardHeader>
-          <CardTitle>📋 다음 학습 액션</CardTitle>
+          <CardTitle>다음 학습 액션</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">

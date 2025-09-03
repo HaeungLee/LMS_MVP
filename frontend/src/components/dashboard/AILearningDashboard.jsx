@@ -130,11 +130,11 @@ const AILearningDashboard = () => {
       {/* 학습 추천사항 */}
       {recommendations && (
         <div style={styles.card}>
-          <h3 style={styles.cardTitle}>💡 AI 학습 추천</h3>
+          <h3 style={styles.cardTitle}>AI 학습 추천</h3>
           
           {recommendations.recommendations && recommendations.recommendations.length > 0 && (
             <div style={styles.recommendationsSection}>
-              <h4>📝 학습 가이드</h4>
+              <h4>학습 가이드</h4>
               <ul style={styles.recommendationsList}>
                 {recommendations.recommendations.map((rec, index) => (
                   <li key={index} style={styles.recommendationItem}>
@@ -147,7 +147,7 @@ const AILearningDashboard = () => {
           
           {recommendations.next_topic && (
             <div style={styles.nextTopicSection}>
-              <h4>🚀 다음 학습 주제</h4>
+              <h4>다음 학습 주제</h4>
               <div style={styles.nextTopicCard}>
                 <span style={styles.nextTopicName}>{recommendations.next_topic}</span>
                 <span style={styles.nextTopicTime}>
@@ -162,7 +162,7 @@ const AILearningDashboard = () => {
       {/* 취약점 분석 */}
       {weaknesses && weaknesses.weaknesses && weaknesses.weaknesses.length > 0 && (
         <div style={styles.card}>
-          <h3 style={styles.cardTitle}>🔍 학습 개선 포인트</h3>
+          <h3 style={styles.cardTitle}>학습 개선 포인트</h3>
           <div style={styles.weaknessesSection}>
             {weaknesses.weaknesses.map((weakness, index) => (
               <div key={index} style={styles.weaknessItem}>
@@ -172,7 +172,7 @@ const AILearningDashboard = () => {
             ))}
           </div>
           <div style={styles.improvementTip}>
-            💪 이 영역들을 집중적으로 연습하면 실력이 크게 향상될 거예요!
+            이 영역들을 집중적으로 연습하면 실력이 크게 향상될 거예요!
           </div>
         </div>
       )}

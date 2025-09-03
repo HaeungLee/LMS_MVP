@@ -357,7 +357,7 @@ const AIQuestionGenerator = () => {
       {/* 반 현황 개요 */}
       <div style={styles.card}>
         <div style={styles.overviewHeader}>
-          <h3 style={styles.cardTitle}>📊 반 학습 현황</h3>
+          <h3 style={styles.cardTitle}>반 학습 현황</h3>
           <button onClick={handleLoadClassOverview} style={styles.loadButton}>
             🔄 현황 불러오기
           </button>
