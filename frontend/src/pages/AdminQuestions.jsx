@@ -162,8 +162,8 @@ export default function AdminQuestions() {
           <label>토픽</label>
           <select name="topic" value={form.topic} onChange={onChange} required style={{ width:'100%', padding:8, border:'1px solid #d1d5db', borderRadius:6 }}>
             <option value="">선택...</option>
-            {topics.map(t => (
-              <option key={t.topic_key} value={t.topic_key}>{t.topic_key}{t.is_core ? '' : ' (ext)'}</option>
+            {topics.map((t, index) => (
+              <option key={`${t.topic_key}-${index}`} value={t.topic_key}>{t.topic_key}{t.is_core ? '' : ' (ext)'}</option>
             ))}
           </select>
         </div>
@@ -273,8 +273,8 @@ export default function AdminQuestions() {
               <div>
                 <label>토픽</label>
                 <select value={editForm.topic || ''} onChange={(e)=>setEditForm(f=>({...f, topic:e.target.value}))} style={{ width:'100%', padding:8, border:'1px solid #d1d5db', borderRadius:6 }}>
-                  {topics.map(t => (
-                    <option key={t.topic_key} value={t.topic_key}>{t.topic_key}{t.is_core ? '' : ' (ext)'}</option>
+                  {topics.map((t, index) => (
+                    <option key={`edit-${t.topic_key}-${index}`} value={t.topic_key}>{t.topic_key}{t.is_core ? '' : ' (ext)'}</option>
                   ))}
                 </select>
               </div>

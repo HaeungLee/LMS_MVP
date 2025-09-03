@@ -73,6 +73,9 @@ class Question(Base):
     code_snippet = Column(Text, nullable=False)
     correct_answer = Column(String(200), nullable=False)
     difficulty = Column(String(20), nullable=False)
+    taxonomy_level = Column(String(50), nullable=True, default="application")  # 추가된 필드
+    hint = Column(Text, nullable=True)  # 추가된 필드
+    explanation = Column(Text, nullable=True)  # 추가된 필드
     rubric = Column(Text, nullable=True)
     created_by = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
