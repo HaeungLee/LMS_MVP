@@ -103,6 +103,9 @@ class User(Base):
     # Relationships (bring in session/activity models from older schema)
     quiz_sessions = relationship("QuizSession", back_populates="user")
     recent_activities = relationship("RecentActivity", back_populates="user")
+    # Phase 9: AI 커리큘럼 관계
+    ai_curricula = relationship("AIGeneratedCurriculum", back_populates="user")
+    ai_teaching_sessions = relationship("AITeachingSession", back_populates="user")
 
 
 class RefreshToken(Base):
@@ -135,6 +138,9 @@ class Subject(Base):
     total_students = Column(Integer, nullable=True, default=0)
     average_completion_rate = Column(Float, nullable=True, default=0.0)
     updated_at = Column(DateTime, nullable=True, default=datetime.utcnow)
+    
+    # Phase 9: AI 커리큘럼 관계
+    ai_curricula = relationship("AIGeneratedCurriculum", back_populates="subject")
 
 
 class Topic(Base):

@@ -24,6 +24,8 @@ from app.models.orm import Base
 from app.models.dynamic_subject import DynamicSubjectBase
 # 코딩 테스트 모델 import (같은 Base 사용)
 from app.models.code_problem import CodeProblem, CodeTestCase, CodeSubmission
+# Phase 9: AI 커리큘럼 모델 import
+from app.models.ai_curriculum import AIGeneratedCurriculum, AITeachingSession, AIContentGenerationLog
 
 # 모든 모델의 메타데이터를 포함
 target_metadata = [Base.metadata, DynamicSubjectBase.metadata]

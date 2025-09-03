@@ -1,27 +1,61 @@
 """
-Enhanced Curriculum Generator - Phase 9
-EduGPT의 2-Agent 모델을 하이브리드 AI 시스템에 통합
+Enhanced Curriculum Generator - Phase 9 (LangChain Integrated)
+EduGPT의 2-Agent 모델을 LangChain 기반 하이브리드 AI 시스템에 통합
+데이터베이스 연동 및 Phase 8 동적 과목 시스템과 완전 통합
 """
 
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
 import json
 import asyncio
+from sqlalchemy.orm import Session
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser
+from pydantic import BaseModel, Field
 
-from app.services.hybrid_ai_provider import HybridAIProvider
+from app.services.langchain_hybrid_provider import LangChainHybridProvider
+from app.models.orm import Subject, User
+from app.models.ai_curriculum import AIGeneratedCurriculum, AIContentGenerationLog
 
 logger = logging.getLogger(__name__)
 
+
+class CurriculumStep(BaseModel):
+    """커리큘럼 단계 모델"""
+    step_number: int = Field(..., description="단계 번호")
+    title: str = Field(..., description="단계 제목")
+    description: str = Field(..., description="단계 설명")
+    learning_objectives: List[str] = Field(..., description="학습 목표")
+    key_concepts: List[str] = Field(..., description="핵심 개념")
+    practice_activities: List[str] = Field(..., description="실습 활동")
+    estimated_duration: str = Field(..., description="예상 소요 시간")
+    difficulty_level: int = Field(..., description="난이도 (1-10)")
+
+
+class GeneratedCurriculum(BaseModel):
+    """생성된 커리큘럼 모델"""
+    title: str = Field(..., description="커리큘럼 제목")
+    description: str = Field(..., description="커리큘럼 설명")
+    target_audience: str = Field(..., description="대상 학습자")
+    prerequisites: List[str] = Field(..., description="선수 지식")
+    learning_outcomes: List[str] = Field(..., description="학습 성과")
+    total_duration: str = Field(..., description="전체 소요 시간")
+    steps: List[CurriculumStep] = Field(..., description="커리큘럼 단계들")
+
+
 class TwoAgentCurriculumGenerator:
     """
-    EduGPT의 2-Agent 협력 모델을 활용한 커리큘럼 생성기
+    EduGPT의 2-Agent 협력 모델을 LangChain으로 구현
     - Instructor Agent: 전문적인 교육과정 설계
     - Teaching Assistant Agent: 학습자 관점에서 피드백 제공
+    - 데이터베이스 연동: Phase 8 과목 시스템과 완전 통합
     """
     
     def __init__(self):
-        self.ai_provider = HybridAIProvider()
+        self.ai_provider = LangChainHybridProvider()
+        self.curriculum_parser = PydanticOutputParser(pydantic_object=GeneratedCurriculum)
         self.conversation_history = []
         
     async def generate_curriculum(
