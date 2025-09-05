@@ -69,6 +69,10 @@ class Question(Base):
     id = Column(Integer, primary_key=True, index=True)
     subject = Column(String(100), nullable=False, index=True)
     topic = Column(String(100), nullable=False, index=True)
+    
+    # 계층적 구조 지원
+    subject_path = Column(String(500), nullable=True, index=True)  # "/saas_dev/backend/python/variables"
+    
     question_type = Column(String(50), nullable=False)
     code_snippet = Column(Text, nullable=False)
     correct_answer = Column(String(200), nullable=False)
@@ -89,6 +93,7 @@ class Question(Base):
     # Explicitly define the index with the existing name
     __table_args__ = (
         Index('idx_question_ai_generated', 'ai_generated'),
+        Index('idx_question_subject_path', 'subject_path'),
     )
 
 
@@ -698,4 +703,57 @@ class SubjectCategory(Base):
     color_code = Column(String(10), nullable=True)
     order_index = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class SubjectHierarchy(Base):
+    """계층적 과목 구조 - 무한 확장 가능"""
+    __tablename__ = "subject_hierarchy"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(100), nullable=False, unique=True, index=True)
+    title = Column(String(200), nullable=False)
+    
+    # 계층 구조
+    parent_id = Column(Integer, ForeignKey("subject_hierarchy.id"), nullable=True, index=True)
+    level = Column(Integer, nullable=False, default=0, index=True)  # 0:카테고리, 1:영역, 2:과목, 3:토픽
+    path = Column(String(500), nullable=False, unique=True, index=True)  # "/saas_dev/backend/python/variables"
+    
+    # 메타데이터
+    description = Column(Text, nullable=True)
+    difficulty_level = Column(String(20), default='beginner')
+    estimated_duration = Column(String(50), nullable=True)
+    
+    # UI 정보
+    icon_name = Column(String(50), nullable=True)
+    color_code = Column(String(10), nullable=True)
+    order_index = Column(Integer, default=0)
+    
+    # 상태
+    is_active = Column(Boolean, default=True, nullable=False)
+    is_core = Column(Boolean, default=True, nullable=False)  # 핵심/선택 여부
+    
+    # 통계 (자동 계산)
+    total_problems = Column(Integer, default=0)
+    total_students = Column(Integer, default=0)
+    average_completion_rate = Column(Float, default=0.0)
+    
+    # 학습 경로 정보
+    prerequisites = Column(ARRAY(String), default=list)  # 선수 과목/토픽 키들
+    learning_objectives = Column(JSON, default=list)
+    
+    # 생성/수정 시간
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # 관계
+    parent = relationship("SubjectHierarchy", remote_side=[id], back_populates="children")
+    children = relationship("SubjectHierarchy", back_populates="parent", cascade="all, delete-orphan")
+    
+    # 인덱스
+    __table_args__ = (
+        Index('idx_subject_hierarchy_path', 'path'),
+        Index('idx_subject_hierarchy_level', 'level'),
+        Index('idx_subject_hierarchy_parent_id', 'parent_id'),
+        Index('idx_subject_hierarchy_active', 'is_active'),
+    )
 

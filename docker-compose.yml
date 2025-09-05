@@ -13,7 +13,6 @@ services:
       # PostgreSQL 설정 최적화
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     ports:
-      # 호스트 포트:컨테이너 포트. 기존 15432 대신 15433 포트를 사용합니다.
       - "15433:5432"
     volumes:
       # 테스트용 데이터베이스 데이터를 영구적으로 저장하기 위한 볼륨 설정

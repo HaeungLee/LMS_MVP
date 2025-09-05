@@ -1,0 +1,240 @@
+1. 시스템 아키텍처 설계
+핵심 모듈 구성
+학습 엔진 (Learning Engine)
+
+커리큘럼 생성 AI: 학습 목표와 현재 수준을 기반으로 개인화된 학습 경로 설계
+문제 생성 AI: 난이도와 유형을 조절하며 동적으로 문제 생성
+평가 분석 AI: 학습자의 응답 패턴, 소요 시간, 정답률을 분석하여 강점/약점 도출
+적응형 난이도 조절기: 실시간으로 학습자 수준에 맞춰 콘텐츠 난이도 조정
+
+사용자 프로파일링 시스템
+
+학습 스타일 분석기: 시각형/청각형/실습형 등 선호 학습 방식 파악
+진도 추적기: 학습 속도, 반복 패턴, 시간대별 집중도 분석
+역량 매핑: 기술별/주제별 숙련도를 다차원 벡터로 표현
+
+콘텐츠 관리 시스템
+
+지식 그래프: 개념 간 관계와 선수학습 요구사항 매핑
+멀티모달 콘텐츠 저장소: 텍스트, 영상, 인터랙티브 콘텐츠 통합 관리
+버전 관리: 커리큘럼과 문제의 변경 이력 추적
+
+2. 기술 스택 제안
+Backend Architecture
+API Layer: FastAPI (Python) 또는 NestJS (TypeScript)
+- 비동기 처리로 높은 동시성 지원
+- WebSocket 지원으로 실시간 피드백 가능
+
+AI Services: 
+- 모델 서빙: TorchServe / TensorFlow Serving
+- LLM Integration: LangChain + Vector DB (Pinecone/Weaviate)
+- 프롬프트 관리: Promptflow 또는 자체 템플릿 시스템
+
+Message Queue: Redis + Bull Queue
+- 문제 생성, 평가 분석 등 무거운 작업 비동기 처리
+- 실시간 알림 및 진도 업데이트
+
+Cache Layer: Redis
+- 세션 관리, 자주 접근하는 커리큘럼 데이터 캐싱
+Database Architecture
+Primary DB: PostgreSQL
+- 사용자, 과정, 제출 기록 등 트랜잭셔널 데이터
+- JSONB 타입으로 유연한 스키마 확장 가능
+
+Time-series DB: TimescaleDB
+- 학습 이벤트, 상호작용 로그 저장
+- 시간대별 학습 패턴 분석
+
+Vector DB: Pinecone 또는 Pgvector
+- 문제/콘텐츠 임베딩 저장
+- 유사 문제 검색, 개념 연관성 계산
+
+Document Store: MongoDB
+- 생성된 문제, 해설, 커리큘럼 템플릿 저장
+- 유연한 콘텐츠 구조 지원
+Frontend
+Framework: Next.js 14+ (App Router)
+- SSR/SSG로 초기 로딩 최적화
+- React Server Components로 데이터 페칭 최적화
+
+상태 관리: Zustand + React Query
+- 가벼운 전역 상태 관리
+- 서버 상태 캐싱 및 동기화
+
+UI Components: shadcn/ui + Tailwind CSS
+- 일관된 디자인 시스템
+- 접근성 고려된 컴포넌트
+
+실시간 통신: Socket.io
+- 즉각적인 피드백과 진도 업데이트
+3. 데이터베이스 스키마 설계
+핵심 테이블 구조
+sql-- 사용자 관련
+users (
+  id, email, created_at, last_active,
+  learning_preference_json, timezone
+)
+
+user_profiles (
+  user_id, current_level, target_role,
+  strengths_json, weaknesses_json,
+  learning_style, availability_hours
+)
+
+-- 커리큘럼 관련
+curricula (
+  id, title, description, difficulty_range,
+  prerequisites_json, outcomes_json,
+  estimated_hours, version
+)
+
+learning_paths (
+  id, user_id, curriculum_id,
+  customization_json, progress_percentage,
+  estimated_completion, actual_pace_factor
+)
+
+-- 콘텐츠 관련
+learning_modules (
+  id, curriculum_id, title, order_index,
+  content_type, content_data_json,
+  difficulty_score, estimated_minutes
+)
+
+problems (
+  id, module_id, problem_text, problem_type,
+  difficulty, tags_array, solution_json,
+  generated_at, generation_params_json
+)
+
+-- 학습 기록
+submissions (
+  id, user_id, problem_id, submitted_at,
+  response_json, is_correct, time_spent,
+  hints_used, attempt_number
+)
+
+learning_analytics (
+  user_id, module_id, timestamp,
+  engagement_score, comprehension_score,
+  struggle_indicators_json
+)
+
+-- 기업 연계
+skill_assessments (
+  user_id, skill_id, proficiency_level,
+  assessed_at, evidence_json
+)
+
+job_matches (
+  user_id, company_id, position_id,
+  match_score, required_skills_json,
+  gap_analysis_json
+)
+4. 요구사항 명세서 주요 항목
+기능 요구사항
+Phase 1: MVP (3-4개월)
+
+개발자 트랙 기본 커리큘럼 (Python, JavaScript, SQL)
+AI 기반 문제 생성 (객관식, 코딩 문제)
+기본 난이도 조절 (3단계: 초급/중급/고급)
+학습 진도 대시보드
+
+Phase 2: 개인화 강화 (2-3개월)
+
+학습 패턴 분석 기반 맞춤 추천
+약점 보완 집중 모드
+실시간 힌트 시스템
+동료 학습 기능 (스터디 그룹)
+
+Phase 3: 확장 (3-4개월)
+
+중/고등 수학, 영어 과정 추가
+멀티모달 콘텐츠 (영상, 인터랙티브)
+AI 튜터 채팅 인터페이스
+학부모/교사 대시보드
+
+Phase 4: 기업 연계 (2-3개월)
+
+기술 역량 인증 시스템
+기업 맞춤 평가 모듈
+채용 매칭 알고리즘
+포트폴리오 자동 생성
+
+비기능 요구사항
+성능
+
+API 응답 시간: P95 < 200ms
+문제 생성 시간: < 3초
+동시 접속자: 10,000명 이상 지원
+가용성: 99.9% SLA
+
+보안
+
+JWT 기반 인증
+문제/정답 암호화 저장
+Rate limiting
+GDPR/개인정보보호법 준수
+
+5. 추가 고려사항 및 도전 과제
+기술적 도전 과제
+LLM 비용 최적화
+
+문제 생성 캐싱 전략이 필요합니다. 유사 조건의 문제는 재사용하되, 파라미터를 약간 변경하여 다양성 확보
+Fine-tuned 소형 모델 활용 검토 (Llama, Mistral 등)
+프롬프트 최적화로 토큰 사용량 절감
+
+실시간 적응 알고리즘
+
+Multi-Armed Bandit 또는 강화학습 접근
+A/B 테스팅 프레임워크 내장
+학습 효과 측정 메트릭 정의 중요
+
+콘텐츠 품질 관리
+
+AI 생성 문제의 품질 검증 파이프라인
+전문가 리뷰 프로세스
+사용자 피드백 반영 메커니즘
+
+사업적 고려사항
+초기 콘텐츠 확보
+
+개발자 과정: 실무 프로젝트 기반 커리큘럼 필요
+파트너십: 부트캠프, 대학과 협력
+오픈소스 교육 자료 활용 및 라이선스 검토
+
+수익 모델
+
+B2C: 프리미엄 구독 (고급 기능, 무제한 문제)
+B2B: 기업 교육 솔루션, 채용 연계 수수료
+B2G: 학교/교육기관 라이선스
+
+규제 및 인증
+
+교육 콘텐츠 인증 요구사항 확인
+미성년자 서비스 시 추가 보호 조치
+기업 연계 시 고용 차별 방지 가이드라인
+
+확장성 설계
+마이크로서비스 전환 준비
+
+각 AI 모듈을 독립 서비스로 분리 가능하게 설계
+이벤트 기반 아키텍처로 느슨한 결합
+컨테이너화 (Docker/K8s) 준비
+
+다국어 지원
+
+i18n 프레임워크 초기 도입
+문제 번역 시 컨텍스트 유지 전략
+지역별 교육과정 차이 대응
+
+논의하고 싶은 추가 질문
+
+타겟 시장 우선순위: 개발자 교육 → 중고등 → 대학 순서가 맞나요? 아니면 특정 세그먼트에 더 집중해야 할까요?
+AI 모델 전략: GPT-4 같은 대형 모델 API를 사용할지, 자체 fine-tuning 모델을 만들지? 비용과 성능의 균형점은?
+차별화 전략: 기존 Coursera, Udacity, Khan Academy 등과 어떻게 차별화할 것인지? 한국 시장 특화 전략?
+파일럿 프로그램: MVP를 어느 규모로, 어떤 대상으로 시작할지? (예: 특정 부트캠프 파트너십)
+평가 신뢰성: AI가 생성한 문제와 평가의 신뢰성을 어떻게 검증하고 인증할 것인지?
+데이터 수집: 초기 학습 데이터와 사용자 행동 데이터를 어떻게 효율적으로 수집할 것인지?
+
+이러한 구조와 계획을 바탕으로 시작하되, 애자일 방식으로 빠르게 프로토타입을 만들고 사용자 피드백을 받아 개선하는 것이 중요할 것 같습니다. 특히 어떤 부분부터 구체적으로 시작하시려는지, 또는 위 계획 중 더 자세히 논의하고 싶은 부분이 있는지 말씀해 주시면 더 깊이 있게 도와드리겠습니다.
