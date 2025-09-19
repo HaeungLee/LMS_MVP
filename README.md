@@ -7,7 +7,7 @@ AI 기반 코딩 학습 피드백을 제공하는 LMS(Learning Management System
 ## 2) 기술 스택
 
 - 백엔드: FastAPI (Python)
-- 프론트엔드: React (Vite) + Zustand
+- 프론트엔드: React + TypeScript (Vite) + TanStack Query
 - 데이터베이스: PostgreSQL (Docker) + JSON 호환
 - 기타: Redis/Celery(옵션), Prometheus/Grafana(옵션)
 
@@ -29,6 +29,14 @@ cp env.sample .env  # Windows PowerShell은 수동 복사 또는 편집기로 �
 DATABASE_URL=postgresql://lms_user:1234@localhost:15432/lms_mvp_db
 JWT_SECRET=dev_secret_change_me
 OPENROUTER_API_KEY=
+```
+
+프론트엔드 환경 변수(frontend/.env):
+
+```
+VITE_API_BASE_URL=http://localhost:8000
+
+```
 VITE_API_BASE_URL=http://localhost:8000
 ```
 
@@ -64,7 +72,7 @@ API: http://localhost:8000
 
 ### 4.2 프론트엔드 실행
 
-프론트 개발 서버 기본 포트는 `vite.config.js`에 따라 5174입니다.
+프론트엔드는 새로운 TypeScript + Vite 구조로 마이그레이션되었습니다. 개발 서버 기본 포트는 `vite.config.ts`에 따라 5173입니다.
 
 ```powershell
 cd frontend
@@ -72,7 +80,7 @@ npm install
 npm run dev
 ```
 
-웹: http://localhost:5174
+웹: http://localhost:5173
 
 ## 5) 운영/패키징 (요약)
 
@@ -109,7 +117,7 @@ docker exec -it lms_mvp_db_container psql -U lms_user -d lms_mvp_db
 - 세션: httpOnly 쿠키(`access_token`, `refresh_token`), Remember me 시 refresh 30일
 - CSRF: 더블 서브밋 쿠키(`csrf_token`) + 헤더(`x-csrf-token`)
 - 결과 접근 제어: `/api/v1/results/secure/{submission_id}` 소유자/권한 확인
-- CORS: `http://localhost:5174` 등 로컬 개발 도메인 허용, credentials 허용
+- CORS: `http://localhost:5173` 등 로컬 개발 도메인 허용, credentials 허용
 
 ## 8) 관리자/교사용 기능
 

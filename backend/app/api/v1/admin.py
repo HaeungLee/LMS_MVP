@@ -10,18 +10,17 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from app.database import get_db
-from app.models.user import User
+from app.core.database import get_db
+from app.models.orm import User, Topic
 from app.models.question import Question
-from app.models.topic import Topic
 from app.schemas.admin import (
     QuestionReviewRequest, QuestionReviewResponse,
     CurriculumManagementRequest, CurriculumManagementResponse,
     SystemHealthResponse, UserAnalyticsResponse,
     AdminDashboardResponse
 )
-from app.services.auth_service import get_current_user
-from app.services.ai_question_generator_enhanced import AIQuestionGenerator
+from app.core.security import get_current_user
+from app.services.ai_question_generator_enhanced import AIQuestionGeneratorEnhanced
 from app.services.enhanced_learning_analytics import EnhancedLearningAnalytics
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
@@ -51,7 +50,7 @@ async def get_admin_dashboard(
         total_topics = db.query(Topic).count()
         
         # AI 시스템 상태
-        ai_generator = AIQuestionGenerator()
+        ai_generator = AIQuestionGeneratorEnhanced()
         ai_analytics = await ai_generator.get_analytics()
         
         return AdminDashboardResponse(
@@ -116,7 +115,7 @@ async def review_question(
 ):
     """문제 검토 및 승인/거부"""
     try:
-        ai_generator = AIQuestionGenerator()
+        ai_generator = AIQuestionGeneratorEnhanced()
         result = await ai_generator.review_question(
             question_id, 
             review_data.status,
@@ -311,3 +310,4 @@ async def get_ai_model_performance(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI 모델 성능 조회 실패: {str(e)}")
+    
