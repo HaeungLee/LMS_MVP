@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Bot, Sparkles, Target, MessageCircle, BookOpen, Brain, CheckCircle } from 'lucide-react';
+import { Bot, Sparkles, Target, MessageCircle, BookOpen, Brain, CheckCircle, TrendingUp, Zap } from 'lucide-react';
 import { subjectsApi } from '../../shared/services/apiClient';
 import useAuthStore from '../../shared/hooks/useAuthStore';
 import CurriculumGenerator from './components/CurriculumGenerator';
 import AITeachingSession from './components/AITeachingSession';
+import SmartQuestionGenerator from './components/SmartQuestionGenerator';
+import AdaptiveLearningSystem from './components/AdaptiveLearningSystem';
 
 export default function AIAssistantPage() {
   const { user } = useAuthStore();
@@ -48,6 +50,36 @@ export default function AIAssistantPage() {
             subjects={subjects}
             onBack={() => setActiveFeature(null)}
           />
+        </div>
+      )}
+
+      {activeFeature === 'question_generator' && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900">스마트 문제 생성기</h2>
+            <button 
+              onClick={() => setActiveFeature(null)}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              ← 돌아가기
+            </button>
+          </div>
+          <SmartQuestionGenerator />
+        </div>
+      )}
+
+      {activeFeature === 'adaptive_learning' && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900">적응형 학습 시스템</h2>
+            <button 
+              onClick={() => setActiveFeature(null)}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              ← 돌아가기
+            </button>
+          </div>
+          <AdaptiveLearningSystem />
         </div>
       )}
 
@@ -127,25 +159,29 @@ export default function AIAssistantPage() {
               </div>
             </div>
 
-            {/* AI 문제 생성 (Phase 10) */}
+            {/* AI 문제 생성 (Phase 10) - 구현 완료 */}
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-6 border border-orange-200">
               <div className="flex items-center mb-4">
                 <div className="p-2 bg-orange-600 rounded-lg">
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-lg font-semibold text-orange-900 ml-3">
-                  AI 문제 생성
+                  스마트 문제 생성
                 </h3>
               </div>
               <p className="text-orange-800 mb-4">
-                부족한 영역을 자동으로 감지하여 맞춤형 문제를 생성해드립니다.
+                AI가 학습 목표와 약점 분석을 통해 맞춤형 문제를 자동 생성해드립니다.
               </p>
-              <div className="bg-gray-400 text-white px-4 py-2 rounded-lg text-center cursor-not-allowed">
-                Phase 10에서 구현 예정
+              <button 
+                onClick={() => setActiveFeature('question_generator')}
+                className="w-full bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+              >
+                문제 생성하기
+              </button>
+              <div className="flex items-center mt-2 text-xs text-orange-600">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Phase 10 새로운 기능
               </div>
-              <p className="text-xs text-orange-600 mt-2 text-center">
-                Week 2에서 구현
-              </p>
             </div>
 
             {/* 학습 상담 & 동기부여 */}
@@ -170,75 +206,112 @@ export default function AIAssistantPage() {
               </div>
             </div>
 
-            {/* 적응형 난이도 조절 */}
+            {/* 적응형 학습 시스템 (Phase 10) - 구현 완료 */}
             <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-6 border border-indigo-200">
               <div className="flex items-center mb-4">
                 <div className="p-2 bg-indigo-600 rounded-lg">
-                  <Target className="w-6 h-6 text-white" />
+                  <TrendingUp className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-lg font-semibold text-indigo-900 ml-3">
-                  적응형 난이도 조절
+                  적응형 학습 시스템
                 </h3>
               </div>
               <p className="text-indigo-800 mb-4">
-                실시간으로 당신의 실력을 분석하여 최적의 난이도를 자동 조절합니다.
+                실시간 성과 분석으로 최적의 난이도를 자동 조절하고 개인화된 학습 경로를 제안합니다.
               </p>
-              <button className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
-                난이도 분석하기
+              <button 
+                onClick={() => setActiveFeature('adaptive_learning')}
+                className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                적응형 분석 시작하기
               </button>
               <div className="flex items-center mt-2 text-xs text-indigo-600">
                 <CheckCircle className="w-3 h-3 mr-1" />
-                기존 기능 활용
+                Phase 10 새로운 기능
               </div>
             </div>
           </div>
 
-          {/* Phase 9 구현 상태 - 실제 API 연결 확인 */}
+          {/* Phase 9-10 구현 상태 - API 연결 현황 */}
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 mb-8">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              🚀 Phase 9 API 연결 현황
+              🚀 Phase 9-10 시스템 현황
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <span className="font-medium text-green-900">백엔드 API</span>
-                <span className="text-green-600 font-bold">✅ 연결됨</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <span className="font-medium text-green-900">데이터베이스</span>
-                <span className="text-green-600 font-bold">✅ 활성화</span>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                 <span className="font-medium text-green-900">AI 커리큘럼</span>
-                <span className="text-green-600 font-bold">✅ 준비완료</span>
+                <span className="text-green-600 font-bold">✅ Phase 9</span>
               </div>
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                 <span className="font-medium text-green-900">AI 강사 세션</span>
-                <span className="text-green-600 font-bold">✅ 준비완료</span>
+                <span className="text-green-600 font-bold">✅ Phase 9</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <span className="font-medium text-blue-900">스마트 문제 생성</span>
+                <span className="text-blue-600 font-bold">🆕 Phase 10</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <span className="font-medium text-blue-900">적응형 학습</span>
+                <span className="text-blue-600 font-bold">🆕 Phase 10</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                <span className="font-medium text-yellow-900">고급 분석</span>
+                <span className="text-yellow-600 font-bold">🔄 개발중</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                <span className="font-medium text-purple-900">백엔드 API</span>
+                <span className="text-purple-600 font-bold">✅ 전체 연결</span>
               </div>
             </div>
           </div>
 
           {/* API 엔드포인트 정보 */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-blue-900 mb-2">
-              📡 연결된 API 엔드포인트
+            <h2 className="text-lg font-semibold text-blue-900 mb-4">
+              📡 Phase 9-10 API 엔드포인트
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div className="bg-white rounded p-3">
-                <span className="font-mono text-blue-700">POST /api/v1/ai-curriculum/generate</span>
-                <p className="text-gray-600 text-xs mt-1">커리큘럼 생성</p>
+            
+            <div className="mb-4">
+              <h3 className="font-medium text-blue-800 mb-2">Phase 9 - AI 기본 기능</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div className="bg-white rounded p-3">
+                  <span className="font-mono text-blue-700">POST /api/v1/ai-curriculum/generate</span>
+                  <p className="text-gray-600 text-xs mt-1">커리큘럼 생성</p>
+                </div>
+                <div className="bg-white rounded p-3">
+                  <span className="font-mono text-blue-700">GET /api/v1/ai-curriculum/[ID]</span>
+                  <p className="text-gray-600 text-xs mt-1">커리큘럼 조회</p>
+                </div>
+                <div className="bg-white rounded p-3">
+                  <span className="font-mono text-blue-700">POST /api/v1/ai-teaching/start-session</span>
+                  <p className="text-gray-600 text-xs mt-1">교육 세션 시작</p>
+                </div>
+                <div className="bg-white rounded p-3">
+                  <span className="font-mono text-blue-700">POST /api/v1/ai-teaching/message</span>
+                  <p className="text-gray-600 text-xs mt-1">AI 강사 대화</p>
+                </div>
               </div>
-              <div className="bg-white rounded p-3">
-                <span className="font-mono text-blue-700">GET /api/v1/ai-curriculum/[ID]</span>
-                <p className="text-gray-600 text-xs mt-1">커리큘럼 조회</p>
-              </div>
-              <div className="bg-white rounded p-3">
-                <span className="font-mono text-blue-700">POST /api/v1/ai-teaching/start-session</span>
-                <p className="text-gray-600 text-xs mt-1">교육 세션 시작</p>
-              </div>
-              <div className="bg-white rounded p-3">
-                <span className="font-mono text-blue-700">POST /api/v1/ai-teaching/message</span>
-                <p className="text-gray-600 text-xs mt-1">AI 강사 대화</p>
+            </div>
+
+            <div>
+              <h3 className="font-medium text-blue-800 mb-2">Phase 10 - 고급 AI 기능</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div className="bg-white rounded p-3">
+                  <span className="font-mono text-blue-700">POST /api/v1/ai-questions/generate</span>
+                  <p className="text-gray-600 text-xs mt-1">스마트 문제 생성</p>
+                </div>
+                <div className="bg-white rounded p-3">
+                  <span className="font-mono text-blue-700">POST /api/v1/ai-questions/adaptive</span>
+                  <p className="text-gray-600 text-xs mt-1">적응형 문제 생성</p>
+                </div>
+                <div className="bg-white rounded p-3">
+                  <span className="font-mono text-blue-700">GET /api/v1/ai-questions/analytics</span>
+                  <p className="text-gray-600 text-xs mt-1">문제 생성 분석</p>
+                </div>
+                <div className="bg-white rounded p-3">
+                  <span className="font-mono text-blue-700">POST /api/v1/ai-questions/[ID]/review</span>
+                  <p className="text-gray-600 text-xs mt-1">문제 검토 시스템</p>
+                </div>
               </div>
             </div>
           </div>

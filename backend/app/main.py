@@ -142,6 +142,10 @@ app.include_router(code_execution.router, prefix="/api/v1", tags=["code-executio
 app.include_router(ai_curriculum.router, tags=["ai-curriculum"])  # Phase 9: AI 커리큘럼 생성 및 교육 세션 (prefix 이미 설정됨)
 app.include_router(ai_teaching.router, tags=["ai-teaching"])  # Phase 9: 실라버스 기반 개별화 교육 (prefix 이미 설정됨)
 
+# Phase 10: 고급 AI 기능들
+from app.api.v1 import ai_questions
+app.include_router(ai_questions.router, tags=["ai-questions-phase10"])  # Phase 10: 스마트 문제 생성 (prefix 이미 설정됨)
+
 @app.get("/", tags=["root"])
 def read_root():
     return {

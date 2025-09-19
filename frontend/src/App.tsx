@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'react-hot-toast';
 import MainLayout from './layouts/MainLayout';
 import DashboardPage from './features/dashboard/DashboardPage';
 import LearningPage from './features/learning/LearningPage';
@@ -39,6 +40,38 @@ function App() {
           </Route>
         </Routes>
       </BrowserRouter>
+      
+      {/* Toast 알림 컴포넌트 */}
+      <Toaster
+        position="top-right"
+        reverseOrder={false}
+        gutter={8}
+        containerClassName=""
+        containerStyle={{}}
+        toastOptions={{
+          // 기본 설정
+          className: '',
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          // 성공 토스트
+          success: {
+            duration: 3000,
+            style: {
+              background: '#10b981',
+            },
+          },
+          // 에러 토스트
+          error: {
+            duration: 4000,
+            style: {
+              background: '#ef4444',
+            },
+          },
+        }}
+      />
     </QueryClientProvider>
   );
 }
