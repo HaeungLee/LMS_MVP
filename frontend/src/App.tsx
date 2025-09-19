@@ -8,6 +8,8 @@ import LearningPage from './features/learning/LearningPage';
 import AnalyticsPage from './features/analytics/AnalyticsPage';
 import AIAssistantPage from './features/ai-assistant/AIAssistantPage';
 import SettingsPage from './features/settings/SettingsPage';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import QuestionReviewSystem from './pages/admin/QuestionReviewSystem';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 
@@ -37,6 +39,10 @@ function App() {
             <Route path="analytics/*" element={<AnalyticsPage />} />
             <Route path="ai-assistant/*" element={<AIAssistantPage />} />
             <Route path="settings/*" element={<SettingsPage />} />
+            
+            {/* 관리자 전용 라우트 */}
+            <Route path="admin" element={<AdminDashboard />} />
+            <Route path="admin/questions" element={<QuestionReviewSystem />} />
           </Route>
         </Routes>
       </BrowserRouter>

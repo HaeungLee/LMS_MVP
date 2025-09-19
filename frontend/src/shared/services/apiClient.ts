@@ -315,4 +315,166 @@ export const analyticsApi = {
   }>(`/unified-learning/analytics/${userId}`),
 };
 
+// 관리자 API
+export const adminApi = {
+  // 대시보드
+  getDashboard: () => api.get<{
+    total_users: number;
+    active_users: number;
+    total_questions: number;
+    total_topics: number;
+    ai_questions_generated: number;
+    system_health_score: number;
+    recent_activities: Array<{
+      type: string;
+      count: number;
+      period: string;
+    }>;
+  }>('/admin/dashboard'),
+
+  // 검토 대기 문제 목록
+  getPendingQuestions: (skip: number = 0, limit: number = 10) => 
+    api.get<{
+      questions: Array<{
+        id: number;
+        type: string;
+        difficulty: string;
+        subject: string;
+        topic: string;
+        question_text: string;
+        options?: string[];
+        correct_answer?: string;
+        explanation?: string;
+        created_at: string;
+        ai_confidence: number;
+        status: string;
+      }>;
+      total: number;
+      has_more: boolean;
+    }>(`/admin/questions/pending-review?skip=${skip}&limit=${limit}`),
+
+  // 문제 검토
+  reviewQuestion: (questionId: number, data: {
+    status: string;
+    feedback?: string;
+    suggested_changes?: string;
+  }) => api.post(`/admin/questions/${questionId}/review`, data),
+
+  // 커리큘럼 템플릿 목록
+  getCurriculumTemplates: (skip: number = 0, limit: number = 10, subjectFilter?: string) => {
+    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() });
+    if (subjectFilter) params.append('subject_filter', subjectFilter);
+    return api.get<{
+      templates: Array<{
+        id: number;
+        title: string;
+        subject: string;
+        difficulty_level: string;
+        total_topics: number;
+        estimated_duration: string;
+        usage_count: number;
+        rating: number;
+        created_by: string;
+        created_at: string;
+        last_modified: string;
+        is_active: boolean;
+        tags: string[];
+      }>;
+      total: number;
+      has_more: boolean;
+    }>(`/admin/curriculum/templates?${params.toString()}`);
+  },
+
+  // 커리큘럼 템플릿 생성
+  createCurriculumTemplate: (data: {
+    title: string;
+    subject: string;
+    difficulty_level: string;
+    description?: string;
+    topics: Array<{
+      title: string;
+      description: string;
+      estimated_duration: string;
+      prerequisites?: string[];
+      learning_objectives?: string[];
+    }>;
+    estimated_total_duration?: string;
+    target_audience?: string;
+    tags?: string[];
+  }) => api.post('/admin/curriculum/template', data),
+
+  // 시스템 건강도
+  getSystemHealth: () => api.get<{
+    overall_health: number;
+    api_response_time: number;
+    database_connections: number;
+    active_users: number;
+    memory_usage: number;
+    cpu_usage: number;
+    disk_usage: number;
+    last_backup: string;
+    uptime: string;
+    error_rate: number;
+    components: Array<{
+      name: string;
+      status: string;
+      response_time: number;
+      additional_info?: any;
+    }>;
+  }>('/admin/system/health'),
+
+  // 사용자 분석
+  getUserAnalytics: (period: string = '7d') => 
+    api.get<{
+      total_users: number;
+      new_users: number;
+      active_users: number;
+      retention_rate: number;
+      avg_session_duration: number;
+      completion_rate: number;
+      user_growth: Array<{
+        date: string;
+        new_users: number;
+        active_users: number;
+      }>;
+      subject_popularity: Array<{
+        subject: string;
+        users: number;
+        completion_rate: number;
+      }>;
+    }>(`/admin/analytics/users?period=${period}`),
+
+  // AI 모델 성능
+  getAIModelPerformance: () => api.get<{
+    curriculum_generator: {
+      status: string;
+      success_rate: number;
+      avg_response_time: number;
+      requests_today: number;
+      last_training: string;
+    };
+    question_generator: {
+      status: string;
+      success_rate: number;
+      avg_response_time: number;
+      requests_today: number;
+      last_training: string;
+    };
+    ai_teacher: {
+      status: string;
+      success_rate: number;
+      avg_response_time: number;
+      requests_today: number;
+      last_training: string;
+    };
+    feedback_analyzer: {
+      status: string;
+      success_rate: number;
+      avg_response_time: number;
+      requests_today: number;
+      last_training: string;
+    };
+  }>('/admin/performance/ai-models'),
+};
+
 export default api;

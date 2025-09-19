@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Bot, Sparkles, Target, MessageCircle, BookOpen, Brain, CheckCircle, TrendingUp, Zap } from 'lucide-react';
+import { Bot, Sparkles, Target, MessageCircle, BookOpen, Brain, CheckCircle, TrendingUp, Zap, BarChart3 } from 'lucide-react';
 import { subjectsApi } from '../../shared/services/apiClient';
 import useAuthStore from '../../shared/hooks/useAuthStore';
 import CurriculumGenerator from './components/CurriculumGenerator';
 import AITeachingSession from './components/AITeachingSession';
 import SmartQuestionGenerator from './components/SmartQuestionGenerator';
 import AdaptiveLearningSystem from './components/AdaptiveLearningSystem';
+import LearningAnalyticsDashboard from './components/LearningAnalyticsDashboard';
+import AIFeedbackCenter from './components/AIFeedbackCenter';
 
 export default function AIAssistantPage() {
   const { user } = useAuthStore();
@@ -80,6 +82,36 @@ export default function AIAssistantPage() {
             </button>
           </div>
           <AdaptiveLearningSystem />
+        </div>
+      )}
+
+      {activeFeature === 'learning_analytics' && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900">고급 학습 분석</h2>
+            <button 
+              onClick={() => setActiveFeature(null)}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              ← 돌아가기
+            </button>
+          </div>
+          <LearningAnalyticsDashboard />
+        </div>
+      )}
+
+      {activeFeature === 'feedback_center' && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900">AI 피드백 센터</h2>
+            <button 
+              onClick={() => setActiveFeature(null)}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              ← 돌아가기
+            </button>
+          </div>
+          <AIFeedbackCenter />
         </div>
       )}
 
@@ -230,6 +262,56 @@ export default function AIAssistantPage() {
                 Phase 10 새로운 기능
               </div>
             </div>
+
+            {/* 고급 학습 분석 (Phase 10) - 새로 추가 */}
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg p-6 border border-emerald-200">
+              <div className="flex items-center mb-4">
+                <div className="p-2 bg-emerald-600 rounded-lg">
+                  <BarChart3 className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-emerald-900 ml-3">
+                  고급 학습 분석
+                </h3>
+              </div>
+              <p className="text-emerald-800 mb-4">
+                AI가 학습 패턴을 심층 분석하여 예측 인사이트와 맞춤형 추천을 제공합니다.
+              </p>
+              <button 
+                onClick={() => setActiveFeature('learning_analytics')}
+                className="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                분석 대시보드 보기
+              </button>
+              <div className="flex items-center mt-2 text-xs text-emerald-600">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Phase 10 새로운 기능
+              </div>
+            </div>
+
+            {/* AI 피드백 센터 (Phase 10) - 새로 추가 */}
+            <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 rounded-lg p-6 border border-cyan-200">
+              <div className="flex items-center mb-4">
+                <div className="p-2 bg-cyan-600 rounded-lg">
+                  <MessageCircle className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-cyan-900 ml-3">
+                  AI 피드백 센터
+                </h3>
+              </div>
+              <p className="text-cyan-800 mb-4">
+                모든 AI 상호작용에 대한 피드백을 통합 관리하고 개선점을 파악합니다.
+              </p>
+              <button 
+                onClick={() => setActiveFeature('feedback_center')}
+                className="w-full bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 transition-colors"
+              >
+                피드백 센터 열기
+              </button>
+              <div className="flex items-center mt-2 text-xs text-cyan-600">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Phase 10 새로운 기능
+              </div>
+            </div>
           </div>
 
           {/* Phase 9-10 구현 상태 - API 연결 현황 */}
@@ -254,9 +336,17 @@ export default function AIAssistantPage() {
                 <span className="font-medium text-blue-900">적응형 학습</span>
                 <span className="text-blue-600 font-bold">🆕 Phase 10</span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                <span className="font-medium text-yellow-900">고급 분석</span>
-                <span className="text-yellow-600 font-bold">🔄 개발중</span>
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <span className="font-medium text-green-900">고급 학습 분석</span>
+                <span className="text-green-600 font-bold">✅ Phase 10</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <span className="font-medium text-green-900">AI 피드백 센터</span>
+                <span className="text-green-600 font-bold">✅ Phase 10</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-cyan-50 rounded-lg">
+                <span className="font-medium text-cyan-900">관리자 시스템</span>
+                <span className="text-cyan-600 font-bold">✅ 완료</span>
               </div>
               <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                 <span className="font-medium text-purple-900">백엔드 API</span>

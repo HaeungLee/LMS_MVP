@@ -8,7 +8,8 @@ import {
   Settings,
   LogOut,
   User,
-  RefreshCw
+  RefreshCw,
+  Shield
 } from 'lucide-react';
 import useAuthStore from '../shared/hooks/useAuthStore';
 
@@ -20,48 +21,66 @@ interface NavigationItem {
   description: string;
 }
 
-const navigationItems: NavigationItem[] = [
-  {
-    id: 'dashboard',
-    title: '대시보드',
-    icon: Home,
-    path: '/',
-    description: '개인화 학습 진도 overview'
-  },
-  {
-    id: 'learning',
-    title: '학습하기',
-    icon: BookOpen,
-    path: '/learning',
-    description: '과목 선택 및 스마트 문제 풀이'
-  },
-  {
-    id: 'analytics',
-    title: '내 학습 분석',
-    icon: BarChart3,
-    path: '/analytics',
-    description: '상세 진도 현황 및 성과 분석'
-  },
-  {
-    id: 'ai-assistant',
-    title: 'AI 학습 도우미',
-    icon: Bot,
-    path: '/ai-assistant',
-    description: '맞춤 커리큘럼 및 1:1 AI 강사'
-  },
-  {
-    id: 'settings',
-    title: '설정 & 관리',
-    icon: Settings,
-    path: '/settings',
-    description: '개인 프로필 및 학습 환경'
-  }
-];
-
 export default function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, loading, fetchMe, logout } = useAuthStore();
+
+  // 사용자 역할에 따른 네비게이션 아이템 동적 생성
+  const getNavigationItems = (): NavigationItem[] => {
+    const baseItems = [
+      {
+        id: 'dashboard',
+        title: '대시보드',
+        icon: Home,
+        path: '/',
+        description: '개인화 학습 진도 overview'
+      },
+      {
+        id: 'learning',
+        title: '학습하기',
+        icon: BookOpen,
+        path: '/learning',
+        description: '과목 선택 및 스마트 문제 풀이'
+      },
+      {
+        id: 'analytics',
+        title: '내 학습 분석',
+        icon: BarChart3,
+        path: '/analytics',
+        description: '상세 진도 현황 및 성과 분석'
+      },
+      {
+        id: 'ai-assistant',
+        title: 'AI 학습 도우미',
+        icon: Bot,
+        path: '/ai-assistant',
+        description: '맞춤 커리큘럼 및 1:1 AI 강사'
+      },
+      {
+        id: 'settings',
+        title: '설정 & 관리',
+        icon: Settings,
+        path: '/settings',
+        description: '개인 프로필 및 학습 환경'
+      }
+    ];
+
+    // 관리자인 경우 관리자 메뉴 추가
+    if (user?.is_admin) {
+      baseItems.push({
+        id: 'admin',
+        title: '시스템 관리',
+        icon: Shield,
+        path: '/admin',
+        description: '사용자 및 시스템 관리 대시보드'
+      });
+    }
+
+    return baseItems;
+  };
+
+  const navigationItems = getNavigationItems();
 
   // 사용자 정보 로드
   useEffect(() => {
