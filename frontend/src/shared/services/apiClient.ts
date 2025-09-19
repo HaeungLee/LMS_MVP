@@ -477,4 +477,149 @@ export const adminApi = {
   }>('/admin/performance/ai-models'),
 };
 
+// Phase 10 고급 분석 API
+export const analyticsApi = {
+  // 사용자 개인 분석
+  getDailyStats: (userId: number) => api.get<{
+    user_id: number;
+    date: string;
+    study_minutes: number;
+    accuracy: number;
+    improvement_rate: number;
+    engagement_score: number;
+  }>(`/stats/user/${userId}/daily`),
+
+  // 진도 현황
+  getProgress: (userId: number) => api.get<{
+    user_id: number;
+    overall_progress: number;
+    subjects: Array<{
+      subject: string;
+      progress: number;
+      completed_topics: number;
+      total_topics: number;
+    }>;
+  }>(`/unified-learning/progress/${userId}`),
+
+  // 심층 학습 분석
+  getDeepAnalysis: (userId: number) => api.get<{
+    learning_patterns: Array<{
+      pattern: string;
+      value: string;
+      impact: 'positive' | 'negative';
+      confidence: number;
+      description: string;
+    }>;
+    predictive_insights: Array<{
+      type: string;
+      title: string;
+      prediction: string;
+      confidence: number;
+      recommendation: string;
+    }>;
+    performance_metrics: {
+      accuracy: number;
+      response_time: number;
+      consistency: number;
+      improvement_rate: number;
+      engagement_score: number;
+    };
+  }>(`/analytics/deep-analysis/${userId}`),
+};
+
+// Phase 10 적응형 학습 API
+export const adaptiveLearningApi = {
+  // 적응형 추천 생성
+  getAdaptiveRecommendation: (data: {
+    subject_key: string;
+    current_performance: {
+      accuracy: number;
+      response_time: number;
+      consistency: number;
+      improvement_rate: number;
+      engagement_score: number;
+    };
+    focus_areas: string[];
+  }) => api.post<{
+    current_difficulty: number;
+    recommended_difficulty: number;
+    adjustment_type: string;
+    confidence: number;
+    reasoning: string;
+    suggested_actions: string[];
+    estimated_mastery_time?: number;
+  }>('/ai-questions/adaptive', data),
+
+  // 현재 성과 지표 조회
+  getCurrentPerformance: (userId: number, subjectKey: string) => api.get<{
+    accuracy: number;
+    response_time: number;
+    consistency: number;
+    improvement_rate: number;
+    engagement_score: number;
+    difficulty_comfort_zone: [number, number];
+  }>(`/ai-questions/performance/${userId}/${subjectKey}`),
+};
+
+// AI 피드백 API
+export const feedbackApi = {
+  // 피드백 목록 조회
+  getFeedbacks: (params: {
+    type?: string;
+    status?: string;
+    user_id?: number;
+    skip?: number;
+    limit?: number;
+  }) => {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        queryParams.append(key, value.toString());
+      }
+    });
+    return api.get<{
+      feedbacks: Array<{
+        id: number;
+        type: 'curriculum' | 'teaching' | 'question' | 'analysis';
+        content: string;
+        ai_response: string;
+        rating: number;
+        user_feedback: string;
+        status: 'pending' | 'reviewed' | 'implemented';
+        created_at: string;
+        user_id: number;
+        username: string;
+        ai_confidence: number;
+      }>;
+      total: number;
+      has_more: boolean;
+    }>(`/feedback/list?${queryParams.toString()}`);
+  },
+
+  // 피드백 제출
+  submitFeedback: (data: {
+    type: 'curriculum' | 'teaching' | 'question' | 'analysis';
+    interaction_id: string;
+    rating: number;
+    feedback_text: string;
+    improvement_suggestions?: string[];
+  }) => api.post('/feedback/ai-interaction', data),
+
+  // 피드백 상태 업데이트 (관리자용)
+  updateFeedbackStatus: (feedbackId: number, data: {
+    status: 'pending' | 'reviewed' | 'implemented';
+    admin_notes?: string;
+  }) => api.put(`/feedback/${feedbackId}/status`, data),
+
+  // 피드백 통계
+  getFeedbackStats: () => api.get<{
+    total_feedbacks: number;
+    average_rating: number;
+    satisfaction_rate: number;
+    pending_count: number;
+    type_distribution: Record<string, number>;
+    rating_distribution: Record<string, number>;
+  }>('/feedback/stats'),
+};
+
 export default api;

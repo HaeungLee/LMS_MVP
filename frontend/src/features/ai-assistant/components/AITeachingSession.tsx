@@ -10,8 +10,8 @@ interface Subject {
 }
 
 interface AITeachingSessionProps {
-  subjects: Subject[];
-  onBack: () => void;
+  subjects?: Subject[];
+  onBack?: () => void;
 }
 
 interface Message {
@@ -23,8 +23,9 @@ interface Message {
   suggestedActions?: string[];
 }
 
-export default function AITeachingSession({ subjects, onBack }: AITeachingSessionProps) {
+export default function AITeachingSession({ subjects = [], onBack }: AITeachingSessionProps) {
   const [selectedSubject, setSelectedSubject] = useState('');
+  const [customSubject, setCustomSubject] = useState('');
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -39,10 +40,12 @@ export default function AITeachingSession({ subjects, onBack }: AITeachingSessio
       setIsSessionStarted(true);
       
       // 환영 메시지 추가
+      const finalSubject = customSubject.trim() || selectedSubject;
+      const subjectTitle = subjects.find(s => s.key === selectedSubject)?.title || finalSubject;
       const welcomeMessage: Message = {
         id: `ai-${Date.now()}`,
         type: 'ai',
-        content: `안녕하세요! 저는 ${subjects.find(s => s.key === selectedSubject)?.title} 전문 AI 강사입니다. 무엇을 배우고 싶으신가요?`,
+        content: `안녕하세요! 저는 ${subjectTitle} 전문 AI 강사입니다. 무엇을 배우고 싶으신가요?`,
         timestamp: new Date(),
       };
       setMessages([welcomeMessage]);
@@ -73,10 +76,14 @@ export default function AITeachingSession({ subjects, onBack }: AITeachingSessio
   }, [messages]);
 
   const handleStartSession = () => {
-    if (!selectedSubject) return;
+    const finalSubject = customSubject.trim() || selectedSubject;
+    if (!finalSubject) {
+      alert('학습할 과목을 선택하거나 입력해주세요');
+      return;
+    }
 
     startSessionMutation.mutate({
-      subject_key: selectedSubject,
+      subject_key: finalSubject,
       session_preferences: {
         learning_style: 'interactive',
         pace: 'adaptive',
@@ -138,7 +145,7 @@ export default function AITeachingSession({ subjects, onBack }: AITeachingSessio
             <h2 className="text-xl font-semibold text-gray-900">1:1 AI 강사 세션</h2>
             <p className="text-gray-600 text-sm">
               {isSessionStarted 
-                ? `${subjects.find(s => s.key === selectedSubject)?.title} 학습 중` 
+                ? `${subjects.find(s => s.key === selectedSubject)?.title || customSubject || selectedSubject} 학습 중` 
                 : 'Phase 9 실시간 AI 교육 시스템'
               }
             </p>
@@ -165,20 +172,43 @@ export default function AITeachingSession({ subjects, onBack }: AITeachingSessio
 
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  학습할 과목 선택
+                  학습할 과목
                 </label>
-                <select
-                  value={selectedSubject}
-                  onChange={(e) => setSelectedSubject(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">과목을 선택하세요</option>
-                  {subjects.map((subject) => (
-                    <option key={subject.id} value={subject.key}>
-                      {subject.title}
-                    </option>
-                  ))}
-                </select>
+                
+                {/* 기존 과목 선택 (있는 경우) */}
+                {subjects.length > 0 && (
+                  <div className="mb-3">
+                    <select
+                      value={selectedSubject}
+                      onChange={(e) => {
+                        setSelectedSubject(e.target.value);
+                        if (e.target.value) setCustomSubject('');
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">기존 과목에서 선택</option>
+                      {subjects.map((subject) => (
+                        <option key={subject.id} value={subject.key}>
+                          {subject.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                {/* 직접 입력 */}
+                <div>
+                  <input
+                    type="text"
+                    value={customSubject}
+                    onChange={(e) => {
+                      setCustomSubject(e.target.value);
+                      if (e.target.value) setSelectedSubject('');
+                    }}
+                    placeholder="또는 학습하고 싶은 과목을 직접 입력하세요"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
               </div>
 
               {startSessionMutation.error && (
@@ -197,7 +227,7 @@ export default function AITeachingSession({ subjects, onBack }: AITeachingSessio
 
               <button
                 onClick={handleStartSession}
-                disabled={!selectedSubject || startSessionMutation.isPending}
+                disabled={(!selectedSubject && !customSubject.trim()) || startSessionMutation.isPending}
                 className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center mx-auto"
               >
                 {startSessionMutation.isPending ? (

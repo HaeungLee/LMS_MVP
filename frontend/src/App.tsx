@@ -8,6 +8,7 @@ import LearningPage from './features/learning/LearningPage';
 import AnalyticsPage from './features/analytics/AnalyticsPage';
 import AIAssistantPage from './features/ai-assistant/AIAssistantPage';
 import SettingsPage from './features/settings/SettingsPage';
+import QuestionsPage from './features/learning/QuestionsPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import QuestionReviewSystem from './pages/admin/QuestionReviewSystem';
 import LoginPage from './pages/LoginPage';
@@ -35,7 +36,8 @@ function App() {
           {/* 메인 애플리케이션 - MainLayout 포함 */}
           <Route path="/" element={<MainLayout />}>
             <Route index element={<DashboardPage />} />
-            <Route path="learning/*" element={<LearningPage />} />
+            <Route path="learning" element={<LearningPage />} />
+            <Route path="learning/questions/:subjectKey" element={<QuestionsPage />} />
             <Route path="analytics/*" element={<AnalyticsPage />} />
             <Route path="ai-assistant/*" element={<AIAssistantPage />} />
             <Route path="settings/*" element={<SettingsPage />} />

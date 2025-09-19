@@ -46,7 +46,14 @@ const LearningAnalyticsDashboard: React.FC<LearningAnalyticsDashboardProps> = ()
     enabled: !!user?.id,
   });
 
-  const isLoading = isUserLoading || isSystemLoading || isProgressLoading;
+  // 심층 학습 분석 데이터
+  const { data: deepAnalysisData, isLoading: isDeepAnalysisLoading } = useQuery({
+    queryKey: ['analytics', 'deep-analysis', user?.id, selectedPeriod],
+    queryFn: () => analyticsApi.getDeepAnalysis(user?.id || 1),
+    enabled: !!user?.id,
+  });
+
+  const isLoading = isUserLoading || isSystemLoading || isProgressLoading || isDeepAnalysisLoading;
 
   if (isLoading) {
     return (
@@ -63,32 +70,32 @@ const LearningAnalyticsDashboard: React.FC<LearningAnalyticsDashboardProps> = ()
     );
   }
 
-  // 모킹 데이터 생성 (실제 데이터가 없는 경우)
-  const mockLearningPatterns = [
+  // 실제 데이터 또는 모킹 데이터 사용
+  const learningPatterns = deepAnalysisData?.learning_patterns || [
     {
       pattern: '집중도 높은 시간대',
       value: '오후 2-4시',
-      impact: 'positive',
+      impact: 'positive' as const,
       confidence: 89,
       description: '이 시간대에 학습 시 정답률이 23% 높습니다'
     },
     {
       pattern: '선호 학습 방식',
       value: '예제 중심 학습',
-      impact: 'positive', 
+      impact: 'positive' as const, 
       confidence: 76,
       description: '코드 예제를 통한 학습 시 이해도가 향상됩니다'
     },
     {
       pattern: '약점 패턴',
       value: '재귀 함수 개념',
-      impact: 'negative',
+      impact: 'negative' as const,
       confidence: 82,
       description: '반복 연습이 필요한 영역입니다'
     }
   ];
 
-  const mockPredictiveInsights = [
+  const predictiveInsights = deepAnalysisData?.predictive_insights || [
     {
       type: 'performance_prediction',
       title: '성취도 예측',
@@ -220,7 +227,7 @@ const LearningAnalyticsDashboard: React.FC<LearningAnalyticsDashboardProps> = ()
           </div>
 
           <div className="space-y-4">
-            {mockLearningPatterns.map((pattern, index) => (
+            {learningPatterns.map((pattern, index) => (
               <div key={index} className="p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center">
@@ -248,7 +255,7 @@ const LearningAnalyticsDashboard: React.FC<LearningAnalyticsDashboardProps> = ()
           </div>
 
           <div className="space-y-4">
-            {mockPredictiveInsights.map((insight, index) => (
+            {predictiveInsights.map((insight, index) => (
               <div key={index} className="p-4 border border-gray-200 rounded-lg">
                 <div className="flex items-start justify-between mb-2">
                   <h4 className="text-sm font-medium text-gray-900">{insight.title}</h4>

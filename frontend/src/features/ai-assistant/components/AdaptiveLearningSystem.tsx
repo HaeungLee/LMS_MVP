@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import useAuthStore from '../../../shared/hooks/useAuthStore';
+import { adaptiveLearningApi } from '../../../shared/services/apiClient';
 
 // Phase 10 적응형 학습 타입 정의
 interface PerformanceMetrics {
@@ -57,82 +58,29 @@ const AdaptiveLearningSystem: React.FC = () => {
   });
   const [adaptationHistory, setAdaptationHistory] = useState<AdaptationRecommendation[]>([]);
 
-  // 임시 API 함수들 (실제 구현에서는 apiClient 사용)
-  const getAdaptiveRecommendation = async (data: any): Promise<AdaptationRecommendation> => {
-    await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5초 지연
-    
-    const adjustmentTypes = {
-      'decrease_major': { 
-        change: -0.3, 
-        description: '큰 폭 하향 조정',
-        color: 'text-red-600',
-        reason: '현재 난이도가 너무 높아 기초 실력 향상이 필요합니다.'
-      },
-      'decrease_minor': { 
-        change: -0.1, 
-        description: '소폭 하향 조정',
-        color: 'text-orange-600',
-        reason: '약간의 난이도 조정으로 자신감을 회복하세요.'
-      },
-      'maintain': { 
-        change: 0.0, 
-        description: '현재 난이도 유지',
-        color: 'text-green-600',
-        reason: '현재 난이도가 학습에 최적화되어 있습니다.'
-      },
-      'increase_minor': { 
-        change: 0.1, 
-        description: '소폭 상향 조정',
-        color: 'text-blue-600',
-        reason: '도전할 준비가 되었습니다. 한 단계 올려보세요.'
-      },
-      'increase_major': { 
-        change: 0.3, 
-        description: '큰 폭 상향 조정',
-        color: 'text-purple-600',
-        reason: '뛰어난 성과입니다! 고급 수준에 도전해보세요.'
-      }
-    };
+  // 현재 성과 지표 조회
+  const { data: performanceData, isLoading: isPerformanceLoading } = useQuery({
+    queryKey: ['adaptive-performance', user?.id, selectedSubject],
+    queryFn: () => adaptiveLearningApi.getCurrentPerformance(user?.id || 1, selectedSubject),
+    enabled: !!user?.id,
+    refetchInterval: 30000, // 30초마다 업데이트
+  });
 
-    // 현재 성과 기반 조정 타입 결정
-    let adjustmentType = 'maintain';
-    if (data.current_performance.accuracy < 0.6) {
-      adjustmentType = 'decrease_major';
-    } else if (data.current_performance.accuracy < 0.7) {
-      adjustmentType = 'decrease_minor';
-    } else if (data.current_performance.accuracy > 0.9) {
-      adjustmentType = 'increase_major';
-    } else if (data.current_performance.accuracy > 0.8) {
-      adjustmentType = 'increase_minor';
+  // 성과 데이터가 있으면 업데이트
+  useEffect(() => {
+    if (performanceData) {
+      setCurrentPerformance(performanceData);
     }
-
-    const adjustment = adjustmentTypes[adjustmentType as keyof typeof adjustmentTypes];
-    const currentDifficulty = 0.6; // 임시 현재 난이도
-    const recommendedDifficulty = Math.max(0.1, Math.min(1.0, currentDifficulty + adjustment.change));
-
-    return {
-      current_difficulty: currentDifficulty,
-      recommended_difficulty: recommendedDifficulty,
-      adjustment_type: adjustmentType,
-      confidence: 0.8 + Math.random() * 0.15,
-      reasoning: adjustment.reason,
-      suggested_actions: [
-        '기초 개념 복습하기',
-        '문제 풀이 속도 향상 연습',
-        '실수 패턴 분석하기'
-      ],
-      estimated_mastery_time: Math.round(60 + Math.random() * 120) // 60-180분
-    };
-  };
+  }, [performanceData]);
 
   // 적응형 추천 뮤테이션
   const { mutate: getRecommendation, isPending: isAnalyzing } = useMutation({
-    mutationFn: getAdaptiveRecommendation,
+    mutationFn: adaptiveLearningApi.getAdaptiveRecommendation,
     onSuccess: (recommendation) => {
       setAdaptationHistory(prev => [recommendation, ...prev.slice(0, 4)]); // 최근 5개 유지
       toast.success('적응형 분석이 완료되었습니다!');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(`분석 실패: ${error.message}`);
     },
   });

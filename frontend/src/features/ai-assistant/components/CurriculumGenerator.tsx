@@ -12,12 +12,13 @@ interface Subject {
 }
 
 interface CurriculumGeneratorProps {
-  subjects: Subject[];
-  onBack: () => void;
+  subjects?: Subject[];
+  onBack?: () => void;
 }
 
-export default function CurriculumGenerator({ subjects, onBack }: CurriculumGeneratorProps) {
+export default function CurriculumGenerator({ subjects = [], onBack }: CurriculumGeneratorProps) {
   const [selectedSubject, setSelectedSubject] = useState('');
+  const [customSubject, setCustomSubject] = useState('');
   const [learningGoals, setLearningGoals] = useState<string[]>(['']);
   const [difficultyLevel, setDifficultyLevel] = useState(3);
   const [durationPreference, setDurationPreference] = useState('4주');
@@ -76,13 +77,19 @@ export default function CurriculumGenerator({ subjects, onBack }: CurriculumGene
   const handleGenerate = () => {
     const validGoals = learningGoals.filter(goal => goal.trim());
     const validRequirements = specialRequirements.filter(req => req.trim());
+    const finalSubject = customSubject.trim() || selectedSubject;
     
-    if (!selectedSubject || validGoals.length === 0) {
+    if (!finalSubject || validGoals.length === 0) {
+      if (!finalSubject) {
+        alert('학습할 과목을 선택하거나 직접 입력해주세요');
+      } else {
+        alert('학습 목표를 최소 하나는 입력해주세요');
+      }
       return;
     }
 
     generateMutation.mutate({
-      subject_key: selectedSubject,
+      subject_key: finalSubject,
       learning_goals: validGoals,
       difficulty_level: difficultyLevel,
       duration_preference: durationPreference,
@@ -119,20 +126,46 @@ export default function CurriculumGenerator({ subjects, onBack }: CurriculumGene
             {/* 과목 선택 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                학습할 과목 선택 *
+                학습할 과목 *
               </label>
-              <select
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">과목을 선택하세요</option>
-                {subjects.map((subject) => (
-                  <option key={subject.id} value={subject.key}>
-                    {subject.title} ({subject.difficulty_level || '기본'})
-                  </option>
-                ))}
-              </select>
+              
+              {/* 기존 과목 선택 (있는 경우) */}
+              {subjects.length > 0 && (
+                <div className="mb-3">
+                  <select
+                    value={selectedSubject}
+                    onChange={(e) => {
+                      setSelectedSubject(e.target.value);
+                      if (e.target.value) setCustomSubject(''); // 기존 과목 선택시 직접입력 초기화
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">기존 과목에서 선택</option>
+                    {subjects.map((subject) => (
+                      <option key={subject.id} value={subject.key}>
+                        {subject.title} ({subject.difficulty_level || '기본'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              {/* 직접 입력 */}
+              <div>
+                <input
+                  type="text"
+                  value={customSubject}
+                  onChange={(e) => {
+                    setCustomSubject(e.target.value);
+                    if (e.target.value) setSelectedSubject(''); // 직접입력시 기존 선택 초기화
+                  }}
+                  placeholder="또는 학습하고 싶은 과목을 직접 입력하세요 (예: Python, React, 머신러닝, 영어회화 등)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  프로그래밍, 언어, 디자인, 비즈니스 등 어떤 주제든 가능합니다
+                </p>
+              </div>
             </div>
 
             {/* 학습 목표 */}

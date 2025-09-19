@@ -9,6 +9,8 @@ import SmartQuestionGenerator from './components/SmartQuestionGenerator';
 import AdaptiveLearningSystem from './components/AdaptiveLearningSystem';
 import LearningAnalyticsDashboard from './components/LearningAnalyticsDashboard';
 import AIFeedbackCenter from './components/AIFeedbackCenter';
+import CodeAnalyzer from './components/CodeAnalyzer';
+import LearningCounselor from './components/LearningCounselor';
 
 export default function AIAssistantPage() {
   const { user } = useAuthStore();
@@ -115,6 +117,36 @@ export default function AIAssistantPage() {
         </div>
       )}
 
+      {activeFeature === 'code_analysis' && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900">AI 코드 분석</h2>
+            <button 
+              onClick={() => setActiveFeature(null)}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              ← 돌아가기
+            </button>
+          </div>
+          <CodeAnalyzer />
+        </div>
+      )}
+
+      {activeFeature === 'counseling' && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900">AI 학습 상담</h2>
+            <button 
+              onClick={() => setActiveFeature(null)}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              ← 돌아가기
+            </button>
+          </div>
+          <LearningCounselor />
+        </div>
+      )}
+
       {/* 기본 AI 기능 카드들 */}
       {!activeFeature && (
         <>
@@ -182,7 +214,10 @@ export default function AIAssistantPage() {
               <p className="text-purple-800 mb-4">
                 코드를 분석하고 개선점을 제안하는 AI 코드 리뷰를 받아보세요.
               </p>
-              <button className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+              <button 
+                onClick={() => setActiveFeature('code_analysis')}
+                className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+              >
                 코드 분석하기
               </button>
               <div className="flex items-center mt-2 text-xs text-purple-600">
@@ -229,7 +264,10 @@ export default function AIAssistantPage() {
               <p className="text-pink-800 mb-4">
                 AI가 당신의 학습 패턴을 분석하여 맞춤형 조언과 격려를 제공합니다.
               </p>
-              <button className="w-full bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700 transition-colors">
+              <button 
+                onClick={() => setActiveFeature('counseling')}
+                className="w-full bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700 transition-colors"
+              >
                 상담 받기
               </button>
               <div className="flex items-center mt-2 text-xs text-pink-600">

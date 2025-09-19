@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import useAuthStore from '../../../shared/hooks/useAuthStore';
+import { feedbackApi } from '../../../shared/services/apiClient';
 
 interface AIFeedbackCenterProps {}
 
@@ -42,7 +43,25 @@ const AIFeedbackCenter: React.FC<AIFeedbackCenterProps> = () => {
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [expandedFeedback, setExpandedFeedback] = useState<number | null>(null);
 
-  // 모킹 데이터 - 실제로는 API에서 가져옴
+  // 피드백 데이터 조회
+  const { data: feedbackData, isLoading: isFeedbackLoading } = useQuery({
+    queryKey: ['feedbacks', activeTab, searchTerm, selectedRating],
+    queryFn: () => feedbackApi.getFeedbacks({
+      type: activeTab === 'all' ? undefined : activeTab,
+      skip: 0,
+      limit: 50
+    }),
+    enabled: true,
+  });
+
+  // 피드백 통계 조회
+  const { data: feedbackStats, isLoading: isStatsLoading } = useQuery({
+    queryKey: ['feedback-stats'],
+    queryFn: () => feedbackApi.getFeedbackStats(),
+    enabled: true,
+  });
+
+  // 모킹 데이터 - API가 실패했을 때 사용
   const mockFeedbacks: FeedbackItem[] = [
     {
       id: 1,
@@ -111,23 +130,25 @@ const AIFeedbackCenter: React.FC<AIFeedbackCenterProps> = () => {
     }
   ];
 
+  // 실제 데이터 또는 모킹 데이터 사용
+  const allFeedbacks = feedbackData?.feedbacks || mockFeedbacks;
+  
   // 필터링된 피드백
-  const filteredFeedbacks = mockFeedbacks.filter(feedback => {
-    const matchesTab = activeTab === 'all' || feedback.type === activeTab;
+  const filteredFeedbacks = allFeedbacks.filter(feedback => {
     const matchesSearch = searchTerm === '' || 
       feedback.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
       feedback.ai_response.toLowerCase().includes(searchTerm.toLowerCase()) ||
       feedback.user_feedback.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRating = selectedRating === null || feedback.rating === selectedRating;
     
-    return matchesTab && matchesSearch && matchesRating;
+    return matchesSearch && matchesRating;
   });
 
-  // 통계 계산
-  const totalFeedbacks = mockFeedbacks.length;
-  const averageRating = mockFeedbacks.reduce((sum, f) => sum + f.rating, 0) / totalFeedbacks;
-  const positiveRate = (mockFeedbacks.filter(f => f.rating >= 4).length / totalFeedbacks) * 100;
-  const pendingCount = mockFeedbacks.filter(f => f.status === 'pending').length;
+  // 통계 계산 - 실제 데이터 우선 사용
+  const totalFeedbacks = feedbackStats?.total_feedbacks || allFeedbacks.length;
+  const averageRating = feedbackStats?.average_rating || (allFeedbacks.reduce((sum, f) => sum + f.rating, 0) / allFeedbacks.length);
+  const positiveRate = feedbackStats?.satisfaction_rate || ((allFeedbacks.filter(f => f.rating >= 4).length / allFeedbacks.length) * 100);
+  const pendingCount = feedbackStats?.pending_count || allFeedbacks.filter(f => f.status === 'pending').length;
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -174,11 +195,11 @@ const AIFeedbackCenter: React.FC<AIFeedbackCenterProps> = () => {
   };
 
   const tabs = [
-    { key: 'all', label: '전체', count: mockFeedbacks.length },
-    { key: 'curriculum', label: '커리큘럼', count: mockFeedbacks.filter(f => f.type === 'curriculum').length },
-    { key: 'teaching', label: 'AI 강사', count: mockFeedbacks.filter(f => f.type === 'teaching').length },
-    { key: 'question', label: '문제 생성', count: mockFeedbacks.filter(f => f.type === 'question').length },
-    { key: 'analysis', label: '학습 분석', count: mockFeedbacks.filter(f => f.type === 'analysis').length },
+    { key: 'all', label: '전체', count: allFeedbacks.length },
+    { key: 'curriculum', label: '커리큘럼', count: allFeedbacks.filter(f => f.type === 'curriculum').length },
+    { key: 'teaching', label: 'AI 강사', count: allFeedbacks.filter(f => f.type === 'teaching').length },
+    { key: 'question', label: '문제 생성', count: allFeedbacks.filter(f => f.type === 'question').length },
+    { key: 'analysis', label: '학습 분석', count: allFeedbacks.filter(f => f.type === 'analysis').length },
   ];
 
   return (

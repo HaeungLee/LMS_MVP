@@ -26,14 +26,21 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:5173", 
         "http://localhost:5174",
+        "http://localhost:5175",  # 추가된 포트
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",
+        "http://127.0.0.1:5175",  # 추가된 포트
         "http://192.168.0.104:5174",
+        "http://192.168.0.104:5175",  # 추가된 포트
         "http://172.25.64.1:5174", 
+        "http://172.25.64.1:5175",  # 추가된 포트
         "http://172.31.80.1:5174",
+        "http://172.31.80.1:5175",  # 추가된 포트
         "https://localhost:5174",
-        "https://127.0.0.1:5174"
+        "https://localhost:5175",  # 추가된 포트
+        "https://127.0.0.1:5174",
+        "https://127.0.0.1:5175"  # 추가된 포트
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { BookOpen, Play, Star, Clock, Target, RefreshCw, AlertCircle, ChevronRight } from 'lucide-react';
 import { subjectsApi } from '../../shared/services/apiClient';
 import useAuthStore from '../../shared/hooks/useAuthStore';
 
 export default function LearningPage() {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 
   // 실제 과목 데이터 조회
@@ -176,8 +178,10 @@ export default function LearningPage() {
                   className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
                   onClick={(e) => {
                     e.stopPropagation();
-                    // 실제 학습 페이지로 이동하는 로직 추가
-                    console.log(`학습 시작: ${subject.key}`);
+                    // 학습 문제 페이지로 이동
+                    navigate(`/learning/questions/${subject.key}`, { 
+                      state: { subject: subject } 
+                    });
                   }}
                 >
                   <Play className="w-4 h-4 mr-2" />
@@ -215,7 +219,12 @@ export default function LearningPage() {
                     <span className="text-xs text-gray-500">
                       {index + 1}번째 토픽
                     </span>
-                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                    <button 
+                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      onClick={() => navigate(`/learning/topics/${topic.id}`, { 
+                        state: { topic: topic, subject: activeSubjects.find(s => s.key === selectedSubject) } 
+                      })}
+                    >
                       학습하기
                     </button>
                   </div>
