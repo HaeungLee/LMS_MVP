@@ -1,0 +1,72 @@
+/* Tailwind directives (processed by PostCSS + tailwindcss) */
+@import "tailwindcss";
+
+
+/* 
+  Safe fallback CSS variables for theme tokens used by tailwind.config.js
+  These ensure utility classes like bg-card and text-card-foreground render
+  even if a theme provider or :root variables are not present at runtime.
+*/
+:root {
+  /* HSL triplets (without the hsl() wrapper) because tailwind config uses hsl(var(--name)) */
+  --border: 210 16% 96%;
+  --input: 210 16% 100%;
+  --ring: 222 90% 56%;
+  --background: 210 16% 98%;
+  --foreground: 222 20% 10%;
+
+  --primary: 222 90% 56%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 240 4% 96%;
+  --secondary-foreground: 222 15% 20%;
+
+  --destructive: 0 75% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  --muted: 210 8% 95%;
+  --muted-foreground: 215 18% 46%;
+
+  --accent: 252 95% 60%;
+  --accent-foreground: 0 0% 100%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 20% 10%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 222 20% 10%;
+
+  --radius: 12px;
+}
+
+/* 필요하다면 body 태그 등 아주 기본적인 전역 스타일만 남겨둘 수 있습니다. */
+body {
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Navigation link defaults used by `Navigation` in App.jsx */
+.nav-link {
+  color: #ffffff; /* visible on dark nav background */
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 150ms ease, background-color 150ms ease, transform 120ms ease;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+.nav-link:hover {
+  color: #e6e6e6;
+  background-color: rgba(255,255,255,0.03);
+  transform: translateY(-1px);
+}
+
+.nav-link:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.14);
+}
+
+.nav-link.active {
+  color: #fff0b3; /* subtle highlight for active route */
+  background-color: rgba(255,255,255,0.04);
+}

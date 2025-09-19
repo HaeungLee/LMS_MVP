@@ -128,6 +128,42 @@ LMS_progress/
 monitoring/grafana/data/
 monitoring/prometheus/data/
 
+# === Frontend (Vite/TypeScript/React) ===
+# Vite cache
+.vite/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# React build output
+dist/
+build/
+
+# Node modules
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
 # === Keep ===
 !.gitkeep
 !.gitignore
