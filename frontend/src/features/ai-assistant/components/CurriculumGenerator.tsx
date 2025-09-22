@@ -285,11 +285,23 @@ export default function CurriculumGenerator({ subjects = [], onBack }: Curriculu
             )}
 
             {/* 생성 버튼 */}
-            <div className="flex justify-end">
+            <div className="flex flex-col items-end">
+              {/* 조건 체크 안내 */}
+              {(!selectedSubject && !customSubject.trim()) || learningGoals.filter(g => g.trim()).length === 0 ? (
+                <div className="text-sm text-gray-500 mb-2 text-right">
+                  {(!selectedSubject && !customSubject.trim()) && learningGoals.filter(g => g.trim()).length === 0 
+                    ? '⚠️ 과목과 학습 목표를 입력해주세요'
+                    : (!selectedSubject && !customSubject.trim())
+                      ? '⚠️ 학습할 과목을 선택하거나 입력해주세요'
+                      : '⚠️ 학습 목표를 최소 하나는 입력해주세요'
+                  }
+                </div>
+              ) : null}
+              
               <button
                 onClick={handleGenerate}
-                disabled={!selectedSubject || learningGoals.filter(g => g.trim()).length === 0 || generateMutation.isPending}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
+                disabled={(!selectedSubject && !customSubject.trim()) || learningGoals.filter(g => g.trim()).length === 0 || generateMutation.isPending}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center transition-all duration-200"
               >
                 {generateMutation.isPending ? (
                   <>

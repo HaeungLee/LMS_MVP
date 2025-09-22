@@ -172,22 +172,22 @@ const AdaptiveLearningSystem: React.FC = () => {
         <div className="flex items-center mb-4">
           <TrendingUp className="w-8 h-8 text-blue-600 mr-3" />
           <div>
-            <h2 className="text-2xl font-bold text-blue-900">📊 적응형 학습 시스템</h2>
+            <h2 className="text-2xl font-bold text-blue-900">적응형 학습 시스템</h2>
             <p className="text-blue-700">실시간 성과 분석으로 최적의 학습 경로를 제안합니다</p>
           </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div className="bg-white rounded p-3">
-            <span className="font-medium text-blue-700">🎯 실시간 분석</span>
+            <span className="font-medium text-blue-700">실시간 분석</span>
             <p className="text-gray-600">성과 기반 즉시 피드백</p>
           </div>
           <div className="bg-white rounded p-3">
-            <span className="font-medium text-blue-700">⚡ 자동 조정</span>
+            <span className="font-medium text-blue-700">자동 조정</span>
             <p className="text-gray-600">난이도 스마트 조절</p>
           </div>
           <div className="bg-white rounded p-3">
-            <span className="font-medium text-blue-700">📈 예측 모델</span>
+            <span className="font-medium text-blue-700">예측 모델</span>
             <p className="text-gray-600">숙달 시간 예측</p>
           </div>
         </div>
@@ -265,7 +265,7 @@ const AdaptiveLearningSystem: React.FC = () => {
 
         {/* 적정 난이도 구간 */}
         <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-3">🎯 적정 난이도 구간</h4>
+          <h4 className="font-medium text-blue-900 mb-3">적정 난이도 구간</h4>
           <div className="flex items-center space-x-4">
             <div className="flex-1">
               <div className="w-full bg-gray-200 rounded-full h-3 relative">
@@ -470,7 +470,7 @@ const AdaptiveLearningSystem: React.FC = () => {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
-            <h4 className="font-medium text-purple-800 mb-2">🎯 핵심 기능</h4>
+            <h4 className="font-medium text-purple-800 mb-2">핵심 기능</h4>
             <ul className="text-purple-700 space-y-1">
               <li>• 실시간 성과 분석 및 피드백</li>
               <li>• AI 기반 난이도 자동 조절</li>
@@ -479,7 +479,7 @@ const AdaptiveLearningSystem: React.FC = () => {
             </ul>
           </div>
           <div>
-            <h4 className="font-medium text-purple-800 mb-2">📊 분석 지표</h4>
+            <h4 className="font-medium text-purple-800 mb-2">분석 지표</h4>
             <ul className="text-purple-700 space-y-1">
               <li>• 정답률, 응답시간, 일관성</li>
               <li>• 향상률, 참여도 종합 분석</li>

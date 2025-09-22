@@ -276,18 +276,6 @@ export default function RegisterPage() {
           </form>
         </div>
 
-        {/* 베타 테스트 혜택 */}
-        <div className="text-center">
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">🎉 베타 테스터 혜택</h3>
-            <ul className="text-xs text-blue-800 space-y-1">
-              <li>• 무료 AI 맞춤 커리큘럼 생성</li>
-              <li>• 1:1 AI 강사 세션 무제한</li>
-              <li>• 신기능 우선 체험</li>
-            </ul>
-          </div>
-        </div>
-
         {/* 백엔드 연결 상태 */}
         <div className="text-center">
           <div className="inline-flex items-center bg-green-50 border border-green-200 rounded-lg px-3 py-2">

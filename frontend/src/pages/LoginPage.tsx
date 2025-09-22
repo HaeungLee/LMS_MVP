@@ -139,15 +139,6 @@ export default function LoginPage() {
             </div>
           </form>
         </div>
-
-        {/* 베타 테스트 안내 */}
-        <div className="text-center">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
-              🚀 <strong>베타 테스트 중</strong> - AI 기반 개인화 학습을 경험해보세요!
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   );

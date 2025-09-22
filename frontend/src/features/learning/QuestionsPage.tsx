@@ -3,7 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { ArrowLeft, Play, CheckCircle, AlertCircle, Brain, Clock, Target } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { subjectsApi } from '../../shared/services/apiClient';
+import { subjectsApi, questionsApi } from '../../shared/services/apiClient';
 import useAuthStore from '../../shared/hooks/useAuthStore';
 
 interface Question {
@@ -29,24 +29,41 @@ export default function QuestionsPage() {
 
   const subject = location.state?.subject;
 
-  // 문제 데이터 조회
-  const { data: questions, isLoading } = useQuery({
-    queryKey: ['questions', subjectKey],
+  // AI 문제 생성 뮤테이션
+  const { data: questions, isLoading, refetch: generateQuestions } = useQuery({
+    queryKey: ['ai-questions', subjectKey],
     queryFn: async () => {
-      // 실제 API 호출로 문제를 가져오거나, 없으면 기본 문제 생성
+      if (!subjectKey) return [];
+      
       try {
-        const response = await fetch(`http://localhost:8000/api/v1/questions/${subjectKey}`);
-        if (response.ok) {
-          const data = await response.json();
-          return data.questions || [];
-        } else {
-          // 문제가 없으면 기본 문제 반환
-          return generateDefaultQuestions(subjectKey || '');
+        // AI 문제 생성 API 호출
+        const response = await questionsApi.generateQuestions({
+          subject_key: subjectKey,
+          topic: subject?.name || subjectKey,
+          difficulty_level: 'beginner',
+          count: 5,
+          question_type: 'multiple_choice'
+        });
+        
+        if (response.success && response.questions.length > 0) {
+          // API 응답을 컴포넌트 형식으로 변환
+          return response.questions.map((q, index) => ({
+            id: index + 1,
+            text: q.question_text,
+            options: q.options || ['옵션 1', '옵션 2', '옵션 3', '옵션 4'],
+            correct_answer: q.correct_answer,
+            question_type: q.question_type,
+            difficulty_level: q.difficulty_level,
+            explanation: q.explanation,
+            hints: q.hints
+          }));
         }
       } catch (error) {
-        // API 오류시 기본 문제 반환
-        return generateDefaultQuestions(subjectKey || '');
+        console.error('AI 문제 생성 실패:', error);
       }
+      
+      // 폴백: 기본 문제 사용
+      return generateDefaultQuestions(subjectKey);
     },
     enabled: !!subjectKey,
   });
@@ -205,11 +222,27 @@ export default function QuestionsPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <Brain className="w-8 h-8 animate-pulse mx-auto mb-4 text-blue-600" />
-            <p className="text-gray-600">문제를 불러오고 있습니다...</p>
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="text-center py-12">
+          <div className="flex items-center justify-center mb-4">
+            <Brain className="w-12 h-12 text-blue-600 animate-pulse mr-3" />
+            <div className="text-xl font-semibold text-gray-900">AI가 맞춤형 문제를 생성중입니다...</div>
+          </div>
+          <p className="text-gray-600 mb-6">
+            {subject?.name || subjectKey} 과목에 최적화된 학습 문제를 만들고 있어요
+          </p>
+          <div className="animate-pulse">
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 max-w-2xl mx-auto">
+              <div className="h-6 bg-gray-200 rounded w-3/4 mb-4 mx-auto"></div>
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-12 bg-gray-200 rounded"></div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="mt-6 text-sm text-blue-600">
+            ⚡ Phase 10 스마트 문제 생성 시스템 작동중
           </div>
         </div>
       </div>
@@ -218,17 +251,33 @@ export default function QuestionsPage() {
 
   if (!questions || questions.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto p-6">
         <div className="text-center py-12">
-          <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">문제가 없습니다</h3>
-          <p className="text-gray-600 mb-6">이 과목에 대한 문제가 아직 준비되지 않았습니다.</p>
-          <button
-            onClick={() => navigate('/learning')}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
-          >
-            학습 목록으로 돌아가기
-          </button>
+          <AlertCircle className="w-16 h-16 text-orange-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">문제 생성에 실패했습니다</h3>
+          <p className="text-gray-600 mb-6">
+            AI 문제 생성 중 오류가 발생했습니다. 다시 시도해보시거나 다른 과목을 선택해주세요.
+          </p>
+          <div className="flex justify-center space-x-4">
+            <button
+              onClick={() => generateQuestions()}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              AI 문제 다시 생성
+            </button>
+            <button
+              onClick={() => navigate('/learning')}
+              className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700"
+            >
+              학습 목록으로 돌아가기
+            </button>
+          </div>
+          <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg max-w-md mx-auto">
+            <p className="text-sm text-yellow-800">
+              💡 <strong>팁:</strong> 네트워크 연결을 확인하거나 잠시 후 다시 시도해보세요.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -298,6 +347,10 @@ export default function QuestionsPage() {
               <span className="text-sm text-gray-500">
                 {currentQuestion.question_type === 'multiple_choice' ? '객관식' : '주관식'}
               </span>
+              <div className="flex items-center px-2 py-1 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-full">
+                <Brain className="w-3 h-3 text-blue-600 mr-1" />
+                <span className="text-xs text-blue-700 font-medium">AI 생성</span>
+              </div>
             </div>
             <div className="flex items-center text-sm text-gray-500">
               <Clock className="w-4 h-4 mr-1" />

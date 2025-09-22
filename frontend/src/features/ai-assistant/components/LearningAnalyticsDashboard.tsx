@@ -137,7 +137,7 @@ const LearningAnalyticsDashboard: React.FC<LearningAnalyticsDashboardProps> = ()
       <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold mb-2">🧠 고급 학습 분석 대시보드</h1>
+            <h1 className="text-2xl font-bold mb-2">고급 학습 분석 대시보드</h1>
             <p className="text-purple-100">
               AI가 분석한 학습 패턴과 예측 인사이트를 확인하세요
             </p>
@@ -351,7 +351,7 @@ const LearningAnalyticsDashboard: React.FC<LearningAnalyticsDashboardProps> = ()
             <Brain className="w-6 h-6 text-blue-600" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">🎯 AI 맞춤 권장사항</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">AI 맞춤 권장사항</h3>
             <div className="space-y-2 text-sm text-gray-700">
               <p>• 오늘 오후 2-4시에 새로운 개념 학습을 진행하면 이해도가 23% 향상될 예정입니다</p>
               <p>• 재귀 함수 개념 복습을 통해 전체 성과를 15% 개선할 수 있습니다</p>

@@ -89,7 +89,7 @@ export default function LearningPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center">
           <BookOpen className="w-8 h-8 text-blue-600 mr-3" />
-          📚 학습하기
+          학습하기
         </h1>
         <p className="text-gray-600 mt-1">
           실제 과목 데이터로 구성된 학습 과정입니다. 단계별로 체계적인 학습을 진행하세요.
@@ -197,7 +197,7 @@ export default function LearningPage() {
       {selectedSubject && topics && (
         <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            📝 {activeSubjects.find(s => s.key === selectedSubject)?.name} - 학습 토픽
+            {activeSubjects.find(s => s.key === selectedSubject)?.name} - 학습 토픽
           </h2>
           
           {topics.length > 0 ? (
@@ -245,7 +245,7 @@ export default function LearningPage() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-green-900 mb-2">
-              🤖 AI 맞춤 학습 추천
+              AI 맞춤 학습 추천
             </h3>
             <p className="text-green-800">
               AI가 당신의 수준에 맞는 학습 경로를 제안해드립니다. 

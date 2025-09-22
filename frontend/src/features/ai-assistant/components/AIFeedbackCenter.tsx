@@ -208,7 +208,7 @@ const AIFeedbackCenter: React.FC<AIFeedbackCenterProps> = () => {
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold mb-2">💬 AI 피드백 센터</h1>
+            <h1 className="text-2xl font-bold mb-2">AI 피드백 센터</h1>
             <p className="text-blue-100">
               AI 응답에 대한 사용자 피드백을 통합 관리하고 개선점을 파악합니다
             </p>
@@ -450,7 +450,7 @@ const AIFeedbackCenter: React.FC<AIFeedbackCenterProps> = () => {
             <CheckCircle className="w-6 h-6 text-green-600" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">🎯 개선 제안사항</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">개선 제안사항</h3>
             <div className="space-y-2 text-sm text-gray-700">
               <p>• 재귀 함수 설명 시 더 쉬운 예제 사용 (피드백 기반)</p>
               <p>• 문제 난이도 조절 알고리즘 개선 필요</p>

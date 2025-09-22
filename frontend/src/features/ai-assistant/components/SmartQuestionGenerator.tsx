@@ -169,22 +169,22 @@ const SmartQuestionGenerator: React.FC = () => {
         <div className="flex items-center mb-4">
           <Brain className="w-8 h-8 text-purple-600 mr-3" />
           <div>
-            <h2 className="text-2xl font-bold text-purple-900">🧠 스마트 문제 생성기</h2>
+            <h2 className="text-2xl font-bold text-purple-900">스마트 문제 생성기</h2>
             <p className="text-purple-700">AI가 맞춤형 문제를 자동으로 생성해드립니다</p>
           </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div className="bg-white rounded p-3">
-            <span className="font-medium text-purple-700">✨ 개인화 문제</span>
+            <span className="font-medium text-purple-700">개인화 문제</span>
             <p className="text-gray-600">학습 목표와 약점 기반</p>
           </div>
           <div className="bg-white rounded p-3">
-            <span className="font-medium text-purple-700">🎯 적응형 난이도</span>
+            <span className="font-medium text-purple-700">적응형 난이도</span>
             <p className="text-gray-600">실력에 맞는 도전</p>
           </div>
           <div className="bg-white rounded p-3">
-            <span className="font-medium text-purple-700">📊 품질 보장</span>
+            <span className="font-medium text-purple-700">품질 보장</span>
             <p className="text-gray-600">AI 품질 검증 시스템</p>
           </div>
         </div>
@@ -507,7 +507,7 @@ const SmartQuestionGenerator: React.FC = () => {
       {/* Phase 10 기능 안내 */}
       <div className="bg-gradient-to-r from-green-50 to-purple-50 border border-green-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-green-900 mb-3">
-          🚀 Phase 10 - 스마트 문제 생성 시스템
+          스마트 문제 생성 시스템
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
@@ -520,7 +520,7 @@ const SmartQuestionGenerator: React.FC = () => {
             </ul>
           </div>
           <div>
-            <h4 className="font-medium text-green-800 mb-2">🎯 예정 기능</h4>
+            <h4 className="font-medium text-green-800 mb-2">예정 기능</h4>
             <ul className="text-green-700 space-y-1">
               <li>• 관리자 문제 검토 시스템</li>
               <li>• 학습 패턴 기반 추천</li>

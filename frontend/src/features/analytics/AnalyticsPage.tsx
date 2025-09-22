@@ -85,10 +85,10 @@ export default function AnalyticsPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center">
           <BarChart3 className="w-8 h-8 text-blue-600 mr-3" />
-          📊 학습 분석
+          학습 분석
         </h1>
         <p className="text-gray-600 mt-1">
-          실제 학습 데이터를 기반으로 한 상세 분석입니다. Mock 데이터가 완전히 제거되었습니다.
+          실제 학습 데이터를 기반으로 한 상세 분석입니다.
         </p>
       </div>
 
@@ -139,7 +139,7 @@ export default function AnalyticsPage() {
       {/* 오늘의 학습 통계 (일일 데이터가 있는 경우) */}
       {daily && Object.keys(daily).length > 0 && (
         <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">📈 오늘의 학습</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">오늘의 학습</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between">

@@ -3,6 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Heart, MessageCircle, Target, TrendingUp, Calendar, CheckCircle, AlertCircle, Lightbulb, Star, BookOpen } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import useAuthStore from '../../../shared/hooks/useAuthStore';
+import { counselingApi } from '../../../shared/services/apiClient';
 
 interface CounselingSession {
   id: string;
@@ -36,9 +37,24 @@ export default function LearningCounselor() {
   const [selectedType, setSelectedType] = useState<'motivation' | 'guidance' | 'goal_setting' | 'habit_building'>('motivation');
   const [moodScore, setMoodScore] = useState(5);
   const [sessions, setSessions] = useState<CounselingSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
-  // 모킹 데이터
-  const mockInsights: MotivationalInsight[] = [
+  // 사용자 인사이트 조회 (실제 API)
+  const { data: userInsights, isLoading: isInsightsLoading } = useQuery({
+    queryKey: ['user-insights'],
+    queryFn: () => counselingApi.getUserInsights(),
+    enabled: !!user,
+  });
+
+  // 일일 동기부여 메시지 조회 (실제 API)
+  const { data: dailyMotivation } = useQuery({
+    queryKey: ['daily-motivation'],
+    queryFn: () => counselingApi.getDailyMotivation(),
+    enabled: !!user,
+  });
+
+  // 폴백용 모킹 데이터
+  const fallbackInsights: MotivationalInsight[] = [
     {
       type: 'achievement',
       title: '이번 주 학습 목표 달성!',
@@ -64,6 +80,9 @@ export default function LearningCounselor() {
       icon: '💪'
     }
   ];
+
+  // 실제 데이터 또는 폴백 데이터 사용
+  const insights = userInsights?.insights || fallbackInsights;
 
   const mockGoals: LearningGoal[] = [
     {
@@ -92,53 +111,39 @@ export default function LearningCounselor() {
     }
   ];
 
-  // 상담 세션 전송
+  // 상담 세션 전송 (실제 API 사용)
   const counselingMutation = useMutation({
     mutationFn: async (data: {
       message: string;
-      type: string;
-      mood_score: number;
+      type: 'motivation' | 'guidance' | 'goal_setting' | 'habit_building';
+      mood_score?: number;
     }) => {
-      // 실제 API 호출 시뮬레이션
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // AI 응답 생성 (실제로는 백엔드에서 처리)
-      let aiResponse = '';
-      
-      switch (data.type) {
-        case 'motivation':
-          aiResponse = `${user?.name || '학습자'}님의 현재 기분 점수 ${data.mood_score}/10을 보니, 약간의 동기부여가 필요해 보이네요. 지금까지의 학습 여정을 돌아보면 정말 많은 성장을 이뤄냈어요. 작은 성취도 충분히 가치있다는 것을 기억해주세요. 오늘 하루도 화이팅!`;
-          break;
-        case 'guidance':
-          aiResponse = `훌륭한 질문이에요! 현재 상황을 분석해보니, 체계적인 접근이 필요해 보입니다. 우선 기초를 탄탄히 다진 후 단계별로 진행하는 것을 추천드려요. 구체적인 로드맵을 함께 세워보시는 건 어떨까요?`;
-          break;
-        case 'goal_setting':
-          aiResponse = `목표 설정은 성공적인 학습의 첫걸음이에요! SMART 원칙(구체적, 측정가능, 달성가능, 현실적, 시간제한)을 적용해서 목표를 다시 정리해보세요. 너무 큰 목표보다는 작은 목표들을 연속적으로 달성해나가는 것이 더 효과적입니다.`;
-          break;
-        case 'habit_building':
-          aiResponse = `좋은 학습 습관을 만들고 싶으시는군요! 21일 법칙을 활용해보세요. 매일 같은 시간에 같은 장소에서 학습하는 것부터 시작해보세요. 처음에는 10분이라도 괜찮아요. 중요한 것은 꾸준함입니다.`;
-          break;
-      }
-
-      return aiResponse;
+      return counselingApi.sendMessage({
+        message: data.message,
+        type: data.type,
+        mood_score: data.mood_score,
+        session_id: currentSessionId || undefined,
+      });
     },
-    onSuccess: (aiResponse) => {
+    onSuccess: (response) => {
       const newSession: CounselingSession = {
         id: `session-${Date.now()}`,
         type: selectedType,
         message: message,
-        ai_response: aiResponse,
+        ai_response: response.ai_response,
         timestamp: new Date(),
         mood_score: selectedType === 'motivation' ? moodScore : undefined,
         tags: [selectedType, 'ai-counseling']
       };
       
       setSessions(prev => [newSession, ...prev]);
+      setCurrentSessionId(response.session_id);
       setMessage('');
-      toast.success('상담 응답을 받았습니다!');
+      toast.success('AI 상담사가 응답했습니다!');
     },
     onError: (error: any) => {
-      toast.error(`상담 요청 실패: ${error.message}`);
+      console.error('상담 API 오류:', error);
+      toast.error(`상담 요청 실패: ${error.response?.data?.detail || error.message}`);
     },
   });
 
@@ -151,7 +156,7 @@ export default function LearningCounselor() {
     counselingMutation.mutate({
       message: message.trim(),
       type: selectedType,
-      mood_score: moodScore
+      mood_score: selectedType === 'motivation' ? moodScore : undefined
     });
   };
 
@@ -344,17 +349,28 @@ export default function LearningCounselor() {
               <Star className="w-5 h-5 text-yellow-500 mr-2" />
               오늘의 격려 메시지
             </h3>
-            <div className="space-y-3">
-              {mockInsights.map((insight, index) => (
-                <div key={index} className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg p-4 border border-pink-200">
-                  <div className="flex items-center mb-2">
-                    <span className="text-lg mr-2">{insight.icon}</span>
-                    <h4 className="text-sm font-semibold text-gray-900">{insight.title}</h4>
+            {isInsightsLoading ? (
+              <div className="space-y-3">
+                {[...Array(3)].map((_, index) => (
+                  <div key={index} className="bg-gray-100 rounded-lg p-4 animate-pulse">
+                    <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-300 rounded"></div>
                   </div>
-                  <p className="text-sm text-gray-700">{insight.message}</p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {insights.map((insight, index) => (
+                  <div key={index} className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg p-4 border border-pink-200">
+                    <div className="flex items-center mb-2">
+                      <span className="text-lg mr-2">{insight.icon}</span>
+                      <h4 className="text-sm font-semibold text-gray-900">{insight.title}</h4>
+                    </div>
+                    <p className="text-sm text-gray-700">{insight.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* 학습 목표 현황 */}

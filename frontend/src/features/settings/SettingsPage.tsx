@@ -7,7 +7,7 @@ export default function SettingsPage() {
       {/* 헤더 */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">
-          ⚙️ 설정 & 관리
+          설정 & 관리
         </h1>
         <p className="text-gray-600 mt-1">
           개인 프로필, 학습 환경, 알림 설정을 관리하세요.

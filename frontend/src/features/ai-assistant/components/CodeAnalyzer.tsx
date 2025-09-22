@@ -127,7 +127,7 @@ export default function CodeAnalyzer() {
       <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold mb-2">🔍 AI 코드 분석기</h1>
+            <h1 className="text-2xl font-bold mb-2">AI 코드 분석기</h1>
             <p className="text-purple-100">
               코드를 분석하여 개선점과 최적화 방안을 제안해드립니다
             </p>
@@ -323,7 +323,7 @@ print(fibonacci(10))`}
 
       {/* 기능 설명 */}
       <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-purple-900 mb-4">🚀 AI 코드 분석 기능</h3>
+        <h3 className="text-lg font-semibold text-purple-900 mb-4">AI 코드 분석 기능</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex items-start">
             <Zap className="w-5 h-5 text-purple-600 mr-2 mt-0.5" />

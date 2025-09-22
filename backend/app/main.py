@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .api.v1 import questions, submit, dashboard, student, auth, admin, results_guard, teacher_dashboard, taxonomy, teacher_groups, feedback, ai_learning, curriculum, personalization, monitoring, ai_features, beta_testing, subjects, stats, code_execution, unified_learning, simple_topics, dynamic_subjects_simple
+from .api.v1 import questions, submit, dashboard, student, auth, admin, results_guard, teacher_dashboard, taxonomy, teacher_groups, feedback, ai_learning, curriculum, personalization, monitoring, ai_features, beta_testing, subjects, stats, code_execution, unified_learning, dynamic_subjects_simple
 # Phase 9 imports
 from app.api.v1 import hybrid_ai, ai_curriculum, ai_teaching
 from .core.config import settings
@@ -141,7 +141,7 @@ app.include_router(ai_features.router, prefix="/api/v1/ai-features", tags=["ai-f
 app.include_router(beta_testing.router, prefix="/api/v1/beta", tags=["beta-testing"])
 app.include_router(subjects.router, prefix="/api/v1", tags=["subjects"])
 app.include_router(dynamic_subjects_simple.router, prefix="/api/v1/dynamic-subjects", tags=["dynamic-subjects"])  # Phase 8 - 재활성화
-app.include_router(simple_topics.router, prefix="/api/v1", tags=["simple-topics"])
+# app.include_router(simple_topics.router, prefix="/api/v1", tags=["simple-topics"])  # 파일 없음 - 주석 처리
 app.include_router(unified_learning.router, prefix="/api/v1", tags=["unified-learning"])
 app.include_router(stats.router, prefix="/api/v1/stats", tags=["stats"])
 app.include_router(code_execution.router, prefix="/api/v1", tags=["code-execution"])
@@ -150,8 +150,9 @@ app.include_router(ai_curriculum.router, tags=["ai-curriculum"])  # Phase 9: AI 
 app.include_router(ai_teaching.router, tags=["ai-teaching"])  # Phase 9: 실라버스 기반 개별화 교육 (prefix 이미 설정됨)
 
 # Phase 10: 고급 AI 기능들
-from app.api.v1 import ai_questions
+from app.api.v1 import ai_questions, ai_counseling
 app.include_router(ai_questions.router, tags=["ai-questions-phase10"])  # Phase 10: 스마트 문제 생성 (prefix 이미 설정됨)
+app.include_router(ai_counseling.router, tags=["ai-counseling"])  # AI 학습 상담 시스템 (기존 멘토링 시스템 활용)
 
 @app.get("/", tags=["root"])
 def read_root():

@@ -254,10 +254,20 @@ export const aiApi = {
     subject_key: string;
     session_preferences?: any;
   }) => api.post<{
-    session_id: number;
-    status: string;
-    message: string;
-  }>('/ai-teaching/start-session', data),
+    id: number;
+    curriculum_id: number;
+    session_title: string;
+    current_step: number;
+    total_steps: number;
+    completion_percentage: number;
+    session_status: string;
+    started_at: string;
+    last_activity_at: string;
+    conversation_preview?: string;
+  }>('/ai-teaching/sessions/start', {
+    curriculum_id: data.curriculum_id || 1, // 임시 값
+    session_preferences: data.session_preferences
+  }),
   
   // AI 강사와 메시지 교환
   sendTeachingMessage: (data: {
@@ -265,11 +275,21 @@ export const aiApi = {
     message: string;
     message_type?: string;
   }) => api.post<{
-    response: string;
-    teaching_guidance?: string;
-    suggested_actions?: string[];
-    session_progress?: any;
-  }>('/ai-teaching/message', data),
+    session_id: number;
+    message: string;
+    current_step: number;
+    step_title: string;
+    understanding_check?: string;
+    next_action: string;
+    progress_percentage: number;
+    learning_tips?: string[];
+    difficulty_adjustment?: string;
+    timestamp: string;
+  }>(`/ai-teaching/sessions/${data.session_id}/message`, {
+    session_id: data.session_id,
+    message: data.message,
+    message_type: data.message_type || 'text'
+  }),
   
   // AI 분석 및 피드백
   getAnalysis: (userId: number, analysisType = 'comprehensive') => 
@@ -290,7 +310,7 @@ export const aiApi = {
   }>(`/ai-features/difficulty/optimal/${userId}`, data),
 };
 
-// 학습 분석 관련 API - 실제 존재하는 엔드포인트만 사용
+// 학습 분석 관련 API - 통합된 버전
 export const analyticsApi = {
   getProgress: (userId: number) => api.get<{
     subjects_progress: any[];
@@ -313,6 +333,31 @@ export const analyticsApi = {
     data: any;
     message?: string;
   }>(`/unified-learning/analytics/${userId}`),
+
+  // 심층 학습 분석 (Phase 10 고급 기능)
+  getDeepAnalysis: (userId: number) => api.get<{
+    learning_patterns: Array<{
+      pattern: string;
+      value: string;
+      impact: 'positive' | 'negative';
+      confidence: number;
+      description: string;
+    }>;
+    predictive_insights: Array<{
+      type: string;
+      title: string;
+      prediction: string;
+      confidence: number;
+      recommendation: string;
+    }>;
+    performance_metrics: {
+      accuracy: number;
+      response_time: number;
+      consistency: number;
+      improvement_rate: number;
+      engagement_score: number;
+    };
+  }>(`/analytics/deep-analysis/${userId}`),
 };
 
 // 관리자 API
@@ -477,56 +522,6 @@ export const adminApi = {
   }>('/admin/performance/ai-models'),
 };
 
-// Phase 10 고급 분석 API
-export const analyticsApi = {
-  // 사용자 개인 분석
-  getDailyStats: (userId: number) => api.get<{
-    user_id: number;
-    date: string;
-    study_minutes: number;
-    accuracy: number;
-    improvement_rate: number;
-    engagement_score: number;
-  }>(`/stats/user/${userId}/daily`),
-
-  // 진도 현황
-  getProgress: (userId: number) => api.get<{
-    user_id: number;
-    overall_progress: number;
-    subjects: Array<{
-      subject: string;
-      progress: number;
-      completed_topics: number;
-      total_topics: number;
-    }>;
-  }>(`/unified-learning/progress/${userId}`),
-
-  // 심층 학습 분석
-  getDeepAnalysis: (userId: number) => api.get<{
-    learning_patterns: Array<{
-      pattern: string;
-      value: string;
-      impact: 'positive' | 'negative';
-      confidence: number;
-      description: string;
-    }>;
-    predictive_insights: Array<{
-      type: string;
-      title: string;
-      prediction: string;
-      confidence: number;
-      recommendation: string;
-    }>;
-    performance_metrics: {
-      accuracy: number;
-      response_time: number;
-      consistency: number;
-      improvement_rate: number;
-      engagement_score: number;
-    };
-  }>(`/analytics/deep-analysis/${userId}`),
-};
-
 // Phase 10 적응형 학습 API
 export const adaptiveLearningApi = {
   // 적응형 추천 생성
@@ -620,6 +615,214 @@ export const feedbackApi = {
     type_distribution: Record<string, number>;
     rating_distribution: Record<string, number>;
   }>('/feedback/stats'),
+};
+
+// Phase 10 AI 문제 생성 API
+export const questionsApi = {
+  // 스마트 문제 생성
+  generateQuestions: (data: {
+    subject_key: string;
+    topic: string;
+    question_type?: string;
+    difficulty_level?: string;
+    count?: number;
+    learning_goals?: string[];
+    context?: string;
+  }) => api.post<{
+    success: boolean;
+    message: string;
+    questions: Array<{
+      id: string;
+      question_text: string;
+      question_type: string;
+      difficulty_level: string;
+      options?: string[];
+      correct_answer: string;
+      explanation: string;
+      hints?: string[];
+      tags?: string[];
+      estimated_time?: number;
+      learning_objective?: string;
+      quality_score: number;
+      generated_at: string;
+      status: string;
+    }>;
+    generation_info: {
+      total_generated: number;
+      avg_quality_score: number;
+      estimated_total_time: number;
+      ready_questions: number;
+      needs_review: number;
+    };
+  }>('/ai-questions/generate', data),
+
+  // 적응형 문제 생성
+  generateAdaptiveQuestions: (data: {
+    subject_key: string;
+    current_performance: {
+      accuracy: number;
+      response_time: number;
+      consistency: number;
+      improvement_rate: number;
+      engagement_score: number;
+    };
+    focus_areas?: string[];
+  }) => api.post<{
+    success: boolean;
+    message: string;
+    questions: Array<{
+      id: string;
+      question_text: string;
+      question_type: string;
+      difficulty_level: string;
+      options?: string[];
+      correct_answer: string;
+      explanation: string;
+      adaptation_reason: string;
+      quality_score: number;
+      generated_at: string;
+    }>;
+    adaptation_info: {
+      performance_analysis: any;
+      recommended_focus: string[];
+      difficulty_adjustment: string;
+    };
+  }>('/ai-questions/adaptive', data),
+
+  // 문제 생성 분석
+  getGenerationAnalytics: (subjectKey?: string, days?: number) => {
+    const params = new URLSearchParams();
+    if (subjectKey) params.append('subject_key', subjectKey);
+    if (days) params.append('days', days.toString());
+    return api.get<{
+      success: boolean;
+      period: string;
+      subject_filter?: string;
+      analytics: {
+        generation_stats: {
+          total_generated: number;
+          approved: number;
+          rejected: number;
+          pending_review: number;
+          avg_quality_score: number;
+          generation_success_rate: number;
+        };
+        subject_breakdown: Record<string, {
+          generated: number;
+          avg_quality: number;
+          user_satisfaction: number;
+        }>;
+        difficulty_distribution: Record<string, number>;
+        question_type_stats: Record<string, number>;
+        performance_metrics: {
+          avg_generation_time: number;
+          cache_hit_rate: number;
+          ai_model_usage: Record<string, number>;
+        };
+        user_feedback: {
+          avg_rating: number;
+          total_feedback: number;
+          improvement_suggestions: string[];
+        };
+      };
+      generated_at: string;
+    }>(`/ai-questions/analytics?${params.toString()}`);
+  },
+
+  // 문제 생성 템플릿
+  getQuestionTemplates: (questionType?: string) => {
+    const params = new URLSearchParams();
+    if (questionType) params.append('question_type', questionType);
+    return api.get<{
+      success: boolean;
+      templates?: Record<string, any>;
+      template?: Record<string, any>;
+      usage_guide?: {
+        step1: string;
+        step2: string;
+        step3: string;
+        step4: string;
+      };
+    }>(`/ai-questions/templates?${params.toString()}`);
+  },
+};
+
+// AI 상담 API
+export const counselingApi = {
+  // 상담 세션 시작
+  startSession: (initialQuestion?: string) => api.post<{
+    success: boolean;
+    session_id: string;
+    mentor_personality: string;
+    welcome_message: string;
+    session_goals: string[];
+    current_mood: string;
+  }>('/ai-counseling/start-session', { initial_question: initialQuestion }),
+
+  // 상담 메시지 전송
+  sendMessage: (data: {
+    message: string;
+    type: 'motivation' | 'guidance' | 'goal_setting' | 'habit_building';
+    mood_score?: number;
+    session_id?: string;
+    context?: any;
+  }) => api.post<{
+    session_id: string;
+    ai_response: string;
+    mentor_personality: string;
+    suggestions: string[];
+    follow_up_questions: string[];
+    confidence: number;
+    timestamp: string;
+  }>('/ai-counseling/message', data),
+
+  // 일일 동기부여 메시지
+  getDailyMotivation: () => api.get<{
+    success: boolean;
+    motivation_message: string;
+    user_id: number;
+    generated_at: string;
+  }>('/ai-counseling/daily-motivation'),
+
+  // 개인화된 학습 팁
+  getLearningTips: (topic?: string) => api.get<{
+    success: boolean;
+    tips: string[];
+    topic: string;
+    user_id: number;
+    generated_at: string;
+  }>(`/ai-counseling/learning-tips${topic ? `?topic=${topic}` : ''}`),
+
+  // 세션 기록 조회
+  getSessionHistory: (sessionId: string) => api.get<{
+    success: boolean;
+    session_id: string;
+    conversation_history: Array<{
+      timestamp: string;
+      type: string;
+      content: string;
+      tone?: string;
+    }>;
+    mentor_personality: string;
+    session_goals: string[];
+    start_time: string;
+    current_mood: string;
+  }>(`/ai-counseling/session-history/${sessionId}`),
+
+  // 사용자 인사이트
+  getUserInsights: () => api.get<{
+    success: boolean;
+    insights: Array<{
+      type: 'achievement' | 'progress' | 'challenge' | 'encouragement';
+      title: string;
+      message: string;
+      icon: string;
+    }>;
+    motivation_message: string;
+    learning_tips: string[];
+    user_mood: string;
+    generated_at: string;
+  }>('/ai-counseling/user-insights'),
 };
 
 export default api;

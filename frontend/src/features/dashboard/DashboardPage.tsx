@@ -206,7 +206,7 @@ export default function DashboardPage() {
 
         <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            📈 최근 학습 활동
+            최근 학습 활동
           </h2>
           {hasData && Array.isArray(stats.recent_activities) && stats.recent_activities.length > 0 ? (
             <div className="space-y-3">
