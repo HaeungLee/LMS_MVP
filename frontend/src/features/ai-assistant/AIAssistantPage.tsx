@@ -31,7 +31,7 @@ export default function AIAssistantPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center">
           <Bot className="w-8 h-8 text-blue-600 mr-3" />
-          🤖 AI 학습 도우미
+          AI 학습 도우미
         </h1>
         <p className="text-gray-600 mt-1">
           최신 AI 기술로 개인 맞춤 학습을 지원합니다. Phase 9 실제 API가 연결되어 있습니다.

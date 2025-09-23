@@ -16,7 +16,7 @@ from app.models.orm import User, RefreshToken
 
 JWT_SECRET = os.getenv("JWT_SECRET", "dev_secret_change_me")
 JWT_ALG = "HS256"
-ACCESS_EXPIRES_MIN = int(os.getenv("JWT_EXPIRES_IN_MIN", "15"))
+ACCESS_EXPIRES_MIN = int(os.getenv("JWT_EXPIRES_IN_MIN", "120"))  # 2시간으로 늘림 (개발용)
 REFRESH_EXPIRES_DAYS = int(os.getenv("REFRESH_EXPIRES_IN_DAYS", "14"))
 
 

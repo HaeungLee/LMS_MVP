@@ -37,6 +37,8 @@ class CurriculumStreamingHandler(AsyncCallbackHandler):
         
     async def on_llm_new_token(self, token: str, **kwargs: Any) -> None:
         """새 토큰이 생성될 때마다 호출"""
+        logger.info(f"New token received: {repr(token)}")
+        
         self.tokens.append(token)
         
         # 토큰을 큐에 추가

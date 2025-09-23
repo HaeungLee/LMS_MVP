@@ -98,13 +98,13 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_db))
     db.add(RefreshToken(id=new_jti, user_id=user.id, issued_at=now, expires_at=new_exp, revoked=False))
     db.commit()
     # 쿠키 갱신
-    response.set_cookie("access_token", access, httponly=True, samesite="lax")
+    response.set_cookie("access_token", access, httponly=True, samesite="lax", secure=False)
     if remaining_seconds > 0:
-        response.set_cookie("refresh_token", new_refresh, httponly=True, samesite="lax", max_age=remaining_seconds)
+        response.set_cookie("refresh_token", new_refresh, httponly=True, samesite="lax", max_age=remaining_seconds, secure=False)
     else:
-        response.set_cookie("refresh_token", new_refresh, httponly=True, samesite="lax")
+        response.set_cookie("refresh_token", new_refresh, httponly=True, samesite="lax", secure=False)
     # CSRF 토큰 재발급
-    response.set_cookie("csrf_token", generate_csrf_token(), httponly=False, samesite="lax")
+    response.set_cookie("csrf_token", generate_csrf_token(), httponly=False, samesite="lax", secure=False)
     return {"ok": True}
     return resp
 
@@ -121,12 +121,12 @@ def login(body: LoginDto, response: Response, db: Session = Depends(get_db)) -> 
     db.add(RefreshToken(id=jti, user_id=user.id, issued_at=datetime.utcnow(), expires_at=exp, revoked=False))
     db.commit()
     resp = {"id": user.id, "email": user.email, "role": user.role, "display_name": user.display_name}
-    response.set_cookie("access_token", access, httponly=True, samesite="lax")
+    response.set_cookie("access_token", access, httponly=True, samesite="lax", secure=False)
     # refresh는 remember에 따라 만료일 지정
     max_age = refresh_days * 24 * 60 * 60
-    response.set_cookie("refresh_token", refresh, httponly=True, samesite="lax", max_age=max_age)
+    response.set_cookie("refresh_token", refresh, httponly=True, samesite="lax", max_age=max_age, secure=False)
     # CSRF 토큰 발급 (더블 서브밋 쿠키)
-    response.set_cookie("csrf_token", generate_csrf_token(), httponly=False, samesite="lax")
+    response.set_cookie("csrf_token", generate_csrf_token(), httponly=False, samesite="lax", secure=False)
     return resp
 
 

@@ -192,28 +192,32 @@ Input: None
 """
             
             assistant_input = HumanMessage(content=assistant_prompt)
-            assistant_response = self.assistant_agent.step(assistant_input)
+            # ✅ 올바른 LangChain Agent 호출
+            assistant_response = await self.assistant_agent.ainvoke({"messages": [assistant_input]})
+            response_content = assistant_response.get("messages", [{}])[-1].get("content", "") if isinstance(assistant_response, dict) else assistant_response.content
             
-            conversation_history.append(f"Teaching Assistant: {assistant_response.content}")
-            logger.info(f"Teaching Assistant (턴 {turn+1}): {assistant_response.content}")
+            conversation_history.append(f"Teaching Assistant: {response_content}")
+            logger.info(f"Teaching Assistant (턴 {turn+1}): {response_content}")
             
-            if "<작업완료>" in assistant_response.content:
+            if "<작업완료>" in response_content:
                 break
             
             # Instructor 턴
             instructor_prompt = f"""
-Teaching Assistant 요청: {assistant_response.content}
+Teaching Assistant 요청: {response_content}
 
 위 요청에 대해 한국 학습자들을 위한 전문적인 솔루션을 한국어로 제시하세요.
 """
             
             instructor_input = HumanMessage(content=instructor_prompt)
-            instructor_response = self.instructor_agent.step(instructor_input)
+            # ✅ 올바른 LangChain Agent 호출
+            instructor_response = await self.instructor_agent.ainvoke({"messages": [instructor_input]})
+            instructor_content = instructor_response.get("messages", [{}])[-1].get("content", "") if isinstance(instructor_response, dict) else instructor_response.content
             
-            conversation_history.append(f"Instructor: {instructor_response.content}")
-            logger.info(f"Instructor (턴 {turn+1}): {instructor_response.content}")
+            conversation_history.append(f"Instructor: {instructor_content}")
+            logger.info(f"Instructor (턴 {turn+1}): {instructor_content}")
             
-            current_situation = instructor_response.content
+            current_situation = instructor_content
         
         return conversation_history
     
@@ -314,6 +318,7 @@ JSON 형식으로만 답변하세요:
         스트리밍 방식으로 LangChain 커리큘럼 생성
         """
         try:
+            print(f"🔥 스트리밍 생성 시작: {topic}")  # 디버그 로그
             logger.info(f"스트리밍 커리큘럼 생성 시작: {topic}")
             
             # 기본 컨텍스트 설정
@@ -358,8 +363,10 @@ JSON 형식으로만 답변하세요:
             
             # 스트리밍 LLM 가져오기
             if streaming_handler:
+                print(f"🔥 스트리밍 핸들러 있음, LLM 생성")  # 디버그 로그
                 llm = self.provider.get_streaming_llm(callbacks=[streaming_handler])
             else:
+                print(f"🔥 스트리밍 핸들러 없음, 일반 LLM 생성")  # 디버그 로그
                 llm = self.provider.get_llm()
             
             # 스트리밍 생성 실행
@@ -368,10 +375,18 @@ JSON 형식으로만 답변하세요:
                 HumanMessage(content=user_prompt)
             ]
             
-            response = await llm.ainvoke(messages)
+            # ✅ 진짜 스트리밍: astream() 사용
+            full_response = ""
+            async for chunk in llm.astream(messages):
+                content = chunk.content if hasattr(chunk, 'content') else str(chunk)
+                if content:
+                    full_response += content
+                    # 스트리밍 핸들러가 있으면 직접 토큰 전달
+                    if streaming_handler:
+                        await streaming_handler.on_llm_new_token(content)
             
             # 응답을 구조화된 커리큘럼으로 파싱
-            curriculum_content = response.content if hasattr(response, 'content') else str(response)
+            curriculum_content = full_response
             
             # 기본 구조화된 커리큘럼 생성
             curriculum = {
@@ -414,6 +429,32 @@ JSON 형식으로만 답변하세요:
             }
         
         return curriculum
+    
+    def _prepare_generation_context(
+        self,
+        topic: str,
+        difficulty_level: str,
+        duration_weeks: int,
+        learning_goals: List[str],
+        subject_context: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """생성을 위한 컨텍스트 준비"""
+        context = {
+            "topic": topic,
+            "difficulty_level": difficulty_level,
+            "duration_weeks": duration_weeks,
+            "learning_goals": learning_goals or [],
+            "subject_context": subject_context or {},
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        # 기존 토픽 정보가 있으면 추가
+        if subject_context and subject_context.get('existing_topics'):
+            context["existing_topics"] = [
+                topic['topic_key'] for topic in subject_context['existing_topics']
+            ]
+        
+        return context
 
 
 class LangChainEnhancedCurriculumManager:

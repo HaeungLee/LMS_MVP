@@ -82,15 +82,17 @@ export default function MainLayout() {
 
   const navigationItems = getNavigationItems();
 
-  // 사용자 정보 로드
+  // 사용자 정보 로드 - 한 번만 실행되도록 최적화
   useEffect(() => {
     if (!user && !loading) {
-      fetchMe().catch(() => {
+      console.log('🔐 사용자 정보 로드 시작');
+      fetchMe().catch((error) => {
+        console.log('❌ 인증 실패, 로그인 페이지로 이동:', error.message);
         // 인증 실패시 로그인 페이지로 이동
         navigate('/login');
       });
     }
-  }, [user, loading, fetchMe, navigate]);
+  }, [user, loading]); // fetchMe와 navigate 의존성 제거로 최적화
 
   const isActiveRoute = (path: string) => {
     if (path === '/') {

@@ -127,7 +127,7 @@ async def review_question(
                 message=f"문제 {question_id}가 {review_data.status}로 처리되었습니다",
                 question_id=question_id,
                 new_status=review_data.status,
-                reviewed_by=admin_user.username,
+                reviewed_by=admin_user.email,
                 reviewed_at=datetime.now()
             )
         else:
@@ -190,7 +190,7 @@ async def create_curriculum_template(
             "subject": template_data.subject,
             "difficulty_level": template_data.difficulty_level,
             "topics": template_data.topics,
-            "created_by": admin_user.username,
+            "created_by": admin_user.email,
             "created_at": datetime.now(),
             "is_active": True
         }

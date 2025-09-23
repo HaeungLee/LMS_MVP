@@ -59,7 +59,7 @@ class UnifiedLearningService:
                 "analytics": {
                     "user_profile": {
                         "user_id": user_id,
-                        "username": user.username,
+                        "username": user.email,
                         "total_subjects": 1,  # 간소화
                         "total_submissions": len(recent_submissions)
                     },

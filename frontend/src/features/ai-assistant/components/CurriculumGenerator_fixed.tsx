@@ -22,6 +22,7 @@ export default function CurriculumGenerator({ subjects = [], onBack }: Curriculu
   const [learningGoals, setLearningGoals] = useState<string[]>(['']);
   const [difficultyLevel, setDifficultyLevel] = useState(3);
   const [durationPreference, setDurationPreference] = useState('4주');
+  const [specialRequirements, setSpecialRequirements] = useState<string[]>([]);
   const [generatedCurriculumId, setGeneratedCurriculumId] = useState<number | null>(null);
   
   // 스트리밍 관련 상태
@@ -71,9 +72,24 @@ export default function CurriculumGenerator({ subjects = [], onBack }: Curriculu
     }
   };
 
+  const addSpecialRequirement = () => {
+    setSpecialRequirements([...specialRequirements, '']);
+  };
+
+  const updateSpecialRequirement = (index: number, value: string) => {
+    const updated = [...specialRequirements];
+    updated[index] = value;
+    setSpecialRequirements(updated);
+  };
+
+  const removeSpecialRequirement = (index: number) => {
+    setSpecialRequirements(specialRequirements.filter((_, i) => i !== index));
+  };
+
   // 스트리밍 커리큘럼 생성
   const handleStreamingGenerate = async () => {
     const validGoals = learningGoals.filter(goal => goal.trim());
+    const validRequirements = specialRequirements.filter(req => req.trim());
     const finalSubject = customSubject.trim() || selectedSubject;
     
     if (!finalSubject || validGoals.length === 0) {
@@ -91,6 +107,7 @@ export default function CurriculumGenerator({ subjects = [], onBack }: Curriculu
         learning_goals: validGoals,
         difficulty_level: difficultyLevel,
         duration_preference: durationPreference,
+        special_requirements: validRequirements.length > 0 ? validRequirements : undefined,
       });
 
       if (!response.ok) {
@@ -106,7 +123,7 @@ export default function CurriculumGenerator({ subjects = [], onBack }: Curriculu
           if (done) break;
 
           const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
+          const lines = chunk.split('\\n');
 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
@@ -143,6 +160,7 @@ export default function CurriculumGenerator({ subjects = [], onBack }: Curriculu
 
   const handleGenerate = () => {
     const validGoals = learningGoals.filter(goal => goal.trim());
+    const validRequirements = specialRequirements.filter(req => req.trim());
     const finalSubject = customSubject.trim() || selectedSubject;
     
     if (!finalSubject || validGoals.length === 0) {
@@ -159,6 +177,7 @@ export default function CurriculumGenerator({ subjects = [], onBack }: Curriculu
       learning_goals: validGoals,
       difficulty_level: difficultyLevel,
       duration_preference: durationPreference,
+      special_requirements: validRequirements.length > 0 ? validRequirements : undefined,
     });
 
     generateMutation.mutate({
@@ -166,6 +185,7 @@ export default function CurriculumGenerator({ subjects = [], onBack }: Curriculu
       learning_goals: validGoals,
       difficulty_level: difficultyLevel,
       duration_preference: durationPreference,
+      special_requirements: validRequirements.length > 0 ? validRequirements : undefined,
     });
   };
 
@@ -187,7 +207,7 @@ export default function CurriculumGenerator({ subjects = [], onBack }: Curriculu
           <h2 className="text-2xl font-bold text-gray-900">AI 커리큘럼 생성</h2>
         </div>
 
-        {/* 메인 컨텐츠 - 참고문서의 추천 해결책 적용 */}
+        {/* 메인 컨텐츠 */}
         {!generatedCurriculumId && !isStreaming && !streamContent ? (
           /* 커리큘럼 생성 폼 */
           <div className="space-y-6">
@@ -266,47 +286,19 @@ export default function CurriculumGenerator({ subjects = [], onBack }: Curriculu
               </button>
             </div>
 
-            {/* 난이도 설정 - 스타일 개선 */}
+            {/* 난이도 설정 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 난이도 수준: {difficultyLevel}/10
               </label>
-              <div className="relative">
-                <style dangerouslySetInnerHTML={{
-                  __html: `
-                    .range-slider::-webkit-slider-thumb {
-                      appearance: none;
-                      height: 20px;
-                      width: 20px;
-                      border-radius: 50%;
-                      background: #3b82f6;
-                      cursor: pointer;
-                      border: 2px solid #ffffff;
-                      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                    }
-                    .range-slider::-moz-range-thumb {
-                      height: 20px;
-                      width: 20px;
-                      border-radius: 50%;
-                      background: #3b82f6;
-                      cursor: pointer;
-                      border: 2px solid #ffffff;
-                      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                    }
-                  `
-                }} />
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={difficultyLevel}
-                  onChange={(e) => setDifficultyLevel(parseInt(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-slider"
-                  style={{
-                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(difficultyLevel - 1) * 11.11}%, #e5e7eb ${(difficultyLevel - 1) * 11.11}%, #e5e7eb 100%)`
-                  }}
-                />
-              </div>
+              <input
+                type="range"
+                min="1"
+                max="10"
+                value={difficultyLevel}
+                onChange={(e) => setDifficultyLevel(parseInt(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              />
               <div className="flex justify-between text-sm text-gray-500 mt-1">
                 <span>입문자</span>
                 <span>중급자</span>
@@ -404,106 +396,108 @@ export default function CurriculumGenerator({ subjects = [], onBack }: Curriculu
               </button>
             </div>
           </div>
-        ) : (isStreaming || streamContent) ? (
-          /* 스트리밍 결과 표시 */
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-medium text-gray-900">AI 커리큘럼 생성</h3>
-              {isStreaming && (
-                <div className="flex items-center text-blue-600">
-                  <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
-                  <span className="text-sm">실시간 생성</span>
-                </div>
-              )}
-            </div>
-            
-            {streamStatus && (
-              <div className="mb-3 text-sm text-blue-600 font-medium">
-                {streamStatus}
-              </div>
-            )}
-            
-            <div className="bg-white rounded-lg p-4 border max-h-96 overflow-y-auto">
-              <pre className="whitespace-pre-wrap text-sm text-gray-800">
-                {streamContent}
-                {isStreaming && <span className="animate-pulse">|</span>}
-              </pre>
-            </div>
-
-            {!isStreaming && streamContent && (
-              <div className="mt-3 flex space-x-2">
-                <button
-                  onClick={() => {
-                    setStreamContent('');
-                    setStreamStatus('');
-                    setGeneratedCurriculumId(null);
-                  }}
-                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-                >
-                  다시 생성
-                </button>
-              </div>
-            )}
-          </div>
         ) : (
-          /* 기존 방식 결과 표시 */
+          /* 생성 결과 또는 스트리밍 표시 */
           <div>
-            {isGenerating ? (
-              <div className="text-center py-8">
-                <RefreshCw className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">AI가 커리큘럼을 생성하고 있습니다</h3>
-                <p className="text-gray-600">
-                  2-Agent 시스템이 당신만의 맞춤형 학습 계획을 만들고 있어요...
-                </p>
-              </div>
-            ) : isCompleted && curriculumData ? (
-              <div>
-                <div className="flex items-center mb-4">
-                  <CheckCircle className="w-6 h-6 text-green-600 mr-2" />
-                  <h3 className="text-lg font-semibold text-gray-900">커리큘럼 생성 완료!</h3>
+            {/* 스트리밍 결과 표시 */}
+            {(isStreaming || streamContent) && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-medium text-gray-900">AI 커리큘럼 생성</h3>
+                  {isStreaming && (
+                    <div className="flex items-center text-blue-600">
+                      <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                      <span className="text-sm">실시간 생성</span>
+                    </div>
+                  )}
                 </div>
                 
-                {curriculumData.generated_syllabus && (
-                  <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                    <h4 className="font-medium text-gray-900 mb-2">생성된 커리큘럼</h4>
-                    <pre className="whitespace-pre-wrap text-sm text-gray-700">
-                      {JSON.stringify(curriculumData.generated_syllabus, null, 2)}
-                    </pre>
+                {streamStatus && (
+                  <div className="mb-3 text-sm text-blue-600 font-medium">
+                    {streamStatus}
                   </div>
                 )}
+                
+                <div className="bg-white rounded-lg p-4 border max-h-96 overflow-y-auto">
+                  <pre className="whitespace-pre-wrap text-sm text-gray-800">
+                    {streamContent}
+                    {isStreaming && <span className="animate-pulse">|</span>}
+                  </pre>
+                </div>
 
-                {curriculumData.agent_conversation_log && (
-                  <div className="bg-blue-50 rounded-lg p-4 mb-4">
-                    <h4 className="font-medium text-blue-900 mb-2">AI 분석 과정</h4>
-                    <p className="text-sm text-blue-800">
-                      {curriculumData.agent_conversation_log}
+                {!isStreaming && streamContent && (
+                  <div className="mt-3 flex space-x-2">
+                    <button
+                      onClick={() => {
+                        setStreamContent('');
+                        setStreamStatus('');
+                        setGeneratedCurriculumId(null);
+                      }}
+                      className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                    >
+                      다시 생성
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 기존 방식 결과 표시 */}
+            {generatedCurriculumId && !isStreaming && !streamContent && (
+              <div>
+                {isGenerating && (
+                  <div className="text-center py-8">
+                    <RefreshCw className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">AI가 커리큘럼을 생성하고 있습니다</h3>
+                    <p className="text-gray-600">
+                      2-Agent 시스템이 당신만의 맞춤형 학습 계획을 만들고 있어요...
                     </p>
                   </div>
                 )}
+                
+                {isCompleted && curriculumData && (
+                  <div>
+                    <div className="flex items-center mb-4">
+                      <CheckCircle className="w-6 h-6 text-green-600 mr-2" />
+                      <h3 className="text-lg font-semibold text-gray-900">커리큘럼 생성 완료!</h3>
+                    </div>
+                    
+                    {curriculumData.generated_syllabus && (
+                      <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                        <h4 className="font-medium text-gray-900 mb-2">생성된 커리큘럼</h4>
+                        <pre className="whitespace-pre-wrap text-sm text-gray-700">
+                          {JSON.stringify(curriculumData.generated_syllabus, null, 2)}
+                        </pre>
+                      </div>
+                    )}
 
-                <div className="flex space-x-3">
-                  <button
-                    onClick={() => setGeneratedCurriculumId(null)}
-                    className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
-                  >
-                    새 커리큘럼 생성
-                  </button>
-                  <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                    커리큘럼 저장하기
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-500" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">생성 실패</h3>
-                <p className="text-gray-600 mb-4">커리큘럼 생성 중 오류가 발생했습니다.</p>
-                <button
-                  onClick={() => setGeneratedCurriculumId(null)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                >
-                  다시 시도
-                </button>
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={() => setGeneratedCurriculumId(null)}
+                        className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+                      >
+                        새 커리큘럼 생성
+                      </button>
+                      <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        커리큘럼 저장하기
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                {!isGenerating && !isCompleted && (
+                  <div className="text-center py-8">
+                    <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-500" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">생성 실패</h3>
+                    <p className="text-gray-600 mb-4">커리큘럼 생성 중 오류가 발생했습니다.</p>
+                    <button
+                      onClick={() => setGeneratedCurriculumId(null)}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                    >
+                      다시 시도
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

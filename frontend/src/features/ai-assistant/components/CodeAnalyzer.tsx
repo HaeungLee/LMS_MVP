@@ -25,10 +25,7 @@ export default function CodeAnalyzer() {
   // 코드 분석 mutation
   const analysisMutation = useMutation({
     mutationFn: async (data: { code: string; language: string; analysis_type: string }) => {
-      // 실제 API 호출 시뮬레이션
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // 모킹 분석 결과
+      // 모킹 분석 결과 (실제 API 연결 시 이 부분을 교체)
       const mockResult: CodeAnalysisResult = {
         overall_score: 78,
         strengths: [
@@ -63,7 +60,7 @@ export default function CodeAnalyzer() {
         ],
         improved_code: data.code // 실제로는 개선된 코드가 반환됨
       };
-      
+
       return mockResult;
     },
     onSuccess: (data) => {

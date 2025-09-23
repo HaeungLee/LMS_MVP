@@ -72,7 +72,7 @@ class LangChainHybridProvider:
             logger.info("🔄 No OpenAI key - using OpenRouter for EduGPT (cost-effective)")
             return EduGPTConfig(
                 provider=EduGPTProvider.OPENROUTER_FALLBACK,
-                model_name="mistralai/mistral-7b-instruct:free",
+                model_name="x-ai/grok-4-fast:free",
                 api_key=openrouter_key,
                 base_url="https://openrouter.ai/api/v1",
                 temperature=0.7,

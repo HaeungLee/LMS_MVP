@@ -5,18 +5,7 @@ function normalizeBase(url: string): string {
   if (!url) return ''; // 개발환경에서는 프록시 사용을 위해 빈 문자열
   // ':8000' -> 'http://localhost:8000'
   if (/^:\d+$/.test(url)) return `http://localhost${url}`;
-  // 'localhost:8000' -> 'ht  // AI 커리큘럼 생성
-  generateCurriculum: (data: {
-    subject_key: string;
-    learning_goals: string[];
-    difficulty_level: number;
-    duration_preference?: string;
-    special_requirements?: string[];
-  }) => api.post<{
-    id: number;
-    status: string;
-    message: string;
-  }>('/ai-curriculum/generate-curriculum', data, { timeoutMs: 120000 }),st:8000'
+  // 'localhost:8000' -> 'http://localhost:8000'
   if (/^[^:/]+:\d+$/.test(url) && !/^https?:\/\//.test(url)) return `http://${url}`;
   // '//example.com' -> 'http://example.com'
   if (/^\/\//.test(url)) return `http:${url}`;
@@ -26,6 +15,9 @@ function normalizeBase(url: string): string {
 }
 
 const API_BASE_URL = normalizeBase(rawBase) + '/api/v1';
+
+// 요청 추적을 위한 글로벌 맵
+const activeRequests = new Map<string, AbortController>();
 
 // CSRF 토큰 추출 함수
 function getCsrfToken(): string | null {
@@ -39,37 +31,86 @@ function getCsrfToken(): string | null {
 
 // 타임아웃이 있는 fetch 래퍼
 async function fetchWithTimeout(resource: string, options: RequestInit & { timeoutMs?: number } = {}) {
-  const { timeoutMs = 20000, ...rest } = options;
+  const { timeoutMs = 5000, ...rest } = options; // 10초 → 5초로 단축
+  
+  // 요청 식별자 생성 (메소드 + URL)
+  const requestKey = `${rest.method || 'GET'}:${resource}`;
+  
+  // 기존 동일한 요청이 있으면 취소
+  const existingController = activeRequests.get(requestKey);
+  if (existingController) {
+    console.log(`🔄 중복 요청 취소: ${requestKey}`);
+    existingController.abort();
+    activeRequests.delete(requestKey);
+  }
+  
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
+  activeRequests.set(requestKey, controller);
+  
+  const timeoutId = setTimeout(() => {
+    console.log(`⏰ 타임아웃 발생: ${requestKey}`);
+    controller.abort();
+    activeRequests.delete(requestKey);
+  }, timeoutMs);
   
   try {
     const headers = new Headers(rest.headers || {});
+
+    const token = localStorage.getItem('token'); // 또는 다른 저장소 (예: sessionStorage)
+    if (token && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
     
     // 기본 Content-Type 설정
     if (!headers.has('Content-Type') && rest.method && ['POST', 'PUT', 'PATCH'].includes(rest.method.toUpperCase())) {
       headers.set('Content-Type', 'application/json');
     }
     
-    // CSRF 토큰 설정
+    // CSRF 토큰 설정 (임시 비활성화)
     const method = (rest.method || 'GET').toUpperCase();
     const needsCsrf = !['GET', 'HEAD', 'OPTIONS'].includes(method);
     if (needsCsrf && !headers.has('x-csrf-token')) {
       const csrf = getCsrfToken();
-      if (csrf) headers.set('x-csrf-token', csrf);
+      // CORS 문제 해결을 위해 임시로 CSRF 토큰 비활성화
+      // if (csrf) headers.set('x-csrf-token', csrf);
     }
+    
+    console.log(`🔥 API 요청: ${method} ${resource}`); // 디버그 로그 추가
+    console.log(`⏱️ 타임아웃 설정: ${timeoutMs}ms`); // 타임아웃 정보 추가
+    console.log(`📡 요청 헤더:`, Object.fromEntries(headers.entries())); // 헤더 정보
+    console.log(`🌐 네트워크 상태:`, navigator.onLine ? '온라인' : '오프라인'); // 네트워크 상태
+    
+    const startTime = performance.now(); // 요청 시작 시간
     
     const response = await fetch(resource, {
       ...rest,
       headers,
       signal: controller.signal,
-      credentials: rest.credentials || 'include',
+      credentials: rest.credentials || 'include', // 쿠키 기반 인증을 위해 복원
     });
     
-    clearTimeout(id);
+    const endTime = performance.now(); // 요청 완료 시간
+    
+    // 성공 시 정리
+    clearTimeout(timeoutId);
+    activeRequests.delete(requestKey);
+    console.log(`✅ API 응답: ${response.status} ${response.statusText} (${(endTime - startTime).toFixed(2)}ms)`); // 디버그 로그 추가
     return response;
   } catch (error) {
-    clearTimeout(id);
+    // 실패 시 정리
+    clearTimeout(timeoutId);
+    activeRequests.delete(requestKey);
+    
+    // 에러 타입별 로깅
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        console.warn(`🚫 요청 취소됨: ${requestKey} - ${error.message}`);
+      } else {
+        console.error(`❌ API 에러: ${requestKey} -`, error.message);
+      }
+    } else {
+      console.error(`❌ 알 수 없는 에러: ${requestKey} -`, error);
+    }
     throw error;
   }
 }
@@ -148,15 +189,15 @@ export const api = {
 
 // 인증 관련 API - 올바른 엔드포인트 사용
 export const authApi = {
-  getMe: () => api.get<{ id: number; email: string; role: string; display_name?: string }>('/auth/me'),
+  getMe: () => api.get<{ id: number; email: string; role: string; display_name?: string }>('/auth/me', { timeoutMs: 30000 }),
   
   login: (data: { email: string; password: string }) => 
-    api.post<{ id: number; email: string; role: string; display_name?: string }>('/auth/login', data),
+    api.post<{ id: number; email: string; role: string; display_name?: string }>('/auth/login', data, { timeoutMs: 30000 }),
   
-  logout: () => api.post<{ message: string }>('/auth/logout'),
+  logout: () => api.post<{ message: string }>('/auth/logout', undefined, { timeoutMs: 30000 }),
   
   register: (data: { email: string; password: string; display_name?: string }) => 
-    api.post<{ id: number; email: string; role: string; display_name?: string }>('/auth/register', data),
+    api.post<{ id: number; email: string; role: string; display_name?: string }>('/auth/register', data, { timeoutMs: 30000 }),
 };
 
 // 대시보드 관련 API - 올바른 엔드포인트 사용
@@ -345,6 +386,7 @@ export const aiApi = {
         'Accept': 'text/event-stream',
       },
       body: JSON.stringify(data),
+      credentials: 'include',  // 인증 쿠키 포함
     });
   },
   

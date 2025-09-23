@@ -1,0 +1,91 @@
+해결 방안
+✅ 1. API 요청 헤더에 인증 정보 추가 확인
+apiClient.ts 파일에서 실제 요청 시 헤더에 토큰이 포함되는지 확인하세요.
+
+예시 수정:
+
+ts
+
+
+1
+2
+3
+4
+⌄
+const headers = {
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${localStorage.getItem('token')}`, // 또는 다른 방식
+};
+또는 axios 설정에서 기본 헤더 설정:
+
+ts
+
+
+1
+axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+👉 확인 포인트: 개발자 도구 → Network 탭 → 해당 GET /curricula/18 요청 클릭 → Headers → Request Headers 에 Authorization 있는지 확인!
+
+✅ 2. 서버 로그 확인 (백엔드)
+curriculum_id=18에 대해 실제로 생성 작업이 실행되고 있는지?
+DB에 상태(status)가 started → processing → completed 순으로 업데이트 되는지?
+백엔드에서 비동기 작업(예: Celery, Node worker 등)이 제대로 트리거되었는지?
+✅ 3. 클라이언트 폴링 로직 검토
+폴링 중단 조건이 제대로 되어 있는지 확인:
+
+ts
+
+
+1
+2
+3
+⌄
+if (data.type === 'completed' || data.type === 'error' || data.type === 'stream_end') {
+  clearInterval(interval);
+}
+또한, 너무 짧은 간격 폴링 (예: 100ms) → 서버 부하 or 과잉 요청 → 백엔드에서 무시 가능.
+
+적절한 폴링 간격: 1초 ~ 3초 추천.
+
+✅ 4. 응답 본문(payload) 확인
+현재는 로그에 type과 message만 보이는데, 전체 응답 본문을 찍어보세요:
+
+ts
+
+
+1
+console.log('🎯 전체 응답:', response.data);
+→ 혹시 status: "failed" 나 error: "..." 같은 필드가 숨어있을 수 있음.
+
+✅ 5. 다른 curriculum_id로 테스트
+id=15는 존재하지 않거나 삭제된 건 아닐지?
+처음 생성 요청 후 돌아온 curriculum_id: 18로만 요청해야 함.
+
+생성 API 응답에서 정확히 어떤 ID가 반환됐는지 확인 필요.
+
+🛠️ 디버깅 체크리스트
+🔹 Authorization 헤더 포함?
+❓
+🔹 Network 탭에서 실제 요청 헤더 보기
+✅
+🔹 서버에서 id=18 상태 업데이트 로그 있나?
+🔍
+🔹 응답 본문 전체 출력해봤나?
+✅
+🔹 폴링 중단 조건 제대로 구현?
+✅
+🔹 폴링 간격 너무 짧지 않은가?
+⚠️
+🔹 백엔드에서 AI 작업 진짜 실행되나?
+🔎
+
+💡 결론
+가장 유력한 원인: 인증 헤더 누락 → 서버가 요청을 무시하거나 더미 상태만 반환 
+
+👉 그래서 계속 200 OK는 오지만 내용은 업데이트되지 않고, 결국 stream_end만 오는 것.
+
+✅ 해야 할 일
+apiClient.ts에서 Authorization 헤더가 포함되는지 확인 및 수정
+개발자 도구 > Network > GET /curricula/18 클릭 > Request Headers에 토큰 있는지 확인
+서버 쪽에서 해당 ID의 상태 변화 로그 확인
+클라이언트에서 응답 데이터 전체 출력 (console.log(data))
+필요시 Postman으로 직접 GET /curricula/18 요청 날려보기 (헤더 포함)

@@ -19,83 +19,17 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS 미들웨어 추가 - 가장 먼저 등록 (개발환경용 강화 설정)
+# CORS 미들웨어 추가 - 가장 먼저 등록
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173", 
-        "http://localhost:5174",
-        "http://localhost:5175",  # 추가된 포트
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174",
-        "http://127.0.0.1:5175",  # 추가된 포트
-        "http://192.168.0.104:5174",
-        "http://192.168.0.104:5175",  # 추가된 포트
-        "http://172.25.64.1:5174", 
-        "http://172.25.64.1:5175",  # 추가된 포트
-        "http://172.31.80.1:5174",
-        "http://172.31.80.1:5175",  # 추가된 포트
-        "https://localhost:5174",
-        "https://localhost:5175",  # 추가된 포트
-        "https://127.0.0.1:5174",
-        "https://127.0.0.1:5175"  # 추가된 포트
-    ],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=[
-        "accept",
-        "accept-encoding",
-        "authorization", 
-        "content-type",
-        "dnt",
-        "origin",
-        "user-agent",
-        "x-csrftoken",
-        "x-requested-with"
-    ],
-    expose_headers=["*"],
-    max_age=86400
+    allow_origins=["http://localhost:5174", "http://localhost:3000", "http://127.0.0.1:5174"],  # 특정 도메인 허용
+    allow_credentials=True,  # credentials 허용
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
+    allow_headers=["*"],  # 모든 헤더 허용
 )
 
 # Request ID
 app.add_middleware(RequestIDMiddleware)
-
-# 추가 CORS 헤더 처리를 위한 커스텀 미들웨어
-from fastapi import Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware
-
-class CustomCORSMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        origin = request.headers.get('origin')
-        
-        # OPTIONS 요청 처리
-        if request.method == "OPTIONS":
-            response = Response()
-            if origin:
-                response.headers["Access-Control-Allow-Origin"] = origin
-            else:
-                response.headers["Access-Control-Allow-Origin"] = "*"
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
-            response.headers["Access-Control-Allow-Headers"] = "*"
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Max-Age"] = "86400"
-            return response
-        
-        response = await call_next(request)
-        
-        # 모든 응답에 CORS 헤더 추가
-        if origin:
-            response.headers["Access-Control-Allow-Origin"] = origin
-        else:
-            response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Expose-Headers"] = "*"
-        
-        return response
-
-app.add_middleware(CustomCORSMiddleware)
 
 # Rate limit (basic quotas)
 app.add_middleware(
