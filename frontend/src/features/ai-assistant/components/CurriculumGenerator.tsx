@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { BookOpen, ArrowLeft, RefreshCw, CheckCircle, AlertCircle, Plus, X } from 'lucide-react';
 import { aiApi } from '../../../shared/services/apiClient';
@@ -24,12 +24,24 @@ export default function CurriculumGenerator({ subjects = [], onBack }: Curriculu
   const [durationPreference, setDurationPreference] = useState('4주');
   const [specialRequirements, setSpecialRequirements] = useState<string[]>([]);
   const [generatedCurriculumId, setGeneratedCurriculumId] = useState<number | null>(null);
+  
+  // 스트리밍 관련 상태
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamContent, setStreamContent] = useState('');
+  const [streamStatus, setStreamStatus] = useState('');
+  const [useStreaming, setUseStreaming] = useState(true); // 스트리밍 사용 여부
+  const streamRef = useRef<Response | null>(null);
 
   // 커리큘럼 생성 mutation
   const generateMutation = useMutation({
     mutationFn: aiApi.generateCurriculum,
     onSuccess: (data) => {
+      console.log('커리큘럼 생성 성공:', data);
       setGeneratedCurriculumId(data.id);
+    },
+    onError: (error) => {
+      console.error('커리큘럼 생성 실패:', error);
+      alert(`커리큘럼 생성에 실패했습니다: ${error.message}`);
     },
   });
 
@@ -38,10 +50,12 @@ export default function CurriculumGenerator({ subjects = [], onBack }: Curriculu
     queryKey: ['curriculum', generatedCurriculumId],
     queryFn: () => aiApi.getCurriculum(generatedCurriculumId!),
     enabled: !!generatedCurriculumId,
-    refetchInterval: (data) => {
-      // 상태가 'generating'이면 3초마다 폴링
+    refetchInterval: (query) => {
+      // 상태가 'generating'이면 3초마다 폴링, 아니면 폴링 중지
+      const data = query.state.data;
       return data?.status === 'generating' ? 3000 : false;
     },
+    retry: 3,
   });
 
   const addLearningGoal = () => {
@@ -72,6 +86,78 @@ export default function CurriculumGenerator({ subjects = [], onBack }: Curriculu
 
   const removeSpecialRequirement = (index: number) => {
     setSpecialRequirements(specialRequirements.filter((_, i) => i !== index));
+  };
+
+  // 스트리밍 커리큘럼 생성
+  const handleStreamingGenerate = async () => {
+    const validGoals = learningGoals.filter(goal => goal.trim());
+    const validRequirements = specialRequirements.filter(req => req.trim());
+    const finalSubject = customSubject.trim() || selectedSubject;
+    
+    if (!finalSubject || validGoals.length === 0) {
+      alert(!finalSubject ? '학습할 과목을 선택하거나 직접 입력해주세요' : '학습 목표를 최소 하나는 입력해주세요');
+      return;
+    }
+
+    try {
+      setIsStreaming(true);
+      setStreamContent('');
+      setStreamStatus('AI 커리큘럼 생성을 시작합니다...');
+
+      const response = await aiApi.generateCurriculumStream({
+        subject_key: finalSubject,
+        learning_goals: validGoals,
+        difficulty_level: difficultyLevel,
+        duration_preference: durationPreference,
+        special_requirements: validRequirements.length > 0 ? validRequirements : undefined,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                if (data.type === 'started') {
+                  setGeneratedCurriculumId(data.curriculum_id);
+                  setStreamStatus(data.message);
+                } else if (data.type === 'token') {
+                  setStreamContent(prev => prev + data.content);
+                } else if (data.type === 'section_change') {
+                  setStreamStatus(data.message);
+                } else if (data.type === 'completed') {
+                  setStreamStatus('커리큘럼 생성이 완료되었습니다!');
+                  setIsStreaming(false);
+                } else if (data.type === 'error') {
+                  setStreamStatus(`오류: ${data.message}`);
+                  setIsStreaming(false);
+                }
+              } catch (e) {
+                console.warn('JSON 파싱 실패:', line);
+              }
+            }
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error('스트리밍 생성 실패:', error);
+      setStreamStatus(`생성 실패: ${error.message}`);
+      setIsStreaming(false);
+    }
   };
 
   const handleGenerate = () => {
@@ -269,6 +355,43 @@ export default function CurriculumGenerator({ subjects = [], onBack }: Curriculu
               </button>
             </div>
 
+            {/* 생성 옵션 선택 */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                생성 방식 선택
+              </label>
+              
+              <div className="space-y-2">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="generationMode"
+                    checked={useStreaming}
+                    onChange={() => setUseStreaming(true)}
+                    className="mr-2 text-blue-600"
+                  />
+                  <span className="text-sm">실시간 스트리밍 생성 (권장)</span>
+                </label>
+                <p className="text-xs text-gray-600 ml-6">
+                  ChatGPT처럼 글자가 하나씩 나타나며 생성 과정을 실시간으로 볼 수 있습니다
+                </p>
+                
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="generationMode"
+                    checked={!useStreaming}
+                    onChange={() => setUseStreaming(false)}
+                    className="mr-2 text-blue-600"
+                  />
+                  <span className="text-sm">일반 생성 (완료 후 표시)</span>
+                </label>
+                <p className="text-xs text-gray-600 ml-6">
+                  완성된 커리큘럼을 한 번에 표시합니다 (2-3분 소요)
+                </p>
+              </div>
+            </div>
+
             {/* 에러 표시 */}
             {generateMutation.error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -299,26 +422,56 @@ export default function CurriculumGenerator({ subjects = [], onBack }: Curriculu
               ) : null}
               
               <button
-                onClick={handleGenerate}
-                disabled={(!selectedSubject && !customSubject.trim()) || learningGoals.filter(g => g.trim()).length === 0 || generateMutation.isPending}
+                onClick={useStreaming ? handleStreamingGenerate : handleGenerate}
+                disabled={(!selectedSubject && !customSubject.trim()) || learningGoals.filter(g => g.trim()).length === 0 || generateMutation.isPending || isStreaming}
                 className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center transition-all duration-200"
               >
-                {generateMutation.isPending ? (
+                {generateMutation.isPending || isStreaming ? (
                   <>
                     <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    AI 생성 중...
+                    {useStreaming ? 'AI 스트리밍 생성 중...' : 'AI 생성 중...'}
                   </>
                 ) : (
                   <>
                     <BookOpen className="w-4 h-4 mr-2" />
-                    커리큘럼 생성하기
+                    {useStreaming ? '실시간 커리큘럼 생성' : '커리큘럼 생성하기'}
                   </>
                 )}
               </button>
             </div>
+
+            {/* 스트리밍 결과 표시 */}
+            {(isStreaming || streamContent) && (
+              <div className="mt-6 bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-medium text-gray-900">AI 커리큘럼 생성 중</h3>
+                  {isStreaming && (
+                    <div className="flex items-center text-blue-600">
+                      <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                      <span className="text-sm">실시간 생성</span>
+                    </div>
+                  )}
+                </div>
+                
+                {streamStatus && (
+                  <div className="mb-3 text-sm text-blue-600 font-medium">
+                    {streamStatus}
+                  </div>
+                )}
+                
+                <div className="bg-white rounded-lg p-4 border">
+                  <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
+                    {streamContent}
+                    {isStreaming && <span className="animate-pulse">|</span>}
+                  </pre>
+                </div>
+              </div>
+            )}
           </div>
-        ) : (
-          /* 생성 결과 표시 */
+        )}
+
+        {/* 기존 방식 결과 표시 */}
+        {generatedCurriculumId && !isStreaming && !streamContent && (
           <div>
             {isGenerating ? (
               <div className="text-center py-8">

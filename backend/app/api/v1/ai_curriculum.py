@@ -4,17 +4,21 @@ Enhanced Curriculum Generator와 Teaching Session 관리
 """
 
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 from datetime import datetime
+import json
+import asyncio
 
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.orm import User
 from app.models.ai_curriculum import AIGeneratedCurriculum, AITeachingSession
 from app.services.enhanced_curriculum_generator import TwoAgentCurriculumGenerator
-from app.services.langchain_curriculum_generator import LangChainTwoAgentCurriculumGenerator
+from app.services.langchain_curriculum_generator import LangChainTwoAgentCurriculumGenerator, LangChainEnhancedCurriculumManager
+from app.services.streaming_handler import CurriculumStreamingHandler, SimpleStreamingHandler
 
 router = APIRouter(prefix="/api/v1/ai-curriculum", tags=["AI Curriculum"])
 
@@ -59,7 +63,7 @@ class TeachingSessionResponse(BaseModel):
 # 의존성
 def get_curriculum_generator():
     """커리큘럼 생성기 의존성"""
-    return LangChainTwoAgentCurriculumGenerator()
+    return LangChainEnhancedCurriculumManager()
 
 
 @router.post("/generate-curriculum", response_model=CurriculumResponse)
@@ -68,7 +72,7 @@ async def generate_dynamic_curriculum(
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-    generator: LangChainTwoAgentCurriculumGenerator = Depends(get_curriculum_generator)
+    generator: LangChainEnhancedCurriculumManager = Depends(get_curriculum_generator)
 ):
     """
     동적 커리큘럼 생성 API
@@ -99,11 +103,88 @@ async def generate_dynamic_curriculum(
         raise HTTPException(status_code=500, detail=f"커리큘럼 생성 실패: {str(e)}")
 
 
+@router.post("/generate-curriculum-stream")
+async def generate_curriculum_stream(
+    request: CurriculumGenerationRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """실시간 스트리밍으로 AI 커리큘럼 생성"""
+    
+    async def curriculum_stream():
+        """스트리밍 생성기"""
+        streaming_handler = CurriculumStreamingHandler()
+        
+        try:
+            # LangChain 생성기 가져오기
+            generator = LangChainEnhancedCurriculumManager()
+            
+            # 데이터베이스에 초기 레코드 생성
+            curriculum_record = AIGeneratedCurriculum(
+                user_id=current_user.id,
+                subject_key=request.subject_key,
+                learning_goals=request.learning_goals,
+                difficulty_level=request.difficulty_level,
+                status="generating"
+            )
+            db.add(curriculum_record)
+            db.commit()
+            db.refresh(curriculum_record)
+            
+            # 초기 응답 전송
+            yield f"data: {json.dumps({'type': 'started', 'curriculum_id': curriculum_record.id, 'message': 'AI 커리큘럼 생성을 시작합니다...'})}\n\n"
+            
+            # LangChain 스트리밍으로 커리큘럼 생성
+            curriculum_result = await generator.generate_dynamic_curriculum_streaming(
+                subject_key=request.subject_key,
+                user_goals=request.learning_goals,
+                difficulty_level=request.difficulty_level,
+                user_id=current_user.id,
+                db=db,
+                streaming_handler=streaming_handler
+            )
+            
+            # 스트리밍 데이터 전송
+            async for chunk in streaming_handler.get_stream():
+                yield f"data: {json.dumps(chunk)}\n\n"
+                
+                # 완료 시 데이터베이스 업데이트
+                if chunk.get("type") == "completed":
+                    curriculum_record.generated_syllabus = curriculum_result
+                    curriculum_record.status = "completed"
+                    db.commit()
+                    
+                    # 최종 완료 메시지
+                    yield f"data: {json.dumps({'type': 'final_complete', 'curriculum_id': curriculum_record.id, 'message': '커리큘럼이 성공적으로 생성되었습니다!'})}\n\n"
+                    break
+                    
+        except Exception as e:
+            # 에러 발생 시
+            error_message = f"커리큘럼 생성 중 오류: {str(e)}"
+            yield f"data: {json.dumps({'type': 'error', 'message': error_message})}\n\n"
+            
+            if 'curriculum_record' in locals():
+                curriculum_record.status = "failed"
+                curriculum_record.generation_metadata = {"error": str(e)}
+                db.commit()
+    
+    return StreamingResponse(
+        curriculum_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "*"
+        }
+    )
+
+
 @router.get("/curricula", response_model=List[CurriculumResponse])
 async def get_user_curricula(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-    generator: LangChainTwoAgentCurriculumGenerator = Depends(get_curriculum_generator)
+    generator: LangChainEnhancedCurriculumManager = Depends(get_curriculum_generator)
 ):
     """사용자의 커리큘럼 목록 조회"""
     try:
@@ -132,7 +213,7 @@ async def get_curriculum_detail(
     curriculum_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-    generator: LangChainTwoAgentCurriculumGenerator = Depends(get_curriculum_generator)
+    generator: LangChainEnhancedCurriculumManager = Depends(get_curriculum_generator)
 ):
     """커리큘럼 상세 정보 조회"""
     try:

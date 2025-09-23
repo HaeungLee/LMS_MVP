@@ -109,6 +109,39 @@ class LangChainHybridProvider:
         
         raise ValueError(f"Unsupported provider: {self.config.provider}")
     
+    def get_llm(self) -> BaseChatModel:
+        """일반 LLM 반환"""
+        return self.chat_model
+    
+    def get_streaming_llm(self, callbacks: List = None) -> BaseChatModel:
+        """스트리밍 가능한 LLM 반환"""
+        if self.config.provider == EduGPTProvider.OPENAI_DIRECT:
+            return ChatOpenAI(
+                model=self.config.model_name,
+                openai_api_key=self.config.api_key,
+                temperature=self.config.temperature,
+                max_tokens=self.config.max_tokens,
+                streaming=True,
+                callbacks=callbacks or []
+            )
+        
+        elif self.config.provider == EduGPTProvider.OPENROUTER_FALLBACK:
+            return ChatOpenAI(
+                model=self.config.model_name,
+                openai_api_key=self.config.api_key,
+                openai_api_base=self.config.base_url,
+                temperature=self.config.temperature,
+                max_tokens=self.config.max_tokens,
+                streaming=True,
+                callbacks=callbacks or [],
+                default_headers={
+                    "HTTP-Referer": "https://lms-mvp.com",
+                    "X-Title": "LMS MVP - EduGPT Streaming"
+                }
+            )
+        
+        raise ValueError(f"Unsupported provider for streaming: {self.config.provider}")
+    
     def invoke_with_messages(self, messages: List[BaseMessage]) -> AIMessage:
         """LangChain 메시지 리스트로 AI 호출 (EduGPT 호환)"""
         try:

@@ -5,7 +5,18 @@ function normalizeBase(url: string): string {
   if (!url) return ''; // 개발환경에서는 프록시 사용을 위해 빈 문자열
   // ':8000' -> 'http://localhost:8000'
   if (/^:\d+$/.test(url)) return `http://localhost${url}`;
-  // 'localhost:8000' -> 'http://localhost:8000'
+  // 'localhost:8000' -> 'ht  // AI 커리큘럼 생성
+  generateCurriculum: (data: {
+    subject_key: string;
+    learning_goals: string[];
+    difficulty_level: number;
+    duration_preference?: string;
+    special_requirements?: string[];
+  }) => api.post<{
+    id: number;
+    status: string;
+    message: string;
+  }>('/ai-curriculum/generate-curriculum', data, { timeoutMs: 120000 }),st:8000'
   if (/^[^:/]+:\d+$/.test(url) && !/^https?:\/\//.test(url)) return `http://${url}`;
   // '//example.com' -> 'http://example.com'
   if (/^\/\//.test(url)) return `http:${url}`;
@@ -103,30 +114,33 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 // 기본 API 함수들
 export const api = {
-  get: async <T>(endpoint: string): Promise<T> => {
-    const response = await fetchWithTimeout(`${API_BASE_URL}${endpoint}`);
+  get: async <T>(endpoint: string, options: { timeoutMs?: number } = {}): Promise<T> => {
+    const response = await fetchWithTimeout(`${API_BASE_URL}${endpoint}`, options);
     return handleResponse<T>(response);
   },
   
-  post: async <T>(endpoint: string, data?: any): Promise<T> => {
+  post: async <T>(endpoint: string, data?: any, options: { timeoutMs?: number } = {}): Promise<T> => {
     const response = await fetchWithTimeout(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
+      ...options,
     });
     return handleResponse<T>(response);
   },
   
-  put: async <T>(endpoint: string, data?: any): Promise<T> => {
+  put: async <T>(endpoint: string, data?: any, options: { timeoutMs?: number } = {}): Promise<T> => {
     const response = await fetchWithTimeout(`${API_BASE_URL}${endpoint}`, {
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
+      ...options,
     });
     return handleResponse<T>(response);
   },
   
-  delete: async <T>(endpoint: string): Promise<T> => {
+  delete: async <T>(endpoint: string, options: { timeoutMs?: number } = {}): Promise<T> => {
     const response = await fetchWithTimeout(`${API_BASE_URL}${endpoint}`, {
       method: 'DELETE',
+      ...options,
     });
     return handleResponse<T>(response);
   },
@@ -224,9 +238,85 @@ export const subjectsApi = {
   }>>(`/dynamic-subjects/subjects/${subjectKey}/topics`),
 };
 
+// 문제 관련 API
+export const questionsApi = {
+  // 과목별 문제 조회
+  getQuestions: (subjectKey: string, params?: {
+    limit?: number;
+    difficulty?: string;
+    topic?: string;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.limit) query.append('limit', params.limit.toString());
+    if (params?.difficulty) query.append('difficulty', params.difficulty);
+    if (params?.topic) query.append('topic', params.topic);
+    
+    return api.get<{
+      questions: Array<{
+        id: number;
+        text: string;
+        options?: string[];
+        correct_answer?: string;
+        question_type: string;
+        difficulty_level: string;
+        topic?: string;
+        explanation?: string;
+      }>;
+      total: number;
+    }>(`/questions/${subjectKey}${query.toString() ? '?' + query.toString() : ''}`);
+  },
+
+  // AI 문제 생성 (Phase 10)
+  generateQuestions: (data: {
+    subject_key: string;
+    topic: string;
+    difficulty_level: 'beginner' | 'intermediate' | 'advanced';
+    count: number;
+    question_type: 'multiple_choice' | 'short_answer' | 'coding' | 'essay';
+    custom_requirements?: string[];
+  }) => api.post<{
+    success: boolean;
+    questions: Array<{
+      id: number;
+      text: string;
+      options?: string[];
+      correct_answer?: string;
+      question_type: string;
+      difficulty_level: string;
+      topic: string;
+      explanation?: string;
+      ai_generated: boolean;
+    }>;
+    generation_info: {
+      model_used: string;
+      generation_time: number;
+      quality_score: number;
+    };
+  }>('/ai-questions/generate', data),
+
+  // 문제 제출
+  submitAnswer: (data: {
+    question_id: number;
+    answer: string;
+    time_spent?: number;
+  }) => api.post<{
+    correct: boolean;
+    score: number;
+    explanation?: string;
+    feedback?: string;
+  }>('/submit', data),
+
+  // 문제 피드백
+  getFeedback: (submissionId: number) => api.get<{
+    feedback: string;
+    suggestions: string[];
+    next_topics: string[];
+  }>(`/feedback/${submissionId}`),
+};
+
 // Phase 9 AI 관련 API
 export const aiApi = {
-  // AI 커리큘럼 생성
+  // AI 커리큘럼 생성 (120초 타임아웃)
   generateCurriculum: (data: {
     subject_key: string;
     learning_goals: string[];
@@ -237,7 +327,26 @@ export const aiApi = {
     id: number;
     status: string;
     message: string;
-  }>('/ai-curriculum/generate', data),
+  }>('/ai-curriculum/generate-curriculum', data, { timeoutMs: 120000 }),
+
+  // 스트리밍 커리큘럼 생성
+  generateCurriculumStream: (data: {
+    subject_key: string;
+    learning_goals: string[];
+    difficulty_level: number;
+    duration_preference?: string;
+    special_requirements?: string[];
+  }) => {
+    // POST 요청을 위한 fetch 사용
+    return fetch(`${API_BASE_URL}/ai-curriculum/generate-curriculum-stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+      },
+      body: JSON.stringify(data),
+    });
+  },
   
   // 생성된 커리큘럼 조회
   getCurriculum: (id: number) => api.get<{
@@ -246,7 +355,7 @@ export const aiApi = {
     generated_syllabus: any;
     learning_goals: string[];
     agent_conversation_log?: string;
-  }>(`/ai-curriculum/${id}`),
+  }>(`/ai-curriculum/curricula/${id}`),
   
   // AI 교육 세션 시작
   startTeachingSession: (data: {
@@ -254,20 +363,10 @@ export const aiApi = {
     subject_key: string;
     session_preferences?: any;
   }) => api.post<{
-    id: number;
-    curriculum_id: number;
-    session_title: string;
-    current_step: number;
-    total_steps: number;
-    completion_percentage: number;
-    session_status: string;
-    started_at: string;
-    last_activity_at: string;
-    conversation_preview?: string;
-  }>('/ai-teaching/sessions/start', {
-    curriculum_id: data.curriculum_id || 1, // 임시 값
-    session_preferences: data.session_preferences
-  }),
+    session_id: number;
+    status: string;
+    message: string;
+  }>('/ai-teaching/start-session', data),
   
   // AI 강사와 메시지 교환
   sendTeachingMessage: (data: {
@@ -275,21 +374,11 @@ export const aiApi = {
     message: string;
     message_type?: string;
   }) => api.post<{
-    session_id: number;
-    message: string;
-    current_step: number;
-    step_title: string;
-    understanding_check?: string;
-    next_action: string;
-    progress_percentage: number;
-    learning_tips?: string[];
-    difficulty_adjustment?: string;
-    timestamp: string;
-  }>(`/ai-teaching/sessions/${data.session_id}/message`, {
-    session_id: data.session_id,
-    message: data.message,
-    message_type: data.message_type || 'text'
-  }),
+    response: string;
+    teaching_guidance?: string;
+    suggested_actions?: string[];
+    session_progress?: any;
+  }>('/ai-teaching/message', data),
   
   // AI 분석 및 피드백
   getAnalysis: (userId: number, analysisType = 'comprehensive') => 
@@ -617,212 +706,98 @@ export const feedbackApi = {
   }>('/feedback/stats'),
 };
 
-// Phase 10 AI 문제 생성 API
-export const questionsApi = {
-  // 스마트 문제 생성
-  generateQuestions: (data: {
-    subject_key: string;
-    topic: string;
-    question_type?: string;
-    difficulty_level?: string;
-    count?: number;
-    learning_goals?: string[];
-    context?: string;
-  }) => api.post<{
-    success: boolean;
-    message: string;
-    questions: Array<{
-      id: string;
-      question_text: string;
-      question_type: string;
-      difficulty_level: string;
-      options?: string[];
-      correct_answer: string;
-      explanation: string;
-      hints?: string[];
-      tags?: string[];
-      estimated_time?: number;
-      learning_objective?: string;
-      quality_score: number;
-      generated_at: string;
-      status: string;
-    }>;
-    generation_info: {
-      total_generated: number;
-      avg_quality_score: number;
-      estimated_total_time: number;
-      ready_questions: number;
-      needs_review: number;
-    };
-  }>('/ai-questions/generate', data),
-
-  // 적응형 문제 생성
-  generateAdaptiveQuestions: (data: {
-    subject_key: string;
-    current_performance: {
-      accuracy: number;
-      response_time: number;
-      consistency: number;
-      improvement_rate: number;
-      engagement_score: number;
-    };
-    focus_areas?: string[];
-  }) => api.post<{
-    success: boolean;
-    message: string;
-    questions: Array<{
-      id: string;
-      question_text: string;
-      question_type: string;
-      difficulty_level: string;
-      options?: string[];
-      correct_answer: string;
-      explanation: string;
-      adaptation_reason: string;
-      quality_score: number;
-      generated_at: string;
-    }>;
-    adaptation_info: {
-      performance_analysis: any;
-      recommended_focus: string[];
-      difficulty_adjustment: string;
-    };
-  }>('/ai-questions/adaptive', data),
-
-  // 문제 생성 분석
-  getGenerationAnalytics: (subjectKey?: string, days?: number) => {
-    const params = new URLSearchParams();
-    if (subjectKey) params.append('subject_key', subjectKey);
-    if (days) params.append('days', days.toString());
-    return api.get<{
-      success: boolean;
-      period: string;
-      subject_filter?: string;
-      analytics: {
-        generation_stats: {
-          total_generated: number;
-          approved: number;
-          rejected: number;
-          pending_review: number;
-          avg_quality_score: number;
-          generation_success_rate: number;
-        };
-        subject_breakdown: Record<string, {
-          generated: number;
-          avg_quality: number;
-          user_satisfaction: number;
-        }>;
-        difficulty_distribution: Record<string, number>;
-        question_type_stats: Record<string, number>;
-        performance_metrics: {
-          avg_generation_time: number;
-          cache_hit_rate: number;
-          ai_model_usage: Record<string, number>;
-        };
-        user_feedback: {
-          avg_rating: number;
-          total_feedback: number;
-          improvement_suggestions: string[];
-        };
-      };
-      generated_at: string;
-    }>(`/ai-questions/analytics?${params.toString()}`);
-  },
-
-  // 문제 생성 템플릿
-  getQuestionTemplates: (questionType?: string) => {
-    const params = new URLSearchParams();
-    if (questionType) params.append('question_type', questionType);
-    return api.get<{
-      success: boolean;
-      templates?: Record<string, any>;
-      template?: Record<string, any>;
-      usage_guide?: {
-        step1: string;
-        step2: string;
-        step3: string;
-        step4: string;
-      };
-    }>(`/ai-questions/templates?${params.toString()}`);
-  },
-};
-
-// AI 상담 API
+// AI 학습 상담 API (Phase 10)
 export const counselingApi = {
-  // 상담 세션 시작
-  startSession: (initialQuestion?: string) => api.post<{
-    success: boolean;
-    session_id: string;
-    mentor_personality: string;
-    welcome_message: string;
-    session_goals: string[];
-    current_mood: string;
-  }>('/ai-counseling/start-session', { initial_question: initialQuestion }),
-
-  // 상담 메시지 전송
-  sendMessage: (data: {
-    message: string;
-    type: 'motivation' | 'guidance' | 'goal_setting' | 'habit_building';
-    mood_score?: number;
-    session_id?: string;
-    context?: any;
-  }) => api.post<{
-    session_id: string;
-    ai_response: string;
-    mentor_personality: string;
-    suggestions: string[];
-    follow_up_questions: string[];
-    confidence: number;
-    timestamp: string;
-  }>('/ai-counseling/message', data),
-
-  // 일일 동기부여 메시지
-  getDailyMotivation: () => api.get<{
-    success: boolean;
-    motivation_message: string;
-    user_id: number;
-    generated_at: string;
-  }>('/ai-counseling/daily-motivation'),
-
-  // 개인화된 학습 팁
-  getLearningTips: (topic?: string) => api.get<{
-    success: boolean;
-    tips: string[];
-    topic: string;
-    user_id: number;
-    generated_at: string;
-  }>(`/ai-counseling/learning-tips${topic ? `?topic=${topic}` : ''}`),
-
-  // 세션 기록 조회
-  getSessionHistory: (sessionId: string) => api.get<{
-    success: boolean;
-    session_id: string;
-    conversation_history: Array<{
-      timestamp: string;
-      type: string;
-      content: string;
-      tone?: string;
-    }>;
-    mentor_personality: string;
-    session_goals: string[];
-    start_time: string;
-    current_mood: string;
-  }>(`/ai-counseling/session-history/${sessionId}`),
-
-  // 사용자 인사이트
+  // 사용자 인사이트 조회
   getUserInsights: () => api.get<{
-    success: boolean;
-    insights: Array<{
-      type: 'achievement' | 'progress' | 'challenge' | 'encouragement';
+    achievements: Array<{
+      type: string;
       title: string;
       message: string;
       icon: string;
     }>;
-    motivation_message: string;
-    learning_tips: string[];
-    user_mood: string;
-    generated_at: string;
-  }>('/ai-counseling/user-insights'),
+    progress_stats: {
+      weekly_study_hours: number;
+      completion_rate: number;
+      improvement_rate: number;
+    };
+    recommendations: Array<{
+      type: string;
+      title: string;
+      description: string;
+      priority: 'high' | 'medium' | 'low';
+    }>;
+  }>('/ai-counseling/insights'),
+
+  // 일일 동기부여 메시지
+  getDailyMotivation: () => api.get<{
+    message: string;
+    type: 'motivation' | 'encouragement' | 'challenge';
+    mood_boost_tips: string[];
+    personalized: boolean;
+  }>('/ai-counseling/daily-motivation'),
+
+  // AI 상담 세션 시작
+  startCounselingSession: (data: {
+    type: 'motivation' | 'guidance' | 'goal_setting' | 'habit_building';
+    initial_message: string;
+    mood_score?: number;
+  }) => api.post<{
+    session_id: string;
+    ai_response: string;
+    suggestions: string[];
+  }>('/ai-counseling/start-session', data),
+
+  // 상담 메시지 전송
+  sendCounselingMessage: (data: {
+    session_id: string;
+    message: string;
+    mood_score?: number;
+  }) => api.post<{
+    ai_response: string;
+    mood_analysis: {
+      detected_mood: string;
+      confidence: number;
+      suggestions: string[];
+    };
+    next_actions: string[];
+  }>('/ai-counseling/message', data),
+
+  // 상담 세션 히스토리
+  getCounselingHistory: () => api.get<Array<{
+    session_id: string;
+    type: string;
+    started_at: string;
+    last_message_at: string;
+    mood_trend: number[];
+    summary: string;
+  }>>('/ai-counseling/history'),
+
+  // 개인화된 학습 목표 설정
+  setLearningGoals: (data: {
+    goals: Array<{
+      title: string;
+      description: string;
+      target_date: string;
+      priority: 'high' | 'medium' | 'low';
+    }>;
+    motivation_factors: string[];
+  }) => api.post('/ai-counseling/goals', data),
+
+  // 습관 형성 도우미
+  getHabitRecommendations: () => api.get<{
+    daily_habits: Array<{
+      habit: string;
+      description: string;
+      difficulty: 'easy' | 'medium' | 'hard';
+      estimated_time: string;
+    }>;
+    weekly_challenges: Array<{
+      challenge: string;
+      description: string;
+      reward: string;
+    }>;
+  }>('/ai-counseling/habits'),
 };
 
 export default api;
