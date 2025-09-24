@@ -466,7 +466,7 @@ const AdaptiveLearningSystem: React.FC = () => {
       {/* Phase 10 기능 안내 */}
       <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-purple-900 mb-3">
-          🤖 Phase 10 - 적응형 학습 시스템
+          Phase 10 - 적응형 학습 시스템
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>

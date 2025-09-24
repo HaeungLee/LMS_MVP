@@ -152,14 +152,32 @@ async def generate_curriculum_stream(
             
             # 커리큘럼 결과를 토큰으로 분할하여 스트리밍 전송
             if curriculum_result and isinstance(curriculum_result, dict):
-                curriculum_text = json.dumps(curriculum_result, ensure_ascii=False, indent=2)
+                # JSON을 마크다운 형식으로 변환
+                curriculum_text = f"""
+# {curriculum_result.get('title', 'AI 생성 커리큘럼')}
+
+## 📋 과정 개요
+- **주제**: {curriculum_result.get('topic', 'N/A')}
+- **난이도**: {curriculum_result.get('difficulty_level', 'N/A')}
+- **기간**: {curriculum_result.get('duration_weeks', 'N/A')}주
+- **생성일**: {curriculum_result.get('generated_at', 'N/A')}
+
+## 🎯 학습 목표
+{', '.join(curriculum_result.get('learning_goals', []))}
+
+## 📖 커리큘럼 내용
+{curriculum_result.get('content', '내용을 불러올 수 없습니다.')}
+
+---
+*이 커리큘럼은 AI에 의해 자동 생성되었습니다.*
+                """
                 
                 # 텍스트를 작은 청크로 분할하여 스트리밍
-                chunk_size = 50  # 50자씩 분할
+                chunk_size = 100  # 100자씩 분할로 속도 개선
                 for i in range(0, len(curriculum_text), chunk_size):
                     chunk = curriculum_text[i:i+chunk_size]
                     yield f"data: {json.dumps({'type': 'token', 'content': chunk})}\n\n"
-                    await asyncio.sleep(0.1)  # 0.1초 간격
+                    await asyncio.sleep(0.05)  # 0.05초 간격으로 더 빠르게
                     
                 # 완료 신호
                 yield f"data: {json.dumps({'type': 'completed', 'message': '커리큘럼 생성이 완료되었습니다!'})}\n\n"

@@ -36,7 +36,7 @@ export default function AITeachingSession({ subjects = [], onBack }: AITeachingS
   const startSessionMutation = useMutation({
     mutationFn: aiApi.startTeachingSession,
     onSuccess: (data) => {
-      setSessionId(data.session_id);
+      setSessionId(data.id);
       setIsSessionStarted(true);
       
       // 환영 메시지 추가
@@ -45,7 +45,7 @@ export default function AITeachingSession({ subjects = [], onBack }: AITeachingS
       const welcomeMessage: Message = {
         id: `ai-${Date.now()}`,
         type: 'ai',
-        content: `안녕하세요! 저는 ${subjectTitle} 전문 AI 강사입니다. 무엇을 배우고 싶으신가요?`,
+        content: data.conversation_preview || `안녕하세요! 저는 ${subjectTitle} 전문 AI 강사입니다. 무엇을 배우고 싶으신가요?`,
         timestamp: new Date(),
       };
       setMessages([welcomeMessage]);
@@ -60,10 +60,10 @@ export default function AITeachingSession({ subjects = [], onBack }: AITeachingS
       const aiMessage: Message = {
         id: `ai-${Date.now()}`,
         type: 'ai',
-        content: data.response,
+        content: data.message,
         timestamp: new Date(),
-        teachingGuidance: data.teaching_guidance,
-        suggestedActions: data.suggested_actions,
+        teachingGuidance: data.understanding_check,
+        suggestedActions: data.learning_tips,
       };
 
       setMessages(prev => [...prev, aiMessage]);
@@ -146,7 +146,7 @@ export default function AITeachingSession({ subjects = [], onBack }: AITeachingS
             <p className="text-gray-600 text-sm">
               {isSessionStarted 
                 ? `${subjects.find(s => s.key === selectedSubject)?.title || customSubject || selectedSubject} 학습 중` 
-                : 'Phase 9 실시간 AI 교육 시스템'
+                : '실시간 AI 교육 시스템'
               }
             </p>
           </div>

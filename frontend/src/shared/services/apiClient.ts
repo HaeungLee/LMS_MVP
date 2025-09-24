@@ -405,10 +405,17 @@ export const aiApi = {
     subject_key: string;
     session_preferences?: any;
   }) => api.post<{
-    session_id: number;
-    status: string;
-    message: string;
-  }>('/ai-teaching/start-session', data),
+    id: number;
+    curriculum_id: number;
+    session_title: string;
+    current_step: number;
+    total_steps: number;
+    completion_percentage: number;
+    session_status: string;
+    started_at: string;
+    last_activity_at: string;
+    conversation_preview?: string;
+  }>('/ai-teaching/sessions/start', data),
   
   // AI 강사와 메시지 교환
   sendTeachingMessage: (data: {
@@ -416,11 +423,20 @@ export const aiApi = {
     message: string;
     message_type?: string;
   }) => api.post<{
-    response: string;
-    teaching_guidance?: string;
-    suggested_actions?: string[];
-    session_progress?: any;
-  }>('/ai-teaching/message', data),
+    session_id: number;
+    message: string;
+    current_step: number;
+    step_title: string;
+    understanding_check?: string;
+    next_action: string;
+    progress_percentage: number;
+    learning_tips?: string[];
+    difficulty_adjustment?: string;
+    timestamp: string;
+  }>(`/ai-teaching/sessions/${data.session_id}/message`, { 
+    message: data.message, 
+    message_type: data.message_type 
+  }),
   
   // AI 분석 및 피드백
   getAnalysis: (userId: number, analysisType = 'comprehensive') => 
