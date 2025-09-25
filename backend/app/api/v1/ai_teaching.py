@@ -17,6 +17,54 @@ from app.models.orm import User
 from app.models.ai_curriculum import AITeachingSession, AIGeneratedCurriculum
 from app.services.syllabus_based_teaching_agent import syllabus_based_teaching_agent
 
+# 기본 멘토링 커리큘럼 생성 함수
+async def create_default_mentoring_curriculum(
+    subject_key: str,
+    user_id: int,
+    db: Session
+) -> AIGeneratedCurriculum:
+    """기본 멘토링 커리큘럼 생성"""
+    
+    # 일반 멘토링용 기본 커리큘럼 구조
+    default_curriculum = {
+        "title": "AI 개인 멘토링",
+        "description": "맞춤형 AI 멘토와의 학습 상담 및 도움",
+        "target_audience": "모든 학습자",
+        "total_duration": "개방형",
+        "difficulty_level": "적응형",
+        "steps": [
+            {
+                "step_number": 1,
+                "title": "학습 상담",
+                "description": "학습에 대한 궁금증이나 어려움을 자유롭게 상담",
+                "learning_objectives": [
+                    "학습 목표 설정",
+                    "어려운 개념 이해",
+                    "학습 방법 개선",
+                    "동기부여"
+                ],
+                "key_concepts": ["상담", "멘토링", "학습지도"],
+                "estimated_duration": "개방형",
+                "difficulty_level": "적응형"
+            }
+        ]
+    }
+    
+    # 커리큘럼 DB에 저장
+    curriculum = AIGeneratedCurriculum(
+        user_id=user_id,
+        subject_key=subject_key,
+        learning_goals=[default_curriculum["description"]],
+        generated_syllabus=default_curriculum,
+        status="completed"
+    )
+    
+    db.add(curriculum)
+    db.commit()
+    db.refresh(curriculum)
+    
+    return curriculum
+
 router = APIRouter(prefix="/api/v1/ai-teaching", tags=["AI Teaching"])
 
 # Pydantic 모델들
@@ -103,9 +151,14 @@ async def start_teaching_session(
             if curriculum:
                 curriculum_id = curriculum.id
             else:
-                # 적합한 커리큘럼이 없으면 임시로 기본값 사용하고 나중에 동적 생성
-                print(f"'{request.subject_key}'에 적합한 커리큘럼을 찾지 못했습니다. 임시 세션을 시작합니다.")
-                curriculum_id = 1  # 임시 기본값
+                # 일반 멘토링이나 새로운 주제인 경우 기본 멘토링 커리큘럼 생성
+                if request.subject_key == 'general_mentoring':
+                    curriculum = await create_default_mentoring_curriculum(
+                        subject_key=request.subject_key,
+                        user_id=current_user.id,
+                        db=db
+                    )
+                    curriculum_id = curriculum.id
         
         if not curriculum_id:
             raise HTTPException(status_code=400, detail="curriculum_id 또는 subject_key가 필요합니다")
@@ -124,11 +177,9 @@ async def start_teaching_session(
         
         # subject_key가 주어진 경우 세션 제목을 더 구체적으로 수정
         session_title = session.session_title
-        if request.subject_key:
-            if curriculum and curriculum.subject_key != request.subject_key:
-                session_title = f"{request.subject_key} 학습 세션 (임시: {curriculum.subject_key} 기반)"
-            elif not curriculum:
-                session_title = f"{request.subject_key} 학습 세션"
+        if request.subject_key and curriculum:
+            curriculum_title = curriculum.generated_syllabus.get("title", "커리큘럼") if curriculum.generated_syllabus else "커리큘럼"
+            session_title = f"{curriculum_title} - {request.subject_key} 학습"
         
         return TeachingSessionResponse(
             id=session.id,

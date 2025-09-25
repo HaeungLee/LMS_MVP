@@ -5,6 +5,7 @@ import { subjectsApi } from '../../shared/services/apiClient';
 import useAuthStore from '../../shared/hooks/useAuthStore';
 import CurriculumGenerator from './components/CurriculumGenerator';
 import AITeachingSession from './components/AITeachingSession';
+import AIMentorChat from './components/AIMentorChat';
 import SmartQuestionGenerator from './components/SmartQuestionGenerator';
 import AdaptiveLearningSystem from './components/AdaptiveLearningSystem';
 import LearningAnalyticsDashboard from './components/LearningAnalyticsDashboard';
@@ -45,6 +46,21 @@ export default function AIAssistantPage() {
             subjects={subjects}
             onBack={() => setActiveFeature(null)}
           />
+        </div>
+      )}
+
+      {activeFeature === 'mentor_chat' && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900">AI 멘토링 채팅</h2>
+            <button 
+              onClick={() => setActiveFeature(null)}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              ← 돌아가기
+            </button>
+          </div>
+          <AIMentorChat userId={user?.id} />
         </div>
       )}
 
@@ -151,6 +167,31 @@ export default function AIAssistantPage() {
       {!activeFeature && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {/* AI 멘토링 채팅 - 새로운 기능 */}
+            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-6 border border-indigo-200">
+              <div className="flex items-center mb-4">
+                <div className="p-2 bg-indigo-600 rounded-lg">
+                  <MessageCircle className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-indigo-900 ml-3">
+                  AI 멘토링 채팅
+                </h3>
+              </div>
+              <p className="text-indigo-800 mb-4">
+                AI 멘토와 자유롭게 대화하며 학습 상담, 동기부여, 개념 설명을 받아보세요.
+              </p>
+              <button 
+                onClick={() => setActiveFeature('mentor_chat')}
+                className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                멘토와 채팅하기
+              </button>
+              <div className="flex items-center mt-2 text-xs text-indigo-600">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                실시간 LLM 연결
+              </div>
+            </div>
+
             {/* 맞춤 커리큘럼 생성 - Phase 9 실제 연결 */}
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
               <div className="flex items-center mb-4">

@@ -9,6 +9,7 @@ import logging
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Tuple
 from sqlalchemy.orm import Session
+from fastapi import HTTPException
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.memory import ConversationBufferWindowMemory  # langchain.memory에서 import
@@ -153,8 +154,23 @@ class SyllabusBasedTeachingAgent:
                 AIGeneratedCurriculum.id == session.curriculum_id
             ).first()
             
+            if not curriculum:
+                raise HTTPException(status_code=404, detail="Curriculum not found")
+            
             curriculum_data = curriculum.generated_syllabus
-            current_step_data = curriculum_data.get("steps", [])[session.current_step - 1]
+            steps = curriculum_data.get("steps", [])
+            
+            # 안전한 인덱스 접근
+            if not steps:
+                raise HTTPException(status_code=400, detail="No steps found in curriculum")
+            
+            current_step_index = session.current_step - 1
+            if current_step_index < 0 or current_step_index >= len(steps):
+                # 유효하지 않은 단계인 경우 첫 번째 단계로 리셋
+                current_step_index = 0
+                session.current_step = 1
+                
+            current_step_data = steps[current_step_index]
             
             # AI 강사 응답 생성
             response = await self._generate_teaching_response(
