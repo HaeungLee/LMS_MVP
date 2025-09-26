@@ -73,7 +73,7 @@ export default function DashboardPage() {
       {/* 헤더 */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">
-          안녕하세요{user?.display_name ? `, ${user.display_name}` : ''}! 👋
+          안녕하세요{user?.display_name ? `, ${user.display_name}` : ''}!
         </h1>
         <p className="text-gray-600 mt-1">
           오늘도 새로운 것을 배워보세요. AI가 당신의 학습을 도와드립니다.
@@ -172,7 +172,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            📚 과목별 학습 진도
+            과목별 학습 진도
           </h2>
           {hasData && Array.isArray(stats.subjects_progress) && stats.subjects_progress.length > 0 ? (
             <div className="space-y-3">
@@ -246,25 +246,6 @@ export default function DashboardPage() {
               <p className="text-sm text-gray-400 mt-1">문제를 풀어보시면 여기에 기록됩니다!</p>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* API 연결 상태 */}
-      <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-            <span className="text-green-800 font-medium">실제 백엔드 API 연결됨</span>
-            <span className="text-green-600 ml-2">
-              - 통합 대시보드 시스템 활성화 ({user?.id})
-            </span>
-          </div>
-          <button 
-            onClick={() => refetch()}
-            className="text-green-600 hover:text-green-700 p-1"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
         </div>
       </div>
     </div>

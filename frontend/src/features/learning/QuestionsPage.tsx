@@ -164,7 +164,7 @@ export default function QuestionsPage() {
     
     if (isCorrect) {
       setScore(prev => prev + 1);
-      toast.success('정답입니다! 🎉');
+      toast.success('정답입니다!');
     } else {
       toast.error(`오답입니다. 정답: ${currentQuestion?.correct_answer}`);
     }
