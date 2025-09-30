@@ -4,6 +4,12 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+import os
+import sys
+from dotenv import load_dotenv
+
+# Load .env file
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../.env'))
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -18,7 +24,16 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 import os
 import sys
+from dotenv import load_dotenv
+
+# Load .env file
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../.env'))
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app.core.config import settings
+
+# Override the sqlalchemy.url with the one from .env
+config.set_main_option("sqlalchemy.url", settings.database_url)
 
 from app.models.orm import Base
 from app.models.dynamic_subject import DynamicSubjectBase
