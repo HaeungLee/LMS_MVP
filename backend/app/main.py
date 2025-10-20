@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from .api.v1 import questions, submit, dashboard, student, auth, admin, results_guard, teacher_dashboard, taxonomy, teacher_groups, feedback, ai_learning, curriculum, personalization, monitoring, ai_features, beta_testing, subjects, stats, code_execution, unified_learning, dynamic_subjects_simple
 # Phase 9 imports
 from app.api.v1 import hybrid_ai, ai_curriculum, ai_teaching
+# MVP imports
+from app.api.v1 import mvp_learning
 from .core.config import settings
 from sqlalchemy import create_engine
 from .models.orm import Base
@@ -87,6 +89,9 @@ app.include_router(ai_teaching.router, tags=["ai-teaching"])  # Phase 9: 실라�
 from app.api.v1 import ai_questions, ai_counseling
 app.include_router(ai_questions.router, tags=["ai-questions-phase10"])  # Phase 10: 스마트 문제 생성 (prefix 이미 설정됨)
 app.include_router(ai_counseling.router, tags=["ai-counseling"])  # AI 학습 상담 시스템 (기존 멘토링 시스템 활용)
+
+# MVP: 온보딩 & 일일 학습
+app.include_router(mvp_learning.router, tags=["mvp"])  # MVP 온보딩 + 일일 학습
 
 @app.get("/", tags=["root"])
 def read_root():

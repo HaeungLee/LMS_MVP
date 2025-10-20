@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Home, 
@@ -12,6 +12,7 @@ import {
   Shield
 } from 'lucide-react';
 import useAuthStore from '../shared/hooks/useAuthStore';
+import { api } from '../shared/services/apiClient';
 
 interface NavigationItem {
   id: string;
@@ -25,6 +26,7 @@ export default function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, loading, fetchMe, logout } = useAuthStore();
+  const [checkingCurriculum, setCheckingCurriculum] = useState(true);
 
   // 사용자 역할에 따른 네비게이션 아이템 동적 생성
   const getNavigationItems = (): NavigationItem[] => {
@@ -94,6 +96,54 @@ export default function MainLayout() {
     }
   }, [user, loading]); // fetchMe와 navigate 의존성 제거로 최적화
 
+  // 커리큘럼 체크 - 신규 사용자는 온보딩으로
+  useEffect(() => {
+    let mounted = true;
+    
+    const checkCurriculum = async () => {
+      if (!user) {
+        setCheckingCurriculum(false);
+        return;
+      }
+
+      try {
+        console.log('📚 커리큘럼 확인 중...');
+        const curricula = await api.get<any[]>('/mvp/curricula/my', { timeoutMs: 5000 });
+        
+        if (!mounted) return;
+        
+        if (!curricula || curricula.length === 0) {
+          console.log('❌ 커리큘럼 없음 → 온보딩으로 이동');
+          navigate('/onboarding');
+        } else {
+          console.log('✅ 커리큘럼 있음:', curricula.length);
+          setCheckingCurriculum(false);
+        }
+      } catch (error: any) {
+        if (!mounted) return;
+        
+        console.log('⚠️ 커리큘럼 체크 실패:', error.message);
+        // 404 에러 = 커리큘럼 없음 → 온보딩
+        // 네트워크 에러 = 일단 대시보드 진입 허용
+        if (error.message?.includes('404') || error.message?.includes('not found')) {
+          console.log('→ 온보딩으로 이동');
+          navigate('/onboarding');
+        } else {
+          console.log('→ 대시보드 진입 허용 (네트워크 문제일 수 있음)');
+          setCheckingCurriculum(false);
+        }
+      }
+    };
+
+    if (user && checkingCurriculum) {
+      checkCurriculum();
+    }
+
+    return () => {
+      mounted = false;
+    };
+  }, [user, checkingCurriculum, navigate]);
+
   const isActiveRoute = (path: string) => {
     if (path === '/') {
       return location.pathname === '/';
@@ -110,13 +160,15 @@ export default function MainLayout() {
     }
   };
 
-  // 로딩 중
-  if (loading) {
+  // 로딩 중 (사용자 정보 + 커리큘럼 체크)
+  if (loading || checkingCurriculum) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600 dark:text-gray-300">사용자 정보를 불러오고 있습니다...</p>
+          <p className="text-gray-600 dark:text-gray-300">
+            {loading ? '사용자 정보를 불러오고 있습니다...' : '학습 정보를 확인하고 있습니다...'}
+          </p>
         </div>
       </div>
     );

@@ -55,7 +55,7 @@ export default function RegisterPage() {
 
     try {
       await register(formData.email, formData.password, formData.displayName || undefined);
-      navigate('/'); // 회원가입 성공 시 대시보드로 이동
+      navigate('/onboarding'); // 회원가입 성공 시 온보딩으로 이동
     } catch (err) {
       // 추가적인 에러 처리는 useAuthStore에서 이미 처리됨
       console.error('회원가입 실패:', err);

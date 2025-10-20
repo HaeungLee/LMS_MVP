@@ -13,6 +13,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import QuestionReviewSystem from './pages/admin/QuestionReviewSystem';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import OnboardingPage from './features/onboarding/OnboardingPage';
 
 // TanStack Query 클라이언트 설정
 const queryClient = new QueryClient({
@@ -33,6 +34,7 @@ function App() {
             {/* 인증 페이지들 - MainLayout 없이 */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/onboarding" element={<OnboardingPage />} />
             
             {/* 메인 애플리케이션 - MainLayout 포함 */}
             <Route path="/" element={<MainLayout />}>
