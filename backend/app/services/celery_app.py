@@ -23,7 +23,8 @@ celery_app = Celery(
     broker=f"redis://{getattr(settings, 'redis_host', 'localhost')}:{getattr(settings, 'redis_port', 6379)}/1",
     backend=f"redis://{getattr(settings, 'redis_host', 'localhost')}:{getattr(settings, 'redis_port', 6379)}/2",
     include=[
-        'app.services.celery_tasks'
+        'app.services.celery_tasks',
+        'app.tasks.email_tasks'  # 이메일 작업 추가
     ]
 )
 
@@ -42,6 +43,10 @@ celery_app.conf.update(
         'app.services.celery_tasks.process_bulk_submissions': {'queue': 'bulk_tasks'},
         'app.services.celery_tasks.update_user_analytics': {'queue': 'analytics_tasks'},
         'app.services.celery_tasks.send_notification': {'queue': 'notification_tasks'},
+        'send_welcome_email': {'queue': 'email_tasks'},
+        'send_trial_reminders': {'queue': 'email_tasks'},
+        'send_re_engagement_emails': {'queue': 'email_tasks'},
+        'send_payment_success_email': {'queue': 'email_tasks'},
     },
     
     # 워커 설정
@@ -88,7 +93,28 @@ celery_app.conf.update(
             'exchange': 'notification_tasks',
             'exchange_type': 'direct',
             'routing_key': 'notification_tasks',
+        },
+        'email_tasks': {
+            'exchange': 'email_tasks',
+            'exchange_type': 'direct',
+            'routing_key': 'email_tasks',
         }
+    },
+    
+    # ⏰ Celery Beat 스케줄 (정기 작업)
+    beat_schedule={
+        # 매일 오전 10시: 무료 체험 리마인더 (2일 전 알림)
+        'send-trial-reminders-daily': {
+            'task': 'send_trial_reminders',
+            'schedule': 36000.0,  # 10시간마다 (개발 중 테스트용)
+            # 'schedule': crontab(hour=10, minute=0),  # 프로덕션: 매일 10:00 AM
+        },
+        # 매일 오전 9시: 재참여 유도 이메일 (7일 비활성)
+        'send-reengagement-emails-daily': {
+            'task': 'send_re_engagement_emails',
+            'schedule': 32400.0,  # 9시간마다 (개발 중 테스트용)
+            # 'schedule': crontab(hour=9, minute=0),  # 프로덕션: 매일 9:00 AM
+        },
     },
     
     # 모니터링

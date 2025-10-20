@@ -17,6 +17,13 @@ from app.core.security import (
 )
 from app.models.orm import User, RefreshToken
 
+# 이메일 전송을 위한 Celery 작업 import
+try:
+    from app.tasks.email_tasks import send_welcome_email_task
+except ImportError:
+    # Celery가 설정되지 않은 경우 None으로 처리
+    send_welcome_email_task = None
+
 
 router = APIRouter()
 
@@ -55,6 +62,19 @@ def register(body: RegisterDto, response: Response, db: Session = Depends(get_db
     refresh, jti, exp = create_refresh_token(user, expires_days=refresh_days)
     db.add(RefreshToken(id=jti, user_id=user.id, issued_at=datetime.utcnow(), expires_at=exp, revoked=False))
     db.commit()
+    
+    # 🎉 환영 이메일 비동기 전송
+    if send_welcome_email_task:
+        try:
+            send_welcome_email_task.delay(
+                user_id=user.id,
+                user_email=user.email,
+                user_name=user.display_name or user.email.split('@')[0]
+            )
+        except Exception as e:
+            # 이메일 전송 실패해도 회원가입은 성공
+            print(f"⚠️ 환영 이메일 전송 실패 (무시됨): {e}")
+    
     resp = {"id": user.id, "email": user.email, "role": user.role, "display_name": user.display_name}
     response.set_cookie("access_token", access, httponly=True, samesite="lax")
     # refresh는 기본 30일로 설정

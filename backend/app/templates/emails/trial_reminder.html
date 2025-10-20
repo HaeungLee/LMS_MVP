@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>무료 체험 종료 안내</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 32px;
+            font-weight: 700;
+        }
+        .countdown {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 15px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .message {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #555;
+            margin-bottom: 30px;
+        }
+        .stats-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+            color: white;
+        }
+        .stats-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        .benefits-list {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        .benefit-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+        .benefit-item:last-child {
+            margin-bottom: 0;
+        }
+        .benefit-check {
+            color: #28a745;
+            margin-right: 10px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .cta-button:hover {
+            opacity: 0.9;
+        }
+        .pricing-highlight {
+            background-color: #fff3cd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .price {
+            font-size: 36px;
+            font-weight: 700;
+            color: #f5576c;
+        }
+        .price-period {
+            font-size: 16px;
+            color: #666;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            font-size: 14px;
+            color: #777;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .divider {
+            height: 1px;
+            background-color: #e0e0e0;
+            margin: 30px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏰ 무료 체험 종료 안내</h1>
+            <div class="countdown">
+                {{ days_left }}일 남았습니다
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                {{ user_name }}님, 함께한 시간이 벌써 끝나가네요! 😊
+            </div>
+            
+            <div class="message">
+                무료 체험 기간 동안 정말 열심히 하셨습니다!<br>
+                지금까지의 학습 성과를 확인해보세요.
+            </div>
+            
+            {% if stats %}
+            <div class="stats-box">
+                <div class="stats-title">📊 지금까지의 성과</div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ stats.problems_solved or 0 }}</div>
+                        <div class="stat-label">문제 풀이</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ stats.study_hours or 0 }}</div>
+                        <div class="stat-label">학습 시간</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ stats.accuracy or 0 }}%</div>
+                        <div class="stat-label">정답률</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="message">
+                <strong>프리미엄으로 업그레이드하시면</strong> 더 많은 기능을 무제한으로 이용하실 수 있습니다:
+            </div>
+            
+            <div class="benefits-list">
+                <div class="benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>무제한 AI 커리큘럼 생성</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>무제한 AI 멘토링 세션</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>고급 학습 분석 및 인사이트</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>우선 고객 지원</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>새로운 기능 우선 이용</span>
+                </div>
+            </div>
+            
+            <div class="pricing-highlight">
+                <div class="price">₩29,000<span class="price-period">/월</span></div>
+                <div style="margin-top: 10px; color: #666;">
+                    언제든지 취소 가능 · 첫 달 20% 할인
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="{{ pricing_url }}" class="cta-button">
+                    프리미엄 시작하기 →
+                </a>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="message" style="font-size: 14px; color: #777;">
+                계속해서 무료 플랜을 사용하실 수도 있지만,<br>
+                일부 기능에 제한이 있을 수 있습니다.<br><br>
+                
+                궁금하신 점이 있으시면 언제든지 문의해 주세요! 💬
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© {{ current_year }} EduAI. All rights reserved.</p>
+            <p>
+                <a href="{{ dashboard_url }}">대시보드</a> · 
+                <a href="{{ pricing_url }}">요금제</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

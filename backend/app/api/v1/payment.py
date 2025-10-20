@@ -29,6 +29,13 @@ from app.core.security import get_current_user
 from app.models.orm import User
 from app.services.subscription_service import SubscriptionService, PaymentService
 
+# 이메일 전송을 위한 Celery 작업 import
+try:
+    from app.tasks.email_tasks import send_payment_success_email_task
+except ImportError:
+    # Celery가 설정되지 않은 경우 None으로 처리
+    send_payment_success_email_task = None
+
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
@@ -222,6 +229,22 @@ async def payment_success(
             )
         
         logger.info(f"결제 완료: user_id={user.id}, order_id={request.order_id}")
+        
+        # 🎉 결제 성공 이메일 비동기 전송
+        if send_payment_success_email_task and subscription:
+            try:
+                plan_display = "프리미엄 월간" if subscription.plan == "monthly" else "프리미엄 연간"
+                send_payment_success_email_task.delay(
+                    user_id=user.id,
+                    user_email=user.email,
+                    user_name=user.display_name or user.email.split('@')[0],
+                    plan_name=plan_display,
+                    amount=request.amount,
+                    next_billing_date=subscription.current_period_end.isoformat() if subscription.current_period_end else datetime.now().isoformat()
+                )
+            except Exception as e:
+                # 이메일 전송 실패해도 결제는 성공
+                logger.warning(f"⚠️ 결제 성공 이메일 전송 실패 (무시됨): {e}")
         
         return {
             "success": True,
