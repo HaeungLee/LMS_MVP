@@ -25,8 +25,8 @@ class AIGeneratedCurriculum(Base):
     updated_at = Column(TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # 관계
-    user = relationship("User", back_populates="ai_curricula")
-    subject = relationship("Subject", back_populates="ai_curricula")
+    # user = relationship("User", back_populates="ai_curricula")  # 임시 비활성화
+    # subject = relationship("Subject", back_populates="ai_curricula")  # 임시 비활성화
     teaching_sessions = relationship("AITeachingSession", back_populates="curriculum")
 
 
@@ -51,7 +51,7 @@ class AITeachingSession(Base):
 
     # 관계
     curriculum = relationship("AIGeneratedCurriculum", back_populates="teaching_sessions")
-    user = relationship("User", back_populates="ai_teaching_sessions")
+    # user = relationship("User", back_populates="ai_teaching_sessions")  # 임시 비활성화
 
 
 class AIContentGenerationLog(Base):
