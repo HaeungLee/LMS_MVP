@@ -87,34 +87,61 @@ async def get_available_goals() -> List[Dict[str, Any]]:
     온보딩 Step 2에서 사용 (인증 불필요)
     """
     try:
-        # 하드코딩된 목표 목록 (서비스 의존성 제거)
+        # 하드코딩된 목표 목록 (언어 중립적, 다양한 직무)
         goals = [
             {
                 "key": "backend_developer",
                 "title": "백엔드 개발자",
-                "description": "Python FastAPI로 REST API를 설계하고 배포할 수 있는 백엔드 개발자",
+                "description": "서버 개발 및 RESTful API 구축 전문가",
                 "icon": "💻",
-                "color": "from-blue-500 to-cyan-500",
+                "color": "from-blue-500 to-indigo-600",
                 "defaultWeeks": 12,
-                "technologies": ["FastAPI", "PostgreSQL", "Docker", "REST API", "Authentication", "Async"]
+                "technologies": ["서버 개발", "API 설계", "데이터베이스", "인증/보안"]
+            },
+            {
+                "key": "frontend_developer",
+                "title": "프론트엔드 개발자",
+                "description": "웹 UI/UX 개발 및 사용자 인터랙션 구현",
+                "icon": "🎨",
+                "color": "from-pink-500 to-rose-600",
+                "defaultWeeks": 12,
+                "technologies": ["웹 개발", "UI 구현", "반응형 디자인", "상태 관리"]
             },
             {
                 "key": "data_analyst",
                 "title": "데이터 분석가",
-                "description": "Python으로 데이터를 분석하고 시각화할 수 있는 데이터 분석가",
+                "description": "데이터 수집, 분석 및 인사이트 도출",
                 "icon": "📊",
-                "color": "from-purple-500 to-pink-500",
+                "color": "from-green-500 to-emerald-600",
                 "defaultWeeks": 10,
-                "technologies": ["Pandas", "NumPy", "Matplotlib", "SQL", "Jupyter", "Seaborn"]
+                "technologies": ["데이터 분석", "통계", "시각화", "SQL"]
             },
             {
-                "key": "automation_engineer",
-                "title": "자동화 엔지니어",
-                "description": "Python으로 업무를 자동화하고 효율을 높이는 엔지니어",
+                "key": "mobile_developer",
+                "title": "모바일 개발자",
+                "description": "iOS/Android 네이티브 및 크로스플랫폼 앱 개발",
+                "icon": "📱",
+                "color": "from-cyan-500 to-blue-600",
+                "defaultWeeks": 14,
+                "technologies": ["모바일 앱", "UI/UX", "네이티브 기능", "앱 배포"]
+            },
+            {
+                "key": "devops_engineer",
+                "title": "DevOps 엔지니어",
+                "description": "CI/CD 파이프라인 구축 및 인프라 자동화",
+                "icon": "⚙️",
+                "color": "from-orange-500 to-amber-600",
+                "defaultWeeks": 12,
+                "technologies": ["CI/CD", "클라우드", "컨테이너", "모니터링"]
+            },
+            {
+                "key": "ai_engineer",
+                "title": "AI 엔지니어",
+                "description": "머신러닝 모델 개발 및 프로덕션 배포",
                 "icon": "🤖",
-                "color": "from-green-500 to-emerald-500",
-                "defaultWeeks": 8,
-                "technologies": ["Selenium", "BeautifulSoup", "Schedule", "API", "Excel", "Pandas"]
+                "color": "from-purple-500 to-pink-600",
+                "defaultWeeks": 16,
+                "technologies": ["머신러닝", "딥러닝", "모델 배포", "MLOps"]
             }
         ]
         return goals
@@ -150,14 +177,22 @@ async def generate_curriculum(
             # 실제로는 LLM이 분석하여 적절한 커리큘럼 생성
             logger.info(f"커스텀 목표 요청: {request.custom_goal}")
             
-            # 간단한 키워드 매핑 (나중에 LLM으로 개선)
+            # 키워드 기반 매핑 (7개 목표 모두 지원)
             custom_goal_lower = request.custom_goal.lower()
-            if 'backend' in custom_goal_lower or 'api' in custom_goal_lower or 'fastapi' in custom_goal_lower:
+            if 'backend' in custom_goal_lower or 'api' in custom_goal_lower or 'fastapi' in custom_goal_lower or '서버' in custom_goal_lower:
                 actual_goal_key = 'backend_developer'
-            elif 'data' in custom_goal_lower or '분석' in custom_goal_lower or 'pandas' in custom_goal_lower:
+            elif 'frontend' in custom_goal_lower or 'react' in custom_goal_lower or 'vue' in custom_goal_lower or 'web' in custom_goal_lower or 'ui' in custom_goal_lower:
+                actual_goal_key = 'frontend_developer'
+            elif 'mobile' in custom_goal_lower or 'ios' in custom_goal_lower or 'android' in custom_goal_lower or '앱' in custom_goal_lower:
+                actual_goal_key = 'mobile_developer'
+            elif 'devops' in custom_goal_lower or 'docker' in custom_goal_lower or 'kubernetes' in custom_goal_lower or 'linux' in custom_goal_lower or '인프라' in custom_goal_lower:
+                actual_goal_key = 'devops_engineer'
+            elif 'ai' in custom_goal_lower or 'ml' in custom_goal_lower or 'machine learning' in custom_goal_lower or '머신러닝' in custom_goal_lower or '딥러닝' in custom_goal_lower:
+                actual_goal_key = 'ai_engineer'
+            elif 'data' in custom_goal_lower or '분석' in custom_goal_lower or 'pandas' in custom_goal_lower or 'sql' in custom_goal_lower:
                 actual_goal_key = 'data_analyst'
-            elif '자동화' in custom_goal_lower or 'automation' in custom_goal_lower or '크롤링' in custom_goal_lower:
-                actual_goal_key = 'automation_expert'
+            elif '자동화' in custom_goal_lower or 'automation' in custom_goal_lower or '크롤링' in custom_goal_lower or 'selenium' in custom_goal_lower:
+                actual_goal_key = 'automation_engineer'
             else:
                 # 기본값: 백엔드 개발자
                 actual_goal_key = 'backend_developer'

@@ -75,6 +75,62 @@ class GoalBasedCurriculumService:
                     "스케줄링",
                     "실전 자동화"
                 ]
+            },
+            "frontend_developer": {
+                "display_name": "프론트엔드 개발자",
+                "description": "웹 UI/UX 개발 및 사용자 인터랙션 구현",
+                "default_weeks": 12,
+                "core_technologies": ["HTML/CSS", "JavaScript", "React", "상태관리", "API 연동"],
+                "learning_path": [
+                    "HTML/CSS 기초",
+                    "JavaScript 핵심",
+                    "React 컴포넌트",
+                    "상태 관리",
+                    "API 연동",
+                    "프로젝트 배포"
+                ]
+            },
+            "mobile_developer": {
+                "display_name": "모바일 개발자",
+                "description": "iOS/Android 네이티브 및 크로스플랫폼 앱 개발",
+                "default_weeks": 14,
+                "core_technologies": ["React Native", "UI Components", "네이티브 기능", "앱 배포"],
+                "learning_path": [
+                    "React Native 기초",
+                    "UI 컴포넌트",
+                    "내비게이션",
+                    "네이티브 모듈",
+                    "상태 관리",
+                    "앱 배포 (iOS/Android)"
+                ]
+            },
+            "devops_engineer": {
+                "display_name": "DevOps 엔지니어",
+                "description": "CI/CD 파이프라인 구축 및 인프라 자동화",
+                "default_weeks": 12,
+                "core_technologies": ["Docker", "Kubernetes", "CI/CD", "모니터링", "클라우드"],
+                "learning_path": [
+                    "Linux 기초",
+                    "Docker 컨테이너",
+                    "Kubernetes 오케스트레이션",
+                    "CI/CD 파이프라인",
+                    "클라우드 (AWS/Azure)",
+                    "모니터링 & 로깅"
+                ]
+            },
+            "ai_engineer": {
+                "display_name": "AI 엔지니어",
+                "description": "머신러닝 모델 개발 및 프로덕션 배포",
+                "default_weeks": 16,
+                "core_technologies": ["Python", "TensorFlow", "PyTorch", "모델 최적화", "MLOps"],
+                "learning_path": [
+                    "Python 머신러닝 기초",
+                    "딥러닝 기초",
+                    "TensorFlow/PyTorch",
+                    "모델 학습 & 튜닝",
+                    "모델 배포",
+                    "MLOps & 모니터링"
+                ]
             }
         }
     

@@ -35,7 +35,14 @@ interface GeneratedCurriculum {
   weekly_themes: Array<{
     week: number;
     theme: string;
-    topics: string[];
+    description: string;
+    daily_tasks: Array<{
+      day: number;
+      title: string;
+      type: string;
+      duration_minutes: number;
+      content: string;
+    }>;
   }>;
 }
 
@@ -320,10 +327,10 @@ const DetailSettingsStep: React.FC<{
   onBack: () => void;
 }> = ({ selectedGoal, currentLevel, dailyMinutes, onLevelChange, onMinutesChange, onGenerate, onBack }) => {
   const levels = [
-    'Python 입문 (변수, 조건문만)',
-    'Python 기초 완료 (함수, 리스트)',
-    'Python 중급 (클래스, 모듈)',
-    'Python 고급 (비동기, 데코레이터)'
+    '처음 배웁니다 (프로그래밍 경험 없음)',
+    '입문 수준 (간단한 코드 이해 가능)',
+    '기초 수준 (함수, 조건문, 반복문 사용 가능)',
+    '중급 이상 (객체지향, 비동기 처리 경험)'
   ];
 
   const minutesOptions = [30, 60, 90, 120];
@@ -350,7 +357,7 @@ const DetailSettingsStep: React.FC<{
           {/* 현재 수준 */}
           <div>
             <label className="block text-lg font-semibold text-gray-900 mb-4">
-              📚 현재 Python 수준
+              � 프로그래밍 경험
             </label>
             <div className="grid grid-cols-1 gap-3">
               {levels.map((level) => (
@@ -574,7 +581,7 @@ const PreviewStep: React.FC<{
           <div>
             <h3 className="text-xl font-bold text-gray-900 mb-4">📅 주차별 로드맵 (미리보기)</h3>
             <div className="space-y-3">
-              {curriculum.weekly_themes.slice(0, 4).map((weekData) => (
+              {curriculum.weekly_themes?.slice(0, 4).map((weekData) => (
                 <div key={weekData.week} className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-xl flex items-center justify-center font-bold">
@@ -582,12 +589,18 @@ const PreviewStep: React.FC<{
                     </div>
                     <div className="flex-1">
                       <h4 className="font-bold text-gray-900 mb-2">{weekData.theme}</h4>
+                      <p className="text-sm text-gray-600 mb-2">{weekData.description}</p>
                       <div className="flex flex-wrap gap-2">
-                        {weekData.topics.slice(0, 3).map((topic, idx) => (
+                        {weekData.daily_tasks?.slice(0, 3).map((task, idx) => (
                           <span key={idx} className="text-sm px-3 py-1 bg-white rounded-full text-gray-700">
-                            {topic}
+                            Day {task.day}: {task.title}
                           </span>
                         ))}
+                        {(weekData.daily_tasks?.length || 0) > 3 && (
+                          <span className="text-sm px-3 py-1 bg-gray-100 rounded-full text-gray-500">
+                            +{(weekData.daily_tasks?.length || 0) - 3}개 더
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -630,7 +643,7 @@ const OnboardingPage: React.FC = () => {
   const [step, setStep] = useState(1);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
-  const [currentLevel, setCurrentLevel] = useState('Python 기초 완료 (함수, 리스트)');
+  const [currentLevel, setCurrentLevel] = useState('기초 수준 (함수, 조건문, 반복문 사용 가능)');
   const [dailyMinutes, setDailyMinutes] = useState(60);
   const [generatedCurriculum, setGeneratedCurriculum] = useState<GeneratedCurriculum | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -695,7 +708,7 @@ const OnboardingPage: React.FC = () => {
       const curriculum = await api.post<GeneratedCurriculum>(
         '/mvp/onboarding/generate-curriculum',
         requestData,
-        { timeoutMs: 60000 } // 60초 타임아웃 (AI 생성 시간 고려)
+        { timeoutMs: 120000 } // 120초 타임아웃 (2-Agent 협력 시간 고려)
       );
 
       setGeneratedCurriculum(curriculum);

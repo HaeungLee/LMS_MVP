@@ -69,10 +69,12 @@ class LangChainHybridProvider:
         openrouter_key = os.getenv("OPENROUTER_API_KEY") or getattr(settings, 'OPENROUTER_API_KEY', None)
         
         if openrouter_key:
-            logger.info("🔄 No OpenAI key - using OpenRouter for EduGPT (cost-effective)")
+            # .env에서 모델 설정 읽기 (기본값: qwen3-coder)
+            openrouter_model = os.getenv("OPENROUTER_MODEL", "qwen/qwen3-coder:free")
+            logger.info(f"🔄 No OpenAI key - using OpenRouter for EduGPT (model: {openrouter_model})")
             return EduGPTConfig(
                 provider=EduGPTProvider.OPENROUTER_FALLBACK,
-                model_name="x-ai/grok-4-fast:free",
+                model_name=openrouter_model,  # .env 파일에서 읽음
                 api_key=openrouter_key,
                 base_url="https://openrouter.ai/api/v1",
                 temperature=0.7,
@@ -208,7 +210,7 @@ class LangChainHybridProvider:
 class EduGPTDiscussAgent:
     """
     EduGPT의 DiscussAgent를 LangChain 기반으로 재구현
-    원본과 100% 호환
+    원본과 100% 호환 + 비동기 지원
     """
     
     def __init__(
@@ -235,13 +237,36 @@ class EduGPTDiscussAgent:
         return self.stored_messages
 
     def step(self, input_message: HumanMessage) -> AIMessage:
-        """한 단계 대화 진행 (EduGPT 원본과 동일)"""
+        """한 단계 대화 진행 (동기)"""
         messages = self.update_messages(input_message)
         
         output_message = self.model.invoke(messages)
         self.update_messages(output_message)
         
         return output_message
+    
+    async def ainvoke(self, input_dict: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        비동기 호출 지원 (LangChain Agent 스타일)
+        
+        Args:
+            input_dict: {"messages": [HumanMessage(...)]} 형식
+        
+        Returns:
+            {"messages": [...전체 메시지 히스토리...]} 형식
+        """
+        messages = input_dict.get("messages", [])
+        
+        if messages:
+            input_message = messages[0]
+            self.update_messages(input_message)
+        
+        # 비동기 모델 호출
+        output_message = await self.model.ainvoke(self.stored_messages)
+        self.update_messages(output_message)
+        
+        # LangChain Agent 스타일 응답 (전체 메시지 히스토리 반환)
+        return {"messages": self.stored_messages}
 
 
 # 전역 인스턴스

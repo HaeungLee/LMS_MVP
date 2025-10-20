@@ -178,7 +178,7 @@ Input: None
         """LangChain 기반 2-Agent 대화 진행"""
         
         conversation_history = []
-        chat_turn_limit = 5
+        chat_turn_limit = 3  # MVP: 5턴 → 3턴 (생성 속도 개선)
         
         # 초기 상황 설정
         current_situation = "안녕하세요! 한국 학습자들을 위한 커리큘럼 설계를 시작하겠습니다. 구체적인 요구사항을 알려주세요."
@@ -194,7 +194,20 @@ Input: None
             assistant_input = HumanMessage(content=assistant_prompt)
             # ✅ 올바른 LangChain Agent 호출
             assistant_response = await self.assistant_agent.ainvoke({"messages": [assistant_input]})
-            response_content = assistant_response.get("messages", [{}])[-1].get("content", "") if isinstance(assistant_response, dict) else assistant_response.content
+            
+            # AIMessage 객체 또는 dict 응답 처리
+            if isinstance(assistant_response, dict):
+                # dict 형식: {"messages": [AIMessage(...)]}
+                messages = assistant_response.get("messages", [])
+                if messages and hasattr(messages[-1], 'content'):
+                    response_content = messages[-1].content
+                else:
+                    response_content = str(messages[-1]) if messages else ""
+            elif hasattr(assistant_response, 'content'):
+                # AIMessage 객체 직접 반환
+                response_content = assistant_response.content
+            else:
+                response_content = str(assistant_response)
             
             conversation_history.append(f"Teaching Assistant: {response_content}")
             logger.info(f"Teaching Assistant (턴 {turn+1}): {response_content}")
@@ -212,7 +225,20 @@ Teaching Assistant 요청: {response_content}
             instructor_input = HumanMessage(content=instructor_prompt)
             # ✅ 올바른 LangChain Agent 호출
             instructor_response = await self.instructor_agent.ainvoke({"messages": [instructor_input]})
-            instructor_content = instructor_response.get("messages", [{}])[-1].get("content", "") if isinstance(instructor_response, dict) else instructor_response.content
+            
+            # AIMessage 객체 또는 dict 응답 처리
+            if isinstance(instructor_response, dict):
+                # dict 형식: {"messages": [AIMessage(...)]}
+                messages = instructor_response.get("messages", [])
+                if messages and hasattr(messages[-1], 'content'):
+                    instructor_content = messages[-1].content
+                else:
+                    instructor_content = str(messages[-1]) if messages else ""
+            elif hasattr(instructor_response, 'content'):
+                # AIMessage 객체 직접 반환
+                instructor_content = instructor_response.content
+            else:
+                instructor_content = str(instructor_response)
             
             conversation_history.append(f"Instructor: {instructor_content}")
             logger.info(f"Instructor (턴 {turn+1}): {instructor_content}")
