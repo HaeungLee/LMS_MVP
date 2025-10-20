@@ -111,9 +111,8 @@ class User(Base):
     # Relationships (bring in session/activity models from older schema)
     quiz_sessions = relationship("QuizSession", back_populates="user")
     recent_activities = relationship("RecentActivity", back_populates="user")
-    # Phase 9: AI 커리큘럼 관계
-    ai_curricula = relationship("AIGeneratedCurriculum", back_populates="user")
-    ai_teaching_sessions = relationship("AITeachingSession", back_populates="user")
+    # MVP: 구독 관계
+    subscriptions = relationship("Subscription", back_populates="user")
 
 
 class RefreshToken(Base):
@@ -146,9 +145,6 @@ class Subject(Base):
     total_students = Column(Integer, nullable=True, default=0)
     average_completion_rate = Column(Float, nullable=True, default=0.0)
     updated_at = Column(DateTime, nullable=True, default=datetime.utcnow)
-    
-    # Phase 9: AI 커리큘럼 관계
-    ai_curricula = relationship("AIGeneratedCurriculum", back_populates="subject")
 
 
 class Topic(Base):
@@ -757,3 +753,97 @@ class SubjectHierarchy(Base):
         Index('idx_subject_hierarchy_active', 'is_active'),
     )
 
+
+# ============================================================
+# MVP: 결제 및 구독 시스템
+# ============================================================
+
+class Subscription(Base):
+    """
+    사용자 구독 정보
+    
+    비즈니스 규칙:
+    - 한 사용자는 하나의 활성 구독만 가능
+    - 체험(trial) → 유료(active) 자동 전환
+    - 취소 시 current_period_end까지 유지
+    """
+    __tablename__ = "subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    
+    # 구독 상태
+    status = Column(String(20), nullable=False, default="trial", index=True)  # trial, active, cancelled, expired
+    plan = Column(String(20), nullable=False, default="monthly")  # monthly, annual
+    
+    # 체험 기간
+    trial_start_date = Column(DateTime, nullable=True)
+    trial_end_date = Column(DateTime, nullable=True)
+    
+    # 결제 기간
+    current_period_start = Column(DateTime, nullable=True)
+    current_period_end = Column(DateTime, nullable=True)
+    
+    # 취소 관련
+    cancel_at_period_end = Column(Boolean, default=False, nullable=False)
+    cancelled_at = Column(DateTime, nullable=True)
+    
+    # 타임스탬프
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="subscriptions")
+    payments = relationship("Payment", back_populates="subscription", cascade="all, delete-orphan")
+    
+    # 인덱스
+    __table_args__ = (
+        Index('idx_subscription_user_status', 'user_id', 'status'),
+        Index('idx_subscription_period_end', 'current_period_end'),
+    )
+
+
+class Payment(Base):
+    """
+    결제 트랜잭션 기록
+    
+    비즈니스 규칙:
+    - 구독과 1:N 관계 (갱신마다 새 결제)
+    - 실패한 결제도 기록 (재시도 추적)
+    - order_id는 unique (멱등성 보장)
+    """
+    __tablename__ = "payments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    subscription_id = Column(Integer, ForeignKey("subscriptions.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # 토스페이먼츠 정보
+    payment_key = Column(String(255), nullable=True, unique=True, index=True)  # 토스 결제 키
+    order_id = Column(String(255), nullable=False, unique=True, index=True)  # 주문 ID (멱등성)
+    
+    # 결제 정보
+    amount = Column(Integer, nullable=False)  # 결제 금액 (원)
+    status = Column(String(20), nullable=False, default="pending", index=True)  # pending, success, failed, refunded
+    payment_method = Column(String(50), nullable=True)  # card, bank, etc
+    
+    # 결제 결과
+    paid_at = Column(DateTime, nullable=True)
+    failed_reason = Column(Text, nullable=True)
+    
+    # 환불 정보
+    refunded_at = Column(DateTime, nullable=True)
+    refund_reason = Column(Text, nullable=True)
+    refund_amount = Column(Integer, nullable=True)
+    
+    # 타임스탬프
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    subscription = relationship("Subscription", back_populates="payments")
+    
+    # 인덱스
+    __table_args__ = (
+        Index('idx_payment_subscription_status', 'subscription_id', 'status'),
+        Index('idx_payment_created_at', 'created_at'),
+    )
