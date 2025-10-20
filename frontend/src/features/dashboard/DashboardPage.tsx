@@ -23,6 +23,7 @@ import {
 import useAuthStore from '../../shared/hooks/useAuthStore';
 import { api } from '../../shared/services/apiClient';
 import DailyAchievementCard from './components/DailyAchievementCard';
+import StatsCard from './components/StatsCard';
 
 interface DailyLearning {
   date: string;
@@ -206,13 +207,20 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Daily Achievement Card */}
-      <DailyAchievementCard
-        streak={achievementStats?.streak ?? 0}
-        todayCompleted={achievementStats?.today_completed ?? false}
-        weeklyProgress={achievementStats?.weekly_progress ?? 0}
-        totalDaysLearned={achievementStats?.total_days_learned ?? 0}
-      />
+      {/* Achievement & Stats Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <DailyAchievementCard
+            streak={achievementStats?.streak ?? 0}
+            todayCompleted={achievementStats?.today_completed ?? false}
+            weeklyProgress={achievementStats?.weekly_progress ?? 0}
+            totalDaysLearned={achievementStats?.total_days_learned ?? 0}
+          />
+        </div>
+        <div>
+          <StatsCard />
+        </div>
+      </div>
 
       {/* 오늘의 학습 과제 */}
       {todayLearning && (

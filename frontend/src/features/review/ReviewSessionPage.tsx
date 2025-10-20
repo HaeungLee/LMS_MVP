@@ -8,6 +8,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import { 
   CheckCircle, 
   XCircle, 
@@ -16,8 +17,10 @@ import {
   Trophy,
   RefreshCw,
   Home,
-  Brain
+  Brain,
+  Loader
 } from 'lucide-react';
+import { api } from '../../shared/services/apiClient';
 
 interface ReviewProblem {
   problem_id: number;
@@ -44,6 +47,8 @@ interface SessionResult {
   answered: boolean;
   correct: boolean;
   time_spent: number;
+  feedback?: string;
+  next_review_date?: string;
 }
 
 export default function ReviewSessionPage() {
@@ -57,6 +62,22 @@ export default function ReviewSessionPage() {
   const [startTime, setStartTime] = useState(Date.now());
   const [sessionComplete, setSessionComplete] = useState(false);
   const [userAnswer, setUserAnswer] = useState('');
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [currentFeedback, setCurrentFeedback] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 답안 제출 mutation
+  const submitMutation = useMutation({
+    mutationFn: async (data: { problem_id: number; user_answer: string; time_spent: number }) => 
+      api.post('/review/submit', {
+        session_id: session?.session_id,
+        ...data
+      }),
+    onSuccess: (data: any) => {
+      setCurrentFeedback(data.feedback);
+      setShowFeedback(true);
+    },
+  });
 
   // 세션이 없으면 복습 페이지로 리다이렉트
   useEffect(() => {
@@ -73,28 +94,44 @@ export default function ReviewSessionPage() {
   const progress = ((currentIndex + 1) / session.total_count) * 100;
 
   // 답안 제출
-  const submitAnswer = () => {
-    const timeSpent = Math.floor((Date.now() - startTime) / 1000); // 초 단위
+  const submitAnswer = async () => {
+    const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+    setIsSubmitting(true);
     
-    // 임시: 랜덤으로 정답 판정 (실제로는 백엔드 검증)
-    const isCorrect = Math.random() > 0.3;
-    
-    const result: SessionResult = {
-      problem_id: currentProblem.problem_id,
-      answered: true,
-      correct: isCorrect,
-      time_spent: timeSpent
-    };
-    
-    setResults([...results, result]);
-    
-    // 다음 문제로 또는 완료
-    if (currentIndex + 1 < session.total_count) {
-      setCurrentIndex(currentIndex + 1);
-      setStartTime(Date.now());
-      setUserAnswer('');
-    } else {
-      setSessionComplete(true);
+    try {
+      const response = await submitMutation.mutateAsync({
+        problem_id: currentProblem.problem_id,
+        user_answer: userAnswer,
+        time_spent: timeSpent
+      });
+      
+      const result: SessionResult = {
+        problem_id: currentProblem.problem_id,
+        answered: true,
+        correct: response.is_correct,
+        time_spent: timeSpent,
+        feedback: response.feedback,
+        next_review_date: response.next_review_date
+      };
+      
+      setResults([...results, result]);
+      
+      // 3초 후 다음 문제로
+      setTimeout(() => {
+        setShowFeedback(false);
+        setIsSubmitting(false);
+        
+        if (currentIndex + 1 < session.total_count) {
+          setCurrentIndex(currentIndex + 1);
+          setStartTime(Date.now());
+          setUserAnswer('');
+        } else {
+          setSessionComplete(true);
+        }
+      }, 3000);
+    } catch (error) {
+      console.error('제출 실패:', error);
+      setIsSubmitting(false);
     }
   };
 
@@ -326,11 +363,20 @@ print(fibonacci(5))`}</code>
           </button>
           <button
             onClick={submitAnswer}
-            disabled={!userAnswer.trim()}
+            disabled={!userAnswer.trim() || isSubmitting}
             className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            제출하기
-            <ArrowRight className="w-5 h-5" />
+            {isSubmitting ? (
+              <>
+                <Loader className="w-5 h-5 animate-spin" />
+                채점 중...
+              </>
+            ) : (
+              <>
+                제출하기
+                <ArrowRight className="w-5 h-5" />
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -341,6 +387,29 @@ print(fibonacci(5))`}</code>
           💡 <strong>Tip:</strong> 틀린 문제는 1일 후 다시 복습하게 됩니다
         </p>
       </div>
+
+      {/* 피드백 모달 */}
+      {showFeedback && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl animate-bounce-in">
+            <div className="text-center">
+              {currentFeedback.includes('정답') ? (
+                <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-4" />
+              ) : (
+                <XCircle className="w-20 h-20 text-red-500 mx-auto mb-4" />
+              )}
+              <p className="text-2xl font-bold text-gray-900 mb-2">
+                {currentFeedback.includes('정답') ? '정답입니다! 🎉' : '아쉽지만 틀렸습니다 💡'}
+              </p>
+              <p className="text-gray-600 mb-4">{currentFeedback}</p>
+              <div className="flex items-center justify-center gap-2 text-purple-600">
+                <Loader className="w-5 h-5 animate-spin" />
+                <span className="text-sm">다음 문제로 이동 중...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
