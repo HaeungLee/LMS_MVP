@@ -14,10 +14,9 @@ from datetime import datetime, timedelta
 from pydantic import BaseModel
 from typing import Optional
 
-from app.database import get_db
+from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.user import User
-from app.models.curriculum import UserProgress
+from app.models.orm import User, UserProgress
 
 router = APIRouter()
 

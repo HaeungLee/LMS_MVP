@@ -9,7 +9,8 @@ import {
   LogOut,
   User,
   RefreshCw,
-  Shield
+  Shield,
+  CreditCard
 } from 'lucide-react';
 import useAuthStore from '../shared/hooks/useAuthStore';
 import { api } from '../shared/services/apiClient';
@@ -59,6 +60,13 @@ export default function MainLayout() {
         icon: Bot,
         path: '/ai-assistant',
         description: '맞춤 커리큘럼 및 1:1 AI 강사'
+      },
+      {
+        id: 'pricing',
+        title: '구독하기',
+        icon: CreditCard,
+        path: '/pricing',
+        description: '₩9,900/월 • 7일 무료 체험'
       },
       {
         id: 'settings',

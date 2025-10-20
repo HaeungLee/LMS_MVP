@@ -15,11 +15,9 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 import math
 
-from app.database import get_db
+from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.user import User
-from app.models.curriculum import UserProgress
-from app.models.submission import Submission
+from app.models.orm import User, UserProgress, Submission
 
 router = APIRouter()
 

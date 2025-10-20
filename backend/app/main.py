@@ -4,7 +4,7 @@ from .api.v1 import questions, submit, dashboard, student, auth, admin, results_
 # Phase 9 imports
 from app.api.v1 import hybrid_ai, ai_curriculum, ai_teaching
 # MVP imports
-from app.api.v1 import mvp_learning, achievement, review_system, review_submit
+from app.api.v1 import mvp_learning, achievement, review_system, review_submit, payment
 from .core.config import settings
 from sqlalchemy import create_engine
 from .models.orm import Base
@@ -95,6 +95,7 @@ app.include_router(mvp_learning.router, tags=["mvp"])  # MVP 온보딩 + 일일 
 app.include_router(achievement.router, prefix="/api/v1/achievement", tags=["achievement"])  # 학습 달성 통계
 app.include_router(review_system.router, prefix="/api/v1/review", tags=["review"])  # 복습 시스템
 app.include_router(review_submit.router, prefix="/api/v1/review", tags=["review"])  # 복습 제출
+app.include_router(payment.router, prefix="/api/v1/payment", tags=["payment"])  # 결제 시스템
 
 @app.get("/", tags=["root"])
 def read_root():
