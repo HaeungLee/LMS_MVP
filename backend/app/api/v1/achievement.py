@@ -52,13 +52,13 @@ async def get_achievement_stats(
     
     # 사용자의 모든 학습 기록 조회 (날짜별 그룹화)
     progress_records = db.query(
-        func.date(UserProgress.last_studied_at).label('study_date'),
+        func.date(UserProgress.last_accessed_at).label('study_date'),
         func.count(UserProgress.id).label('activities')
     ).filter(
         UserProgress.user_id == current_user.id,
-        UserProgress.last_studied_at.isnot(None)
+        UserProgress.last_accessed_at.isnot(None)
     ).group_by(
-        func.date(UserProgress.last_studied_at)
+        func.date(UserProgress.last_accessed_at)
     ).order_by(
         desc('study_date')
     ).all()
@@ -83,7 +83,7 @@ async def get_achievement_stats(
     
     # 5. 총 학습 시간 (분 → 시간)
     total_minutes = db.query(
-        func.sum(UserProgress.study_time_minutes)
+        func.sum(UserProgress.time_spent_minutes)
     ).filter(
         UserProgress.user_id == current_user.id
     ).scalar() or 0

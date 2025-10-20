@@ -294,15 +294,33 @@ class AIProviderManager:
                 messages=[
                     {"role": "user", "content": request.prompt}
                 ],
-                max_tokens=min(max_tokens, 1024),  # 응답 길이 제한으로 속도 향상
-                temperature=min(request.temperature or 0.3, 0.3),  # 낮은 temperature로 응답 속도 향상
-                top_p=0.8,  # 약간 낮춰서 속도 향상
+                max_tokens=min(max_tokens, 2048),  # 더 자세한 응답을 위해 증가 (1024 -> 2048)
+                temperature=min(request.temperature or 0.7, 0.9),  # 더 창의적인 응답을 위해 증가
+                top_p=0.9,  # 다양성 증가
                 frequency_penalty=0.0,
                 presence_penalty=0.0,
                 stream=False  # 스트리밍 비활성화로 초기 응답 속도 향상
             )
             
             response_text = completion.choices[0].message.content
+            
+            # LLM 특수 토큰 제거
+            if response_text:
+                # <s>, </s>, <|im_start|>, <|im_end|> 등 모든 특수 토큰 제거
+                response_text = response_text.replace('<s>', '').replace('</s>', '')
+                response_text = response_text.replace('<|im_start|>', '').replace('<|im_end|>', '')
+                response_text = response_text.replace('<|endoftext|>', '')
+                response_text = response_text.replace('[INST]', '').replace('[/INST]', '')
+                response_text = response_text.replace('[B_INST]', '').replace('[/B_INST]', '')
+                response_text = response_text.replace('[BOS]', '').replace('[/BOS]', '')
+                response_text = response_text.replace('[EOS]', '').replace('[/EOS]', '')
+                response_text = response_text.replace('<<SYS>>', '').replace('<</SYS>>', '')
+                response_text = response_text.replace('[BOT]', '').replace('[/BOT]', '')
+                response_text = response_text.replace('[USER]', '').replace('[/USER]', '')
+                response_text = response_text.replace('[ASSISTANT]', '').replace('[/ASSISTANT]', '')
+                # 앞뒤 공백 제거
+                response_text = response_text.strip()
+            
             tokens_used = completion.usage.total_tokens if completion.usage else 0
             
             return {

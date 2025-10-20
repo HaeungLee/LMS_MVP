@@ -28,21 +28,39 @@ export default function SubscriptionCard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    
+    const fetchSubscription = async () => {
+      try {
+        console.log('🔍 구독 정보 조회 시작...');
+        const response: any = await api.get('/payment/subscription');
+        console.log('✅ 구독 정보 응답:', response);
+        
+        if (isMounted) {
+          setSubscription(response.data || response);
+          setLoading(false);
+        }
+      } catch (error: any) {
+        console.error('❌ 구독 정보 조회 실패:', error);
+        console.error('에러 타입:', error.name);
+        console.error('에러 메시지:', error.message);
+        
+        if (isMounted) {
+          // AbortError가 아닌 경우에만 에러 처리
+          if (error.name !== 'AbortError') {
+            setSubscription(null);
+          }
+          setLoading(false);
+        }
+      }
+    };
+    
     fetchSubscription();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
-
-  const fetchSubscription = async () => {
-    try {
-      const response: any = await api.get('/payment/subscription');
-      setSubscription(response.data);
-    } catch (error) {
-      console.error('Failed to fetch subscription:', error);
-      // 구독 없음 - 무료 사용자
-      setSubscription(null);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (

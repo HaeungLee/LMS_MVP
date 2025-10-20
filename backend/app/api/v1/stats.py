@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 
 from app.core.database import get_db
+from app.core.security import get_current_user
 from app.models.orm import User, Submission, SubmissionItem, Question
 
 logger = logging.getLogger(__name__)
@@ -231,3 +232,191 @@ async def get_available_subjects(db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"과목 목록 조회 실패: {str(e)}")
         raise HTTPException(status_code=500, detail=f"과목 목록 조회 실패: {str(e)}")
+
+
+@router.get("/learning", response_model=Dict[str, Any])
+async def get_learning_stats(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    통합 학습 통계 (일일/주간/월간)
+    
+    프론트엔드 StatsCard 컴포넌트용
+    """
+    
+    try:
+        user_id = current_user.id
+        today = datetime.utcnow().date()
+        
+        # 오늘 통계
+        today_start = datetime.combine(today, datetime.min.time())
+        today_end = datetime.combine(today, datetime.max.time())
+        
+        today_submissions = db.query(SubmissionItem).join(Submission).filter(
+            Submission.user_id == user_id,
+            Submission.submitted_at >= today_start,
+            Submission.submitted_at <= today_end
+        ).all()
+        
+        daily_problems = len(today_submissions)
+        daily_correct = sum(1 for item in today_submissions if item.is_correct)
+        daily_accuracy = round((daily_correct / daily_problems * 100), 1) if daily_problems > 0 else 0
+        
+        # 오늘 학습 시간 추정
+        daily_sessions = db.query(Submission).filter(
+            Submission.user_id == user_id,
+            Submission.submitted_at >= today_start,
+            Submission.submitted_at <= today_end
+        ).order_by(Submission.submitted_at).all()
+        
+        daily_minutes = 0
+        if daily_sessions:
+            for i, session in enumerate(daily_sessions):
+                if i == 0:
+                    daily_minutes += 5
+                else:
+                    time_diff = (session.submitted_at - daily_sessions[i-1].submitted_at).total_seconds() / 60
+                    if time_diff <= 30:
+                        daily_minutes += min(time_diff, 15)
+                    else:
+                        daily_minutes += 5
+        
+        # 주간 통계 (지난 7일)
+        week_start = datetime.utcnow() - timedelta(days=7)
+        
+        weekly_submissions = db.query(SubmissionItem).join(Submission).filter(
+            Submission.user_id == user_id,
+            Submission.submitted_at >= week_start
+        ).all()
+        
+        weekly_problems = len(weekly_submissions)
+        weekly_correct = sum(1 for item in weekly_submissions if item.is_correct)
+        weekly_accuracy = round((weekly_correct / weekly_problems * 100), 1) if weekly_problems > 0 else 0
+        
+        # 주간 학습 시간
+        weekly_sessions = db.query(Submission).filter(
+            Submission.user_id == user_id,
+            Submission.submitted_at >= week_start
+        ).order_by(Submission.submitted_at).all()
+        
+        weekly_minutes = 0
+        if weekly_sessions:
+            for i, session in enumerate(weekly_sessions):
+                if i == 0:
+                    weekly_minutes += 5
+                else:
+                    time_diff = (session.submitted_at - weekly_sessions[i-1].submitted_at).total_seconds() / 60
+                    if time_diff <= 30:
+                        weekly_minutes += min(time_diff, 15)
+                    else:
+                        weekly_minutes += 5
+        
+        weekly_hours = round(weekly_minutes / 60, 1)
+        
+        # 주간 연속 학습일
+        weekly_dates = set()
+        for session in weekly_sessions:
+            weekly_dates.add(session.submitted_at.date())
+        
+        # 연속일 계산
+        sorted_dates = sorted(weekly_dates, reverse=True)
+        streak_days = 0
+        if sorted_dates:
+            current_date = today
+            for date in sorted_dates:
+                if date == current_date:
+                    streak_days += 1
+                    current_date -= timedelta(days=1)
+                elif date == current_date - timedelta(days=1):
+                    streak_days += 1
+                    current_date = date - timedelta(days=1)
+                else:
+                    break
+        
+        # 월간 통계 (지난 30일)
+        month_start = datetime.utcnow() - timedelta(days=30)
+        
+        monthly_submissions = db.query(SubmissionItem).join(Submission).filter(
+            Submission.user_id == user_id,
+            Submission.submitted_at >= month_start
+        ).all()
+        
+        monthly_problems = len(monthly_submissions)
+        monthly_correct = sum(1 for item in monthly_submissions if item.is_correct)
+        monthly_accuracy = round((monthly_correct / monthly_problems * 100), 1) if monthly_problems > 0 else 0
+        
+        # 월간 학습 시간
+        monthly_sessions = db.query(Submission).filter(
+            Submission.user_id == user_id,
+            Submission.submitted_at >= month_start
+        ).order_by(Submission.submitted_at).all()
+        
+        monthly_minutes = 0
+        if monthly_sessions:
+            for i, session in enumerate(monthly_sessions):
+                if i == 0:
+                    monthly_minutes += 5
+                else:
+                    time_diff = (session.submitted_at - monthly_sessions[i-1].submitted_at).total_seconds() / 60
+                    if time_diff <= 30:
+                        monthly_minutes += min(time_diff, 15)
+                    else:
+                        monthly_minutes += 5
+        
+        monthly_hours = round(monthly_minutes / 60, 1)
+        
+        # 월간 학습일
+        monthly_dates = set()
+        for session in monthly_sessions:
+            monthly_dates.add(session.submitted_at.date())
+        completed_days = len(monthly_dates)
+        
+        # 개선도 계산 (이번 주 vs 지난 주)
+        last_week_start = datetime.utcnow() - timedelta(days=14)
+        last_week_end = datetime.utcnow() - timedelta(days=7)
+        
+        last_week_submissions = db.query(SubmissionItem).join(Submission).filter(
+            Submission.user_id == user_id,
+            Submission.submitted_at >= last_week_start,
+            Submission.submitted_at < last_week_end
+        ).all()
+        
+        last_week_problems = len(last_week_submissions)
+        last_week_correct = sum(1 for item in last_week_submissions if item.is_correct)
+        last_week_accuracy = (last_week_correct / last_week_problems * 100) if last_week_problems > 0 else 0
+        
+        accuracy_change = round(weekly_accuracy - last_week_accuracy, 1)
+        
+        # 속도 개선 (문제당 평균 시간)
+        current_avg_time = (weekly_minutes / weekly_problems) if weekly_problems > 0 else 0
+        last_avg_time = (weekly_minutes / last_week_problems) if last_week_problems > 0 else 0
+        speed_change = round(((last_avg_time - current_avg_time) / last_avg_time * 100), 1) if last_avg_time > 0 else 0
+        
+        return {
+            "daily": {
+                "problems_solved": daily_problems,
+                "accuracy": daily_accuracy,
+                "study_minutes": int(daily_minutes)
+            },
+            "weekly": {
+                "problems_solved": weekly_problems,
+                "accuracy": weekly_accuracy,
+                "study_hours": weekly_hours,
+                "streak_days": streak_days
+            },
+            "monthly": {
+                "problems_solved": monthly_problems,
+                "accuracy": monthly_accuracy,
+                "study_hours": monthly_hours,
+                "completed_days": completed_days
+            },
+            "improvement": {
+                "accuracy_change": accuracy_change,
+                "speed_change": speed_change
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"학습 통계 조회 실패 {current_user.id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"학습 통계 조회 실패: {str(e)}")

@@ -271,19 +271,20 @@ class AIMentoringSystem:
         # 세션 고유 식별자 추가
         session_timestamp = int(datetime.utcnow().timestamp())
 
-        greeting_prompt = f"""당신은 {personality['tone']} 톤의 AI 학습 멘토입니다.
-[세션 ID: {session.session_id}_{session_timestamp}]
+        greeting_prompt = f"""You are a warm and knowledgeable AI learning mentor for a programming education platform.
 
-학습자 정보:
-- 현재 기분: {session.current_mood}
-- 세션 목표: {', '.join(session.session_goals)}
-- 멘토 스타일: {personality['style']}
+Session goals: {', '.join(session.session_goals)}
+{f"Student's first question: {initial_question}" if initial_question else ""}
 
-{f"학습자의 첫 질문: {initial_question}" if initial_question else ""}
+Instructions:
+- Greet the student warmly and professionally in Korean
+- Be natural and welcoming (150-250 characters)
+- Express genuine enthusiasm about helping them learn
+- Ask what you can help with today
+- Do NOT use special tokens or formatting markers
+- Use 1 emoji for friendliness
 
-{personality['tone']} 톤으로 학습자를 환영하고 도움을 제공할 준비가 되었음을 알려주세요.
-멘토의 특성을 살려 따뜻하게 인사하고, 어떤 도움이 필요한지 물어보세요.
-200자 이내로 작성해주세요."""
+Generate a warm, professional greeting in Korean."""
 
         response = await generate_ai_response(
             prompt=greeting_prompt,
@@ -384,39 +385,34 @@ class AIMentoringSystem:
         # 고유한 대화 식별자 추가 (캐시 충돌 방지)
         conversation_id = f"{session.session_id}_{len(session.conversation_history)}_{int(datetime.utcnow().timestamp())}"
 
-        # 프롬프트 구성
-        response_prompt = f"""당신은 {personality['tone']} AI 학습 멘토입니다.
-[대화 ID: {conversation_id}]
+        # 프롬프트 구성 - 자세하고 친절하게
+        response_prompt = f"""You are a knowledgeable and friendly AI learning mentor for programming and technology education.
 
-멘토 특성:
-- 스타일: {personality['style']}
-- 응답 패턴: {personality['response_pattern']}
-- 특징적 표현: {', '.join(personality['catchphrases'])}
+Student's question: "{context['user_message']}"
 
-학습자 상황:
-- 현재 기분: {context['user_mood']}
-- 감정 톤: {context['emotional_tone']}
-- 질문 유형: {context['question_type']}
-- 세션 목표: {', '.join(session.session_goals)}
+Previous conversation:
+{json.dumps(context['recent_conversation'][-2:], ensure_ascii=False) if len(context['recent_conversation']) > 0 else 'None'}
 
-학습자 메시지: "{context['user_message']}"
+Session goals: {', '.join(session.session_goals)}
 
-대화 맥락: {json.dumps(context['recent_conversation'], ensure_ascii=False)}
+Instructions:
+- Answer the student's question thoroughly and clearly in Korean
+- Provide detailed explanations with examples when appropriate
+- Keep response between 200-400 characters for balance
+- Be friendly, encouraging, and show genuine interest in teaching
+- Offer practical advice and actionable steps
+- Use emojis sparingly (1-2 max) for friendliness
+- Do NOT use special tokens, formatting markers, or meta-commentary
+- Focus on being helpful and informative
 
-다음을 포함한 응답을 작성해주세요:
-1. 학습자의 질문에 대한 직접적인 답변
-2. 추가 학습 제안 2-3개
-3. 후속 질문 1-2개
-4. 격려나 동기부여 멘트
-
-{personality['tone']} 톤을 유지하고, 300자 이내로 작성해주세요."""
+Respond in Korean, naturally and conversationally with helpful details."""
 
         response = await generate_ai_response(
             prompt=response_prompt,
             task_type="mentoring",
             model_preference=ModelTier.FREE,
             user_id=session.user_id,
-            temperature=0.7
+            temperature=0.8
         )
         
         # 응답 파싱 및 구조화

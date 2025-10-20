@@ -1,10 +1,12 @@
 /**
  * 플로팅 AI 멘토 - 모든 페이지에서 접근 가능
  * 우측 하단 고정 버튼
+ * OpenRouter API 연동
  */
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Send, Sparkles, Minimize2, Maximize2 } from 'lucide-react';
+import useAuthStore from '../hooks/useAuthStore';
 
 interface Message {
   role: 'user' | 'ai';
@@ -13,40 +15,142 @@ interface Message {
 }
 
 export default function FloatingAIMentor() {
+  const { user } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = () => {
-    if (!message.trim()) return;
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // 채팅창이 열릴 때 세션 시작
+  useEffect(() => {
+    if (isOpen && !isMinimized && !sessionId && messages.length === 0) {
+      startSession();
+    }
+  }, [isOpen, isMinimized]);
+
+  // 세션 시작
+  const startSession = async (): Promise<string | null> => {
+    try {
+      const response = await fetch(`/api/v1/ai-features/mentoring/start-session/${user?.id || 1}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          initial_question: null,
+          text_style: 'default',
+          line_height: 'comfortable'
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.session) {
+        const newSessionId = data.session.session_id;
+        setSessionId(newSessionId);
+        
+        // 환영 메시지 추가 (기존 메시지가 없을 때만)
+        if (data.session.greeting && messages.length === 0) {
+          const welcomeMessage: Message = {
+            role: 'ai',
+            text: data.session.greeting,
+            timestamp: new Date()
+          };
+          setMessages([welcomeMessage]);
+        }
+        
+        return newSessionId;
+      }
+      return null;
+    } catch (error) {
+      console.error('세션 시작 실패:', error);
+      return null;
+    }
+  };
+
+  // 메시지 전송
+  const handleSend = async () => {
+    if (!message.trim() || loading) return;
+
+    const messageToSend = message;
+    setMessage('');
+    setLoading(true);
 
     // 사용자 메시지 추가
     const userMessage: Message = {
       role: 'user',
-      text: message,
+      text: messageToSend,
       timestamp: new Date()
     };
     setMessages(prev => [...prev, userMessage]);
 
-    // AI 응답 (임시)
-    setTimeout(() => {
-      const aiMessage: Message = {
+    try {
+      // 세션이 없으면 먼저 생성
+      let currentSessionId = sessionId;
+      if (!currentSessionId) {
+        currentSessionId = await startSession();
+        
+        // 여전히 세션이 없으면 에러
+        if (!currentSessionId) {
+          throw new Error('세션 생성 실패');
+        }
+      }
+
+      const response = await fetch(`/api/v1/ai-features/mentoring/chat/${currentSessionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          message: messageToSend,
+          conversation_mode: 'help_seeking',
+          text_style: 'default',
+          line_height: 'comfortable'
+        })
+      });
+      
+      const data = await response.json();
+      
+      console.log('API 응답:', data); // 디버깅용
+      
+      if (data.success && data.response !== undefined && data.response !== null) {
+        const aiMessage: Message = {
+          role: 'ai',
+          text: data.response || '(응답 없음)',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        console.error('API 응답 오류:', data);
+        throw new Error(data.error || '응답 생성 실패');
+      }
+    } catch (error) {
+      console.error('메시지 전송 실패:', error);
+      const errorMessage: Message = {
         role: 'ai',
-        text: `안녕하세요! "${message}"에 대해 도움을 드리겠습니다.\n\n(실제로는 AI 멘토가 맥락을 파악하여 답변합니다)`,
+        text: '죄송합니다. 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, aiMessage]);
-    }, 800);
-
-    setMessage('');
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full shadow-2xl hover:scale-110 transition-transform duration-200 flex items-center justify-center z-50 animate-pulse"
+        className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full shadow-2xl hover:scale-110 transition-transform duration-200 flex items-center justify-center z-50"
         aria-label="AI 멘토 열기"
       >
         <Sparkles className="w-8 h-8 text-white" />
@@ -115,16 +219,34 @@ export default function FloatingAIMentor() {
                       className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-xs px-4 py-2 rounded-2xl ${
+                        className={`max-w-xs px-4 py-3 rounded-2xl ${
                           msg.role === 'user'
                             ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-                            : 'bg-white text-gray-900 border border-gray-200'
+                            : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
                         }`}
                       >
-                        <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.text}</p>
+                        <p className="text-xs opacity-60 mt-1">
+                          {msg.timestamp.toLocaleTimeString('ko-KR', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </p>
                       </div>
                     </div>
                   ))}
+                  {loading && (
+                    <div className="flex justify-start">
+                      <div className="bg-white text-gray-900 border border-gray-200 shadow-sm px-4 py-3 rounded-2xl">
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
                 </div>
               )}
             </div>
@@ -136,13 +258,15 @@ export default function FloatingAIMentor() {
                   type="text"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                  onKeyPress={(e) => e.key === 'Enter' && !loading && handleSend()}
                   placeholder="궁금한 점을 물어보세요..."
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm disabled:bg-gray-100"
                 />
                 <button
                   onClick={handleSend}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-lg transition-all duration-200"
+                  disabled={loading || !message.trim()}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="w-4 h-4" />
                 </button>
@@ -152,14 +276,15 @@ export default function FloatingAIMentor() {
               {messages.length === 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {[
-                    "이 개념 설명해줘",
+                    "개념 설명해줘",
                     "예제 보여줘",
-                    "왜 이렇게 하나요?"
+                    "학습 방법 알려줘"
                   ].map((q, idx) => (
                     <button
                       key={idx}
                       onClick={() => setMessage(q)}
-                      className="text-xs px-3 py-1 bg-purple-50 text-purple-700 rounded-full border border-purple-200 hover:bg-purple-100 transition-colors"
+                      disabled={loading}
+                      className="text-xs px-3 py-1 bg-purple-50 text-purple-700 rounded-full border border-purple-200 hover:bg-purple-100 transition-colors disabled:opacity-50"
                     >
                       {q}
                     </button>
