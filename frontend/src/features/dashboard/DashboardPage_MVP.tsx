@@ -17,12 +17,10 @@ import {
   Calendar,
   RefreshCw,
   ArrowRight,
-  Sparkles,
-  Brain
+  Sparkles
 } from 'lucide-react';
 import useAuthStore from '../../shared/hooks/useAuthStore';
 import { api } from '../../shared/services/apiClient';
-import DailyAchievementCard from './components/DailyAchievementCard';
 
 interface DailyLearning {
   date: string;
@@ -68,17 +66,6 @@ interface Curriculum {
   weekly_themes: any[];
 }
 
-interface AchievementStats {
-  streak: number;
-  today_completed: boolean;
-  weekly_progress: number;
-  total_days_learned: number;
-  total_study_hours: number;
-  this_week_days: number;
-  this_month_days: number;
-  longest_streak: number;
-}
-
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -100,16 +87,6 @@ export default function DashboardPage() {
       `/mvp/daily-learning?curriculum_id=${currentCurriculum?.curriculum_id}`
     ),
     enabled: !!currentCurriculum,
-  });
-
-  // 학습 달성 통계 조회
-  const { data: achievementStats } = useQuery({
-    queryKey: ['achievement-stats', user?.id],
-    queryFn: async () => {
-      const data = await api.get<AchievementStats>('/achievement/stats');
-      return data;
-    },
-    enabled: !!user,
   });
 
   // 로딩 상태
@@ -183,7 +160,7 @@ export default function DashboardPage() {
               안녕하세요{user?.display_name ? `, ${user.display_name}` : ''}! 👋
             </h1>
             <p className="text-indigo-100 text-lg">
-              {currentCurriculum?.goal || '학습'} 로드맵 진행 중
+              {currentCurriculum.goal} 로드맵 진행 중
             </p>
           </div>
           <div className="text-right">
@@ -205,14 +182,6 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
-
-      {/* Daily Achievement Card */}
-      <DailyAchievementCard
-        streak={achievementStats?.streak ?? 0}
-        todayCompleted={achievementStats?.today_completed ?? false}
-        weeklyProgress={achievementStats?.weekly_progress ?? 0}
-        totalDaysLearned={achievementStats?.total_days_learned ?? 0}
-      />
 
       {/* 오늘의 학습 과제 */}
       {todayLearning && (
@@ -236,14 +205,12 @@ export default function DashboardPage() {
           <div className="mb-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">학습 목표</h3>
             <ul className="space-y-2">
-              {todayLearning?.learning_objectives?.map((objective, idx) => (
+              {todayLearning.learning_objectives.map((objective, idx) => (
                 <li key={idx} className="flex items-start gap-2">
                   <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                   <span className="text-gray-700">{objective}</span>
                 </li>
-              )) || (
-                <li className="text-gray-500 text-sm">학습 목표를 불러오는 중...</li>
-              )}
+              ))}
             </ul>
           </div>
 
@@ -252,41 +219,18 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">진행률</span>
               <span className="text-sm font-bold text-indigo-600">
-                {todayLearning?.progress?.completion_percentage || 0}%
+                {todayLearning.progress.completion_percentage}%
               </span>
             </div>
             <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
-                style={{ width: `${todayLearning?.progress?.completion_percentage || 0}%` }}
+                style={{ width: `${todayLearning.progress.completion_percentage}%` }}
               />
             </div>
           </div>
         </div>
       )}
-
-      {/* 복습 시스템 바로가기 */}
-      <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl text-white">
-              <Brain className="w-8 h-8" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 mb-1">🧠 복습 시스템</h3>
-              <p className="text-gray-600">망각 곡선 기반 맞춤 복습으로 학습 효과 극대화</p>
-            </div>
-          </div>
-          <button
-            onClick={() => navigate('/review')}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
-          >
-            <Sparkles className="w-5 h-5" />
-            복습하러 가기
-            <ArrowRight className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
 
       {/* 오늘의 학습 3단계 */}
       <div>
@@ -299,7 +243,7 @@ export default function DashboardPage() {
             description="AI 튜터의 맞춤 강의"
             status={todayLearning?.sections.textbook.completed ? 'completed' : 'available'}
             available={todayLearning?.sections.textbook.available ?? true}
-            onClick={() => navigate('/learn')}
+            onClick={() => navigate('/learning')}
             gradient="from-blue-500 to-cyan-500"
           />
 
@@ -310,7 +254,7 @@ export default function DashboardPage() {
             description="직접 코드를 작성해보세요"
             status={todayLearning?.sections.practice.completed ? 'completed' : 'available'}
             available={todayLearning?.sections.practice.available ?? true}
-            onClick={() => navigate('/learn')}
+            onClick={() => navigate('/learning')}
             gradient="from-purple-500 to-pink-500"
           />
 
@@ -321,7 +265,7 @@ export default function DashboardPage() {
             description="학습 내용을 확인하세요"
             status={todayLearning?.sections.quiz.completed ? 'completed' : 'locked'}
             available={todayLearning?.sections.quiz.available ?? false}
-            onClick={() => navigate('/learn')}
+            onClick={() => navigate('/learning')}
             gradient="from-green-500 to-emerald-500"
           />
         </div>
@@ -335,7 +279,7 @@ export default function DashboardPage() {
               전체 학습 로드맵
             </h3>
             <p className="text-gray-600">
-              {currentCurriculum?.total_weeks || 12}주 완성 코스 • {currentCurriculum?.core_technologies?.length || 0}개 핵심 기술
+              {currentCurriculum.total_weeks}주 완성 코스 • {currentCurriculum.core_technologies.length}개 핵심 기술
             </p>
           </div>
           <button
@@ -349,16 +293,14 @@ export default function DashboardPage() {
 
         {/* 핵심 기술 */}
         <div className="mt-6 flex flex-wrap gap-2">
-          {currentCurriculum?.core_technologies?.map((tech, idx) => (
+          {currentCurriculum.core_technologies.map((tech, idx) => (
             <span
               key={idx}
               className="px-3 py-1 bg-white rounded-full text-sm font-medium text-gray-700 shadow-sm"
             >
               {tech}
             </span>
-          )) || (
-            <p className="text-gray-500 text-sm">기술 스택 정보를 불러오는 중...</p>
-          )}
+          ))}
         </div>
       </div>
     </div>

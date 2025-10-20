@@ -14,6 +14,9 @@ import QuestionReviewSystem from './pages/admin/QuestionReviewSystem';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import OnboardingPage from './features/onboarding/OnboardingPage';
+import UnifiedLearningPage from './features/unified-learning/UnifiedLearningPage';
+import ReviewPage from './features/review/ReviewPage';
+import ReviewSessionPage from './features/review/ReviewSessionPage';
 
 // TanStack Query 클라이언트 설정
 const queryClient = new QueryClient({
@@ -39,6 +42,9 @@ function App() {
             {/* 메인 애플리케이션 - MainLayout 포함 */}
             <Route path="/" element={<MainLayout />}>
               <Route index element={<DashboardPage />} />
+              <Route path="learn" element={<UnifiedLearningPage />} />
+              <Route path="review" element={<ReviewPage />} />
+              <Route path="review/session/:sessionId" element={<ReviewSessionPage />} />
               <Route path="learning" element={<LearningPage />} />
               <Route path="learning/questions/:subjectKey" element={<QuestionsPage />} />
               <Route path="analytics/*" element={<AnalyticsPage />} />

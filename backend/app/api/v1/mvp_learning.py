@@ -30,10 +30,11 @@ router = APIRouter(prefix="/api/v1/mvp", tags=["MVP"])
 
 class GoalSelectionRequest(BaseModel):
     """목표 선택 요청"""
-    goal_key: str = Field(..., description="목표 키 (backend_developer, data_analyst, etc.)")
+    goal_key: str = Field(..., description="목표 키 (backend_developer, data_analyst, custom)")
     current_level: str = Field(default="Python 기초 완료", description="현재 수준")
     target_weeks: Optional[int] = Field(None, description="목표 주차 (None이면 기본값)")
     daily_study_minutes: int = Field(default=60, description="일일 학습 시간 (분)")
+    custom_goal: Optional[str] = Field(None, description="직접 입력한 목표 (goal_key가 'custom'일 때)")
 
 
 class CurriculumResponse(BaseModel):
@@ -134,11 +135,40 @@ async def generate_curriculum(
     
     온보딩 Step 3에서 사용
     AI가 2-Agent 협력으로 12주 커리큘럼 생성 (30초 소요)
+    커스텀 목표 지원: goal_key가 'custom'이면 custom_goal 내용 사용
     """
     try:
+        # 커스텀 목표 처리
+        if request.goal_key == 'custom':
+            if not request.custom_goal:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="커스텀 목표를 입력해주세요 (custom_goal 필드 필요)"
+                )
+            
+            # 커스텀 목표를 goal_key로 변환 (임시)
+            # 실제로는 LLM이 분석하여 적절한 커리큘럼 생성
+            logger.info(f"커스텀 목표 요청: {request.custom_goal}")
+            
+            # 간단한 키워드 매핑 (나중에 LLM으로 개선)
+            custom_goal_lower = request.custom_goal.lower()
+            if 'backend' in custom_goal_lower or 'api' in custom_goal_lower or 'fastapi' in custom_goal_lower:
+                actual_goal_key = 'backend_developer'
+            elif 'data' in custom_goal_lower or '분석' in custom_goal_lower or 'pandas' in custom_goal_lower:
+                actual_goal_key = 'data_analyst'
+            elif '자동화' in custom_goal_lower or 'automation' in custom_goal_lower or '크롤링' in custom_goal_lower:
+                actual_goal_key = 'automation_expert'
+            else:
+                # 기본값: 백엔드 개발자
+                actual_goal_key = 'backend_developer'
+            
+            logger.info(f"커스텀 목표 '{request.custom_goal}' → '{actual_goal_key}'로 매핑")
+        else:
+            actual_goal_key = request.goal_key
+        
         curriculum = await service.generate_goal_based_curriculum(
             user_id=current_user.id,
-            goal_key=request.goal_key,
+            goal_key=actual_goal_key,
             current_level=request.current_level,
             target_weeks=request.target_weeks,
             daily_study_minutes=request.daily_study_minutes,

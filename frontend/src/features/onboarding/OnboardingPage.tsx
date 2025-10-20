@@ -109,6 +109,27 @@ const GoalSelectionStep: React.FC<{
   onNext: () => void;
   onBack: () => void;
 }> = ({ goals, selectedGoal, onSelect, onNext, onBack }) => {
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customGoal, setCustomGoal] = useState('');
+
+  const handleCustomGoalSubmit = () => {
+    if (!customGoal.trim()) return;
+    
+    // 커스텀 목표를 Goal 객체로 변환
+    const customGoalObject: Goal = {
+      key: 'custom',
+      title: '맞춤 목표',
+      description: customGoal,
+      icon: '🎯',
+      color: 'from-orange-500 to-red-500',
+      defaultWeeks: 12,
+      technologies: ['AI 맞춤 추천']
+    };
+    
+    onSelect(customGoalObject);
+    setShowCustomInput(false);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12 px-4">
       <div className="max-w-6xl mx-auto">
@@ -122,8 +143,8 @@ const GoalSelectionStep: React.FC<{
           </p>
         </div>
 
-        {/* 목표 카드들 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* 목표 카드들 + 직접 입력 */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {goals.map((goal) => (
             <div
               key={goal.key}
@@ -183,6 +204,77 @@ const GoalSelectionStep: React.FC<{
               </div>
             </div>
           ))}
+
+          {/* 직접 입력 카드 */}
+          <div
+            onClick={() => !showCustomInput && setShowCustomInput(true)}
+            className={`
+              relative p-8 rounded-2xl cursor-pointer transform transition-all duration-200
+              ${selectedGoal?.key === 'custom'
+                ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-2xl scale-105'
+                : showCustomInput
+                  ? 'bg-white border-2 border-orange-500 shadow-xl scale-105'
+                  : 'bg-gradient-to-br from-orange-50 to-red-50 border-2 border-dashed border-orange-300 hover:border-orange-500 hover:shadow-xl'
+              }
+            `}
+          >
+            {/* 선택 체크마크 */}
+            {selectedGoal?.key === 'custom' && (
+              <div className="absolute top-4 right-4 w-8 h-8 bg-white text-orange-600 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+            )}
+
+            {!showCustomInput ? (
+              <>
+                {/* 아이콘 */}
+                <div className="text-6xl mb-4">✏️</div>
+                {/* 제목 & 설명 */}
+                <h3 className="text-2xl font-bold mb-3 text-orange-900">직접 입력</h3>
+                <p className="text-sm mb-6 text-orange-700">
+                  원하는 목표를 자유롭게 입력하고 AI가 맞춤 커리큘럼을 만들어드립니다
+                </p>
+                <div className="mt-4 pt-4 border-t border-orange-200">
+                  <p className="text-sm font-semibold text-orange-800">
+                    💡 예: "웹 크롤링 배우기", "Django REST API"
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">
+                  🎯 학습 목표를 입력하세요
+                </h3>
+                <textarea
+                  value={customGoal}
+                  onChange={(e) => setCustomGoal(e.target.value)}
+                  placeholder="예: Python으로 웹 크롤링 배우고 싶어요&#10;예: FastAPI로 REST API 서버 만들기&#10;예: 데이터 분석을 위한 Pandas 마스터"
+                  className="w-full h-32 px-4 py-3 border-2 border-orange-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none text-sm"
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleCustomGoalSubmit}
+                    disabled={!customGoal.trim()}
+                    className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 text-white py-3 px-4 rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                  >
+                    ✨ AI 커리큘럼 생성
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowCustomInput(false);
+                      setCustomGoal('');
+                    }}
+                    className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+                  >
+                    취소
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* 하단 버튼 */}
@@ -588,14 +680,21 @@ const OnboardingPage: React.FC = () => {
     setStep(4); // 로딩 화면으로 이동
 
     try {
+      const requestData: any = {
+        goal_key: selectedGoal.key,
+        current_level: currentLevel,
+        target_weeks: null, // 기본값 사용
+        daily_study_minutes: dailyMinutes
+      };
+      
+      // 커스텀 목표인 경우 custom_goal 필드 추가
+      if (selectedGoal.key === 'custom') {
+        requestData.custom_goal = selectedGoal.description;
+      }
+
       const curriculum = await api.post<GeneratedCurriculum>(
         '/mvp/onboarding/generate-curriculum',
-        {
-          goal_key: selectedGoal.key,
-          current_level: currentLevel,
-          target_weeks: null, // 기본값 사용
-          daily_study_minutes: dailyMinutes
-        },
+        requestData,
         { timeoutMs: 60000 } // 60초 타임아웃 (AI 생성 시간 고려)
       );
 

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import useAuthStore from '../shared/hooks/useAuthStore';
 import { api } from '../shared/services/apiClient';
+import FloatingAIMentor from '../shared/components/FloatingAIMentor';
 
 interface NavigationItem {
   id: string;
@@ -279,6 +280,9 @@ export default function MainLayout() {
           <Outlet />
         </div>
       </main>
+
+      {/* 플로팅 AI 멘토 - 모든 페이지에서 접근 가능 */}
+      <FloatingAIMentor />
     </div>
   );
 }
