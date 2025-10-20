@@ -126,7 +126,7 @@ export default function AnalyticsPage() {
                 학습하러 가기
               </button>
               <button 
-                onClick={() => window.location.href = '/ai-assistant'}
+                onClick={() => window.location.href = '/dashboard/ai-assistant'}
                 className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-medium"
               >
                 AI 도우미 사용하기

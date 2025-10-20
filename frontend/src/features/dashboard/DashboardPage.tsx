@@ -319,8 +319,8 @@ export default function DashboardPage() {
             title="💻 실습 코딩"
             description="직접 코드를 작성해보세요"
             status={todayLearning?.sections.practice.completed ? 'completed' : 'available'}
-            available={todayLearning?.sections.practice.available ?? true}
-            onClick={() => navigate('/learn')}
+            available={true}
+            onClick={() => navigate('/dashboard/learn')}
             gradient="from-purple-500 to-pink-500"
           />
 
@@ -329,9 +329,9 @@ export default function DashboardPage() {
             icon={<CheckCircle className="w-8 h-8" />}
             title="✍️ 이해도 퀴즈"
             description="학습 내용을 확인하세요"
-            status={todayLearning?.sections.quiz.completed ? 'completed' : 'locked'}
-            available={todayLearning?.sections.quiz.available ?? false}
-            onClick={() => navigate('/learn')}
+            status={todayLearning?.sections.quiz.completed ? 'completed' : 'available'}
+            available={true}
+            onClick={() => navigate('/dashboard/learn')}
             gradient="from-green-500 to-emerald-500"
           />
         </div>
@@ -349,10 +349,10 @@ export default function DashboardPage() {
             </p>
           </div>
           <button
-            onClick={() => navigate('/ai-assistant')}
+            onClick={() => navigate('/dashboard/learning')}
             className="flex items-center gap-2 px-6 py-3 bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow"
           >
-            <span className="font-medium text-gray-900">로드맵 보기</span>
+            <span className="font-medium text-gray-900">과목 목록 보기</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Play, Star, Clock, Target, RefreshCw, AlertCircle, ChevronRight } from 'lucide-react';
+import { BookOpen, Play, Star, Clock, Target, RefreshCw, AlertCircle, ChevronRight, PlusCircle, Sparkles } from 'lucide-react';
 import { subjectsApi } from '../../shared/services/apiClient';
 import useAuthStore from '../../shared/hooks/useAuthStore';
 
@@ -87,13 +87,27 @@ export default function LearningPage() {
     <div className="max-w-7xl mx-auto">
       {/* 헤더 */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-          <BookOpen className="w-8 h-8 text-blue-600 mr-3" />
-          학습하기
-        </h1>
-        <p className="text-gray-600 mt-1">
-          실제 과목 데이터로 구성된 학습 과정입니다. 단계별로 체계적인 학습을 진행하세요.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+              <BookOpen className="w-8 h-8 text-blue-600 mr-3" />
+              학습하기
+            </h1>
+            <p className="text-gray-600 mt-1">
+              아래 과목 중 선택하거나, 새로운 커리큘럼을 생성하세요.
+            </p>
+          </div>
+          
+          {/* 새 커리큘럼 생성 버튼 */}
+          <button
+            onClick={() => navigate('/onboarding')}
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+          >
+            <Sparkles className="w-5 h-5" />
+            새 커리큘럼 생성
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* 과목 없음 안내 */}
@@ -179,7 +193,7 @@ export default function LearningPage() {
                   onClick={(e) => {
                     e.stopPropagation();
                     // 학습 문제 페이지로 이동
-                    navigate(`/learning/questions/${subject.key}`, { 
+                    navigate(`/dashboard/learning/questions/${subject.key}`, { 
                       state: { subject: subject } 
                     });
                   }}
@@ -253,7 +267,7 @@ export default function LearningPage() {
             </p>
           </div>
           <button 
-            onClick={() => window.location.href = '/ai-assistant'}
+            onClick={() => window.location.href = '/dashboard/ai-assistant'}
             className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-medium"
           >
             AI 도우미 사용하기
