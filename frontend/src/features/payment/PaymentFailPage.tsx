@@ -42,10 +42,10 @@ export default function PaymentFailPage() {
           </button>
           
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/dashboard')}
             className="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-semibold"
           >
-            홈으로 돌아가기
+            대시보드로 돌아가기
           </button>
         </div>
 

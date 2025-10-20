@@ -44,35 +44,35 @@ export default function MainLayout() {
         id: 'learning',
         title: '학습하기',
         icon: BookOpen,
-        path: '/learning',
+        path: '/dashboard/learning',
         description: '과목 선택 및 스마트 문제 풀이'
       },
       {
         id: 'analytics',
         title: '내 학습 분석',
         icon: BarChart3,
-        path: '/analytics',
+        path: '/dashboard/analytics',
         description: '상세 진도 현황 및 성과 분석'
       },
       {
         id: 'ai-assistant',
         title: 'AI 학습 도우미',
         icon: Bot,
-        path: '/ai-assistant',
+        path: '/dashboard/ai-assistant',
         description: '맞춤 커리큘럼 및 1:1 AI 강사'
       },
       {
         id: 'pricing',
         title: '구독하기',
         icon: CreditCard,
-        path: '/pricing',
+        path: '/dashboard/pricing',
         description: '₩9,900/월 • 7일 무료 체험'
       },
       {
         id: 'settings',
         title: '설정 & 관리',
         icon: Settings,
-        path: '/settings',
+        path: '/dashboard/settings',
         description: '개인 프로필 및 학습 환경'
       }
     ];
@@ -83,7 +83,7 @@ export default function MainLayout() {
         id: 'admin',
         title: '시스템 관리',
         icon: Shield,
-        path: '/admin',
+        path: '/dashboard/admin',
         description: '사용자 및 시스템 관리 대시보드'
       });
     }

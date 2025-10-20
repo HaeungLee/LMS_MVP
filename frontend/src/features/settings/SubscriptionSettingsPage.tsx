@@ -82,7 +82,7 @@ export default function SubscriptionSettingsPage() {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/dashboard')}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -117,7 +117,7 @@ export default function SubscriptionSettingsPage() {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/dashboard')}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
         >
           <ArrowLeft className="w-5 h-5" />

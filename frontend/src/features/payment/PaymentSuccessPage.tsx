@@ -36,7 +36,7 @@ export default function PaymentSuccessPage() {
 
         // 3초 후 대시보드로 이동
         setTimeout(() => {
-          navigate('/');
+          navigate('/dashboard');
         }, 3000);
 
       } catch (err: any) {

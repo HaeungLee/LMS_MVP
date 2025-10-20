@@ -15,7 +15,7 @@ export default function LoginPage() {
     
     try {
       await login(email, password);
-      navigate('/'); // 로그인 성공 시 대시보드로 이동
+      navigate('/dashboard'); // 로그인 성공 시 대시보드로 이동
     } catch (err) {
       // 에러는 useAuthStore에서 처리됨
       console.error('로그인 실패:', err);

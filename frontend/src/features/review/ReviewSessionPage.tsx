@@ -246,7 +246,7 @@ export default function ReviewSessionPage() {
             다시 복습하기
           </button>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/dashboard')}
             className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gray-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
           >
             <Home className="w-5 h-5" />
