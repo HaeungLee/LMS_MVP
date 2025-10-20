@@ -309,7 +309,7 @@ export default function DashboardPage() {
             description="AI 튜터의 맞춤 강의"
             status={todayLearning?.sections.textbook.completed ? 'completed' : 'available'}
             available={todayLearning?.sections.textbook.available ?? true}
-            onClick={() => navigate('/learn')}
+            onClick={() => navigate(`/dashboard/learn?curriculum_id=${currentCurriculum?.curriculum_id}`)}
             gradient="from-blue-500 to-cyan-500"
           />
 
@@ -320,7 +320,7 @@ export default function DashboardPage() {
             description="직접 코드를 작성해보세요"
             status={todayLearning?.sections.practice.completed ? 'completed' : 'available'}
             available={true}
-            onClick={() => navigate('/dashboard/learn')}
+            onClick={() => navigate(`/dashboard/learn?curriculum_id=${currentCurriculum?.curriculum_id}`)}
             gradient="from-purple-500 to-pink-500"
           />
 
@@ -331,7 +331,7 @@ export default function DashboardPage() {
             description="학습 내용을 확인하세요"
             status={todayLearning?.sections.quiz.completed ? 'completed' : 'available'}
             available={true}
-            onClick={() => navigate('/dashboard/learn')}
+            onClick={() => navigate(`/dashboard/learn?curriculum_id=${currentCurriculum?.curriculum_id}`)}
             gradient="from-green-500 to-emerald-500"
           />
         </div>

@@ -75,7 +75,7 @@ export default function UnifiedLearningPage() {
     queryKey: ['daily-learning', curriculumId],
     queryFn: async () => {
       const params = curriculumId ? `?curriculum_id=${curriculumId}` : '';
-      const response = await api.get(`/api/v1/mvp/daily-learning${params}`);
+      const response = await api.get(`/mvp/daily-learning${params}`);
       return response as DailyLearning;
     },
     enabled: !!user,

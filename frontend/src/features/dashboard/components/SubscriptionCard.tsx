@@ -153,7 +153,7 @@ export default function SubscriptionCard() {
         </div>
         
         <button
-          onClick={() => navigate('/settings/subscription')}
+          onClick={() => navigate('/dashboard/settings/subscription')}
           className="text-gray-400 hover:text-gray-600"
         >
           <Settings className="w-5 h-5" />
@@ -205,7 +205,7 @@ export default function SubscriptionCard() {
       )}
 
       <button
-        onClick={() => navigate('/settings/subscription')}
+        onClick={() => navigate('/dashboard/settings/subscription')}
         className="w-full py-2.5 bg-white text-gray-700 font-semibold rounded-lg border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all"
       >
         구독 관리
