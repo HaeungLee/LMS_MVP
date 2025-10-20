@@ -20,6 +20,7 @@ import ReviewSessionPage from './features/review/ReviewSessionPage';
 import PricingPage from './features/pricing/PricingPage';
 import PaymentSuccessPage from './features/payment/PaymentSuccessPage';
 import PaymentFailPage from './features/payment/PaymentFailPage';
+import SubscriptionSettingsPage from './features/settings/SubscriptionSettingsPage';
 
 // TanStack Query 클라이언트 설정
 const queryClient = new QueryClient({
@@ -51,6 +52,7 @@ function App() {
               <Route path="pricing" element={<PricingPage />} />
               <Route path="payment/success" element={<PaymentSuccessPage />} />
               <Route path="payment/fail" element={<PaymentFailPage />} />
+              <Route path="settings/subscription" element={<SubscriptionSettingsPage />} />
               <Route path="learning" element={<LearningPage />} />
               <Route path="learning/questions/:subjectKey" element={<QuestionsPage />} />
               <Route path="analytics/*" element={<AnalyticsPage />} />

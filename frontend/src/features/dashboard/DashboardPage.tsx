@@ -24,6 +24,7 @@ import useAuthStore from '../../shared/hooks/useAuthStore';
 import { api } from '../../shared/services/apiClient';
 import DailyAchievementCard from './components/DailyAchievementCard';
 import StatsCard from './components/StatsCard';
+import SubscriptionCard from './components/SubscriptionCard';
 
 interface DailyLearning {
   date: string;
@@ -207,7 +208,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Achievement & Stats Grid */}
+      {/* Achievement & Stats & Subscription Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <DailyAchievementCard
@@ -217,8 +218,9 @@ export default function DashboardPage() {
             totalDaysLearned={achievementStats?.total_days_learned ?? 0}
           />
         </div>
-        <div>
+        <div className="space-y-6">
           <StatsCard />
+          <SubscriptionCard />
         </div>
       </div>
 
