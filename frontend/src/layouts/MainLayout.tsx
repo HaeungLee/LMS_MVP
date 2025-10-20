@@ -37,7 +37,7 @@ export default function MainLayout() {
         id: 'dashboard',
         title: '대시보드',
         icon: Home,
-        path: '/',
+        path: '/dashboard',
         description: '개인화 학습 진도 overview'
       },
       {
