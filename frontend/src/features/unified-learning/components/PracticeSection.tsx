@@ -16,12 +16,23 @@ export default function PracticeSection({ problems, onComplete }: PracticeSectio
   const [isCompleted, setIsCompleted] = useState(false);
 
   const handleRun = () => {
-    // 임시 실행 결과
+    // 실제 코드 실행은 백엔드 API 호출 필요
+    if (!problem.title || problem.title === "실습 문제 준비 중") {
+      setResult({
+        success: false,
+        output: "실습 문제를 먼저 불러와주세요.",
+        passed: 0,
+        total: 0
+      });
+      return;
+    }
+    
+    // TODO: 백엔드 코드 실행 API 호출
     setResult({
-      success: true,
-      output: "Hello, FastAPI!\n실행 시간: 0.05s",
-      passed: 3,
-      total: 3
+      success: false,
+      output: "코드 실행 기능은 개발 중입니다.\n현재는 교재를 통해 학습해주세요.",
+      passed: 0,
+      total: 0
     });
   };
 
@@ -30,11 +41,11 @@ export default function PracticeSection({ problems, onComplete }: PracticeSectio
     onComplete();
   };
 
-  // 임시 문제
+  // 문제가 없으면 안내 메시지
   const defaultProblem = {
-    title: "FastAPI 기본 라우트 만들기",
-    description: "GET 엔드포인트를 만들어서 'Hello, FastAPI!'를 반환하는 API를 작성하세요.",
-    starter_code: `from fastapi import FastAPI\n\napp = FastAPI()\n\n# 여기에 코드를 작성하세요\n`
+    title: "실습 문제 준비 중",
+    description: "커리큘럼에서 실습 문제를 불러오고 있습니다. 잠시만 기다려주세요.",
+    starter_code: `# 실습 문제를 불러오는 중입니다...\n`
   };
 
   const problem = problems?.[0] || defaultProblem;

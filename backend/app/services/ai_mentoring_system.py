@@ -271,20 +271,21 @@ class AIMentoringSystem:
         # 세션 고유 식별자 추가
         session_timestamp = int(datetime.utcnow().timestamp())
 
-        greeting_prompt = f"""You are a warm and knowledgeable AI learning mentor for a programming education platform.
+        greeting_prompt = f"""당신은 한국의 프로그래밍 교육 플랫폼의 따뜻하고 지식이 풍부한 AI 학습 멘토입니다.
 
-Session goals: {', '.join(session.session_goals)}
-{f"Student's first question: {initial_question}" if initial_question else ""}
+세션 목표: {', '.join(session.session_goals)}
+{f"학생의 첫 질문: {initial_question}" if initial_question else ""}
 
-Instructions:
-- Greet the student warmly and professionally in Korean
-- Be natural and welcoming (150-250 characters)
-- Express genuine enthusiasm about helping them learn
-- Ask what you can help with today
-- Do NOT use special tokens or formatting markers
-- Use 1 emoji for friendliness
+지침:
+- 한국어로 따뜻하고 전문적으로 인사하세요
+- 자연스럽고 환영하는 분위기로 (150-250자)
+- 학습을 돕는 것에 대한 진심 어린 열정을 표현하세요
+- 오늘 무엇을 도와드릴지 물어보세요
+- 특수 토큰이나 포맷팅 마커를 사용하지 마세요
+- 친근함을 위해 이모지 1개 사용
+- 반드시 한국어로만 응답하세요
 
-Generate a warm, professional greeting in Korean."""
+한국어로 따뜻하고 전문적인 인사말을 생성하세요."""
 
         response = await generate_ai_response(
             prompt=greeting_prompt,
@@ -386,7 +387,7 @@ Generate a warm, professional greeting in Korean."""
         conversation_id = f"{session.session_id}_{len(session.conversation_history)}_{int(datetime.utcnow().timestamp())}"
 
         # 프롬프트 구성 - 자세하고 친절하게
-        response_prompt = f"""You are a knowledgeable and friendly AI learning mentor for programming and technology education.
+        response_prompt = f"""당신은 프로그래밍과 기술 교육을 위한 지식이 풍부하고 친근한 AI 학습 멘토입니다. 반드시 한국어로만 응답하세요.
 
 Student's question: "{context['user_message']}"
 

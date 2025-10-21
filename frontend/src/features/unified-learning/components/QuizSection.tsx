@@ -17,40 +17,18 @@ export default function QuizSection({ questions, onComplete }: QuizSectionProps)
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
 
-  // 임시 퀴즈 데이터
+  // 퀴즈가 없으면 안내
   const defaultQuestions = [
     {
-      question: "FastAPI에서 경로 매개변수를 정의하는 올바른 방법은?",
+      question: "퀴즈를 불러오는 중입니다",
       options: [
-        "@app.get('/items/:item_id')",
-        "@app.get('/items/{item_id}')",
-        "@app.get('/items?item_id')",
-        "@app.get('/items/<item_id>')"
-      ],
-      correct: 1,
-      explanation: "FastAPI는 중괄호 {}를 사용하여 경로 매개변수를 정의합니다."
-    },
-    {
-      question: "쿼리 매개변수의 기본값을 설정하려면?",
-      options: [
-        "def read_items(skip: int = 0)",
-        "def read_items(skip = 0: int)",
-        "def read_items(skip: int -> 0)",
-        "def read_items(skip default 0)"
+        "커리큘럼에서 퀴즈 데이터를 가져오고 있습니다",
+        "잠시만 기다려주세요",
+        "교재 학습 후 퀴즈가 제공됩니다",
+        "곧 준비됩니다"
       ],
       correct: 0,
-      explanation: "Python의 기본 매개변수 문법 (param: type = default_value)을 사용합니다."
-    },
-    {
-      question: "FastAPI의 자동 타입 검증의 장점은?",
-      options: [
-        "코드 실행 속도 향상",
-        "잘못된 타입 입력 시 자동 에러 반환",
-        "데이터베이스 성능 최적화",
-        "HTML 렌더링 개선"
-      ],
-      correct: 1,
-      explanation: "FastAPI는 타입 힌트를 통해 요청 데이터를 자동으로 검증하고, 타입이 맞지 않으면 422 에러를 반환합니다."
+      explanation: "실제 커리큘럼 기반 퀴즈가 곧 제공됩니다."
     }
   ];
 

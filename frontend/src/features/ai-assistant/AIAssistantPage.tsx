@@ -341,10 +341,6 @@ export default function AIAssistantPage() {
               >
                 분석 대시보드 보기
               </button>
-              <div className="flex items-center mt-2 text-xs text-emerald-600">
-                <CheckCircle className="w-3 h-3 mr-1" />
-                Phase 10 새로운 기능
-              </div>
             </div>
 
             {/* AI 피드백 센터 (Phase 10) - 새로 추가 */}
