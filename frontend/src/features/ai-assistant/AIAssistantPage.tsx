@@ -211,10 +211,6 @@ export default function AIAssistantPage() {
               >
                 커리큘럼 만들기
               </button>
-              <div className="flex items-center mt-2 text-xs text-blue-600">
-                <CheckCircle className="w-3 h-3 mr-1" />
-                Phase 9 API 연결 완료
-              </div>
             </div>
 
             {/* 1:1 AI 강사 세션 - Phase 9 실제 연결 */}
@@ -236,10 +232,6 @@ export default function AIAssistantPage() {
               >
                 AI 강사와 대화하기
               </button>
-              <div className="flex items-center mt-2 text-xs text-green-600">
-                <CheckCircle className="w-3 h-3 mr-1" />
-                Phase 9 API 연결 완료
-              </div>
             </div>
 
             {/* 스마트 코딩 피드백 - 기존 API 활용 */}
@@ -261,10 +253,6 @@ export default function AIAssistantPage() {
               >
                 코드 분석하기
               </button>
-              <div className="flex items-center mt-2 text-xs text-purple-600">
-                <CheckCircle className="w-3 h-3 mr-1" />
-                기존 AI 기능 활용
-              </div>
             </div>
 
             {/* AI 문제 생성 (Phase 10) - 구현 완료 */}
@@ -286,10 +274,6 @@ export default function AIAssistantPage() {
               >
                 문제 생성하기
               </button>
-              <div className="flex items-center mt-2 text-xs text-orange-600">
-                <CheckCircle className="w-3 h-3 mr-1" />
-                Phase 10 새로운 기능
-              </div>
             </div>
 
             {/* 학습 상담 & 동기부여 */}
@@ -336,10 +320,6 @@ export default function AIAssistantPage() {
               >
                 적응형 분석 시작하기
               </button>
-              <div className="flex items-center mt-2 text-xs text-indigo-600">
-                <CheckCircle className="w-3 h-3 mr-1" />
-                Phase 10 새로운 기능
-              </div>
             </div>
 
             {/* 고급 학습 분석 (Phase 10) - 새로 추가 */}

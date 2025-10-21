@@ -16,7 +16,8 @@ from typing import Optional
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.orm import User, UserProgress
+from app.models.orm import User
+from app.models.ai_curriculum import AITeachingSession
 
 router = APIRouter()
 
@@ -43,28 +44,30 @@ async def get_achievement_stats(
     db: Session = Depends(get_db)
 ):
     """
-    학습 달성 통계 조회
+    학습 달성 통계 조회 (AI Teaching Session 기반)
     
     - 연속 학습일 계산 (오늘부터 역산)
     - 주간/월간 학습일 계산
-    - 총 학습 시간 합산
+    - 총 학습 시간 합산 (세션 활동 기준)
     """
     
-    # 사용자의 모든 학습 기록 조회 (날짜별 그룹화)
-    progress_records = db.query(
-        func.date(UserProgress.last_accessed_at).label('study_date'),
-        func.count(UserProgress.id).label('activities')
+    # 사용자의 모든 AI Teaching Session 조회 (날짜별 그룹화)
+    # last_activity_at을 기준으로 학습한 날짜 추출
+    session_records = db.query(
+        func.date(AITeachingSession.last_activity_at).label('study_date'),
+        func.count(AITeachingSession.id).label('sessions'),
+        func.sum(AITeachingSession.completion_percentage).label('total_progress')
     ).filter(
-        UserProgress.user_id == current_user.id,
-        UserProgress.last_accessed_at.isnot(None)
+        AITeachingSession.user_id == current_user.id,
+        AITeachingSession.last_activity_at.isnot(None)
     ).group_by(
-        func.date(UserProgress.last_accessed_at)
+        func.date(AITeachingSession.last_activity_at)
     ).order_by(
         desc('study_date')
     ).all()
     
     # 학습한 날짜들 (오늘부터 역순)
-    study_dates = [record.study_date for record in progress_records]
+    study_dates = [record.study_date for record in session_records]
     
     # 1. 연속 학습일 계산
     streak = calculate_streak(study_dates)
@@ -81,12 +84,21 @@ async def get_achievement_stats(
     # 4. 총 학습일
     total_days_learned = len(study_dates)
     
-    # 5. 총 학습 시간 (분 → 시간)
-    total_minutes = db.query(
-        func.sum(UserProgress.time_spent_minutes)
-    ).filter(
-        UserProgress.user_id == current_user.id
-    ).scalar() or 0
+    # 5. 총 학습 시간 추정
+    # 세션 생성부터 마지막 활동까지의 시간을 합산
+    total_sessions = db.query(AITeachingSession).filter(
+        AITeachingSession.user_id == current_user.id,
+        AITeachingSession.session_status.in_(['active', 'completed'])
+    ).all()
+    
+    total_minutes = 0
+    for session in total_sessions:
+        if session.started_at and session.last_activity_at:
+            duration = (session.last_activity_at - session.started_at).total_seconds() / 60
+            # 최소 1분, 최대 180분으로 제한 (이상치 제거)
+            duration = max(1, min(duration, 180))
+            total_minutes += duration
+    
     total_study_hours = round(total_minutes / 60, 1)
     
     # 6. 이번 달 학습일
