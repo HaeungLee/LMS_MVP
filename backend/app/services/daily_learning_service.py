@@ -9,6 +9,7 @@ MVP Week 1: 일일 학습 서비스
 """
 
 import logging
+import json
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
@@ -55,6 +56,73 @@ class DailyLearningService:
         self.teaching_agent = SyllabusBasedTeachingAgent()
         self.code_executor = CodeExecutionService()
         self.question_generator = AIQuestionGeneratorEnhanced()
+
+    def _extract_response_text(self, response: Any) -> str:
+        """
+        Normalize various provider response shapes into a plain string.
+
+        Handles:
+        - dict-like responses with keys like 'response', 'text', 'content'
+        - JSON-encoded strings (attempts to json.loads)
+        - plain strings
+        - objects with a .text attribute
+        """
+        try:
+            # dict-like
+            if isinstance(response, dict):
+                for k in ("response", "text", "content", "answer"):
+                    if k in response and isinstance(response[k], str):
+                        return response[k]
+                # fallback: jsonify the dict
+                try:
+                    return json.dumps(response, ensure_ascii=False)
+                except Exception:
+                    return str(response)
+
+            # plain string: maybe JSON
+            if isinstance(response, str):
+                try:
+                    parsed = json.loads(response)
+                    # if parsed is dict/has expected keys, try again
+                    if isinstance(parsed, dict):
+                        return self._extract_response_text(parsed)
+                    # otherwise, return the stringified parsed
+                    return str(parsed)
+                except Exception:
+                    return response
+
+            # object with `.text` attribute (requests-like)
+            if hasattr(response, "text") and isinstance(getattr(response, "text"), str):
+                return getattr(response, "text")
+
+            # fallback
+            return str(response)
+        except Exception:
+            try:
+                return str(response)
+            except Exception:
+                return ""
+
+    def _normalize_syllabus(self, syllabus_raw: Any) -> Dict[str, Any]:
+        """Ensure syllabus is a dict. If it's a JSON string try to parse it, otherwise return a minimal structure."""
+        if syllabus_raw is None:
+            return {}
+        if isinstance(syllabus_raw, dict):
+            return syllabus_raw
+        if isinstance(syllabus_raw, str):
+            try:
+                parsed = json.loads(syllabus_raw)
+                if isinstance(parsed, dict):
+                    return parsed
+                # if it's not a dict, keep as text under 'raw'
+                return {"raw": str(parsed)}
+            except Exception:
+                return {"raw": syllabus_raw}
+        # unknown type
+        try:
+            return dict(syllabus_raw)
+        except Exception:
+            return {"raw": str(syllabus_raw)}
     
     async def get_today_learning(
         self,
@@ -171,10 +239,12 @@ class DailyLearningService:
         if not curriculum:
             return None
         
+        # Normalize syllabus which may be stored as dict or raw string
+        syllabus = self._normalize_syllabus(curriculum.generated_syllabus)
         return {
             "id": curriculum.id,
-            "goal": curriculum.generated_syllabus.get("goal"),
-            "syllabus": curriculum.generated_syllabus,
+            "goal": syllabus.get("goal") if isinstance(syllabus, dict) else None,
+            "syllabus": syllabus,
             "created_at": curriculum.created_at
         }
     
@@ -266,46 +336,98 @@ class DailyLearningService:
         db: Session
     ) -> Dict[str, Any]:
         """
-        교과서 섹션 생성 (개념 설명)
+        교재 섹션 생성 (개념 설명)
         
-        SyllabusBasedTeachingAgent 활용
+        실제 LLM으로 풍부한 교재 생성
         """
         try:
-            # 교육 세션 시작 또는 재개
-            session, initial_message = await self.teaching_agent.start_teaching_session(
-                curriculum_id=curriculum["id"],
-                user_id=user_id,
-                db=db
-            )
+            logger.info(f"교재 생성 시작: {daily_task['task']}")
             
-            # 오늘의 학습 주제로 메시지 전송
-            topic_message = f"{daily_task['task']}에 대해 설명해주세요. 초보자도 이해할 수 있게 예제와 함께 설명해주세요."
+            # LLM으로 교재 생성
+            from app.services.langchain_hybrid_provider import get_langchain_hybrid_provider
             
-            response = await self.teaching_agent.send_message(
-                session_id=session.id,
-                user_message=topic_message,
-                db=db
+            provider = get_langchain_hybrid_provider()
+            goal = curriculum["goal"]
+            theme = daily_task.get("theme", "")
+            task = daily_task.get("task", "")
+            objectives = daily_task.get("learning_objectives", [])
+            
+            # 교재 생성 프롬프트
+            textbook_prompt = f"""당신은 {goal} 분야의 전문 교육자입니다.
+
+오늘의 학습 주제: {theme}
+학습 과제: {task}
+학습 목표:
+{chr(10).join([f"- {obj}" for obj in objectives])}
+
+다음 형식으로 상세한 교재를 한국어로 작성하세요:
+
+# {theme}
+
+## 📚 학습 목표
+{chr(10).join([f"- {obj}" for obj in objectives])}
+
+## 🎯 핵심 개념
+(개념을 초보자도 이해할 수 있게 상세히 설명 - 800-1000자)
+
+## 💻 실습 예제
+```language
+(실제 동작하는 코드 예제 - 주석 포함)
+```
+
+## 🔍 심화 학습
+(추가로 알아두면 좋은 내용 - 300-500자)
+
+## ✅ 체크포인트
+- [ ] (이해 확인 항목 3-5개)
+
+## 💡 학습 팁
+- (효과적인 학습 방법 2-3개)
+
+**중요 규칙:**
+1. 반드시 한국어로만 작성
+2. {goal} 분야와 100% 관련된 내용만
+3. 초보자 눈높이에 맞춘 설명
+4. 실제 동작하는 코드 예제 필수
+5. 총 2000-3000자 분량
+6. Markdown 형식 준수
+"""
+            
+            # LLM 호출
+            response = await provider.generate_response(
+                prompt=textbook_prompt,
+                temperature=0.7,
+                max_tokens=3000
             )
+
+            textbook_content = self._extract_response_text(response)
+            
+            if not textbook_content or len(textbook_content) < 500:
+                raise ValueError("생성된 교재가 너무 짧습니다")
+            
+            logger.info(f"교재 생성 완료: {len(textbook_content)}자")
             
             return {
                 "type": "textbook",
                 "title": "📖 개념 학습",
-                "content": response.message,
-                "examples": self._extract_code_examples(response.message),
-                "learning_tips": response.learning_tips or [],
-                "estimated_read_time": 10  # 분
+                "content": textbook_content,
+                "examples": self._extract_code_examples(textbook_content),
+                "learning_tips": self._extract_learning_tips(textbook_content),
+                "estimated_read_time": max(5, len(textbook_content) // 200)  # 200자/분
             }
             
         except Exception as e:
-            logger.error(f"교과서 섹션 생성 실패: {str(e)}")
-            # 폴백: 간단한 설명
+            logger.error(f"교재 섹션 생성 실패: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            
+            # 폴백: 기본 교재
             return {
                 "type": "textbook",
                 "title": "📖 개념 학습",
-                "content": f"{daily_task['task']}\n\n학습 목표:\n" + \
-                          "\n".join([f"- {obj}" for obj in daily_task.get("learning_objectives", [])]),
+                "content": self._generate_fallback_textbook(daily_task, curriculum),
                 "examples": [],
-                "learning_tips": [],
+                "learning_tips": ["교재를 천천히 읽으며 이해하세요", "예제 코드를 직접 실행해보세요"],
                 "estimated_read_time": 10
             }
     
@@ -319,66 +441,110 @@ class DailyLearningService:
         """
         실습 섹션 생성 (코딩 과제)
         
-        CodeProblem 조회 또는 생성
+        LLM으로 실습 문제 자동 생성
         """
         try:
-            # 해당 주제의 코딩 문제 조회
-            task_type = daily_task.get("type", "concept")
+            logger.info(f"실습 문제 생성 시작: {daily_task['task']}")
             
-            if task_type not in ["practice", "project"]:
-                # 실습이 아닌 경우
-                return {
-                    "type": "practice",
-                    "title": "💻 실습",
-                    "available": False,
-                    "message": "오늘은 개념 학습에 집중하세요. 실습은 다음 날 진행됩니다."
-                }
+            from app.services.langchain_hybrid_provider import get_langchain_hybrid_provider
             
-            # 기존 문제 조회 (태그 기반)
-            problem = db.query(CodeProblem).filter(
-                CodeProblem.title.contains(daily_task["theme"])
-            ).first()
+            provider = get_langchain_hybrid_provider()
+            goal = curriculum["goal"]
+            theme = daily_task.get("theme", "")
+            task = daily_task.get("task", "")
+            deliverable = daily_task.get("deliverable", "")
             
-            if not problem:
-                # 폴백: 기본 실습 과제
-                return {
-                    "type": "practice",
-                    "title": "💻 실습",
-                    "available": True,
-                    "problem_id": None,
-                    "description": daily_task["deliverable"],
-                    "starter_code": "# 여기에 코드를 작성하세요\n\ndef solution():\n    pass",
-                    "test_cases": [],
-                    "difficulty": daily_task.get("difficulty", "medium"),
-                    "estimated_time": 30  # 분
-                }
+            # 실습 문제 생성 프롬프트
+            practice_prompt = f"""당신은 {goal} 분야의 실습 문제 출제 전문가입니다.
+
+학습 주제: {theme}
+오늘의 과제: {task}
+목표 결과물: {deliverable}
+
+다음 형식으로 실습 문제를 생성하세요:
+
+## 문제 제목
+{task}
+
+## 문제 설명
+(초보자가 이해할 수 있게 구체적으로 설명 - 200-300자)
+
+## 요구사항
+1. (구체적인 구현 요구사항 3-5개)
+
+## 시작 코드
+```language
+# 기본 구조 제공 (학생이 완성할 부분 주석 처리)
+# TODO: 여기를 구현하세요
+```
+
+## 예제 입출력
+**입력:**
+```
+(예제 입력)
+```
+
+**출력:**
+```
+(예제 출력)
+```
+
+## 힌트
+- (문제 해결 힌트 2-3개)
+
+**중요 규칙:**
+1. {goal} 분야와 직접 관련된 문제만
+2. 초보자가 30분 내에 풀 수 있는 난이도
+3. 실제 동작하는 코드만
+4. 모두 한국어로 작성
+5. 시작 코드는 최소한의 구조만 제공
+"""
+            
+            response = await provider.generate_response(
+                prompt=practice_prompt,
+                temperature=0.7,
+                max_tokens=2000
+            )
+
+            practice_content = self._extract_response_text(response)
+            
+            # 시작 코드 추출
+            starter_code = self._extract_starter_code(practice_content)
+            if not starter_code:
+                starter_code = f"# {task}\n# TODO: 여기에 코드를 작성하세요\n\ndef solution():\n    pass"
+            
+            logger.info(f"실습 문제 생성 완료")
             
             return {
                 "type": "practice",
                 "title": "💻 실습",
                 "available": True,
-                "problem_id": problem.id,
-                "description": problem.description,
-                "starter_code": problem.starter_code,
-                "test_cases": [
-                    {
-                        "input": tc.input_data,
-                        "expected": tc.expected_output,
-                        "description": tc.description
-                    }
-                    for tc in problem.test_cases
-                ],
-                "difficulty": problem.difficulty,
-                "estimated_time": 30
+                "problem_id": None,
+                "description": practice_content,
+                "starter_code": starter_code,
+                "test_cases": [],
+                "difficulty": daily_task.get("difficulty", "medium"),
+                "estimated_time": 30,
+                "hints": self._extract_hints(practice_content)
             }
             
         except Exception as e:
             logger.error(f"실습 섹션 생성 실패: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            
+            # 폴백
             return {
                 "type": "practice",
                 "title": "💻 실습",
-                "available": False,
-                "message": "실습 과제를 불러올 수 없습니다."
+                "available": True,
+                "problem_id": None,
+                "description": daily_task.get("deliverable", task),
+                "starter_code": "# 여기에 코드를 작성하세요\n\n",
+                "test_cases": [],
+                "difficulty": "medium",
+                "estimated_time": 30,
+                "hints": ["교재에서 배운 내용을 활용하세요", "천천히 단계별로 구현하세요"]
             }
     
     async def _generate_quiz_section(
@@ -391,58 +557,106 @@ class DailyLearningService:
         """
         퀴즈 섹션 생성
         
-        AIQuestionGeneratorEnhanced 활용
+        LLM으로 퀴즈 자동 생성
         """
         try:
-            task_type = daily_task.get("type", "concept")
+            logger.info(f"퀴즈 생성 시작: {daily_task['task']}")
             
-            if task_type != "quiz":
-                # 퀴즈 날이 아닌 경우
-                return {
-                    "type": "quiz",
-                    "title": "✍️ 퀴즈",
-                    "available": False,
-                    "message": "Day 5에 주간 퀴즈를 진행합니다."
-                }
+            from app.services.langchain_hybrid_provider import get_langchain_hybrid_provider
             
-            # 문제 생성 요청
-            request = QuestionGenerationRequest(
-                user_id=user_id,
-                subject_key=curriculum["syllabus"].get("core_technologies", ["Python"])[0],
-                topic=daily_task["theme"],
-                question_type=QuestionType.MULTIPLE_CHOICE,
-                difficulty_level=DifficultyLevel.INTERMEDIATE,
-                count=3  # MVP는 3문제
+            provider = get_langchain_hybrid_provider()
+            goal = curriculum["goal"]
+            theme = daily_task.get("theme", "")
+            objectives = daily_task.get("learning_objectives", [])
+            
+            # 퀴즈 생성 프롬프트
+            quiz_prompt = f"""당신은 {goal} 분야의 평가 전문가입니다.
+
+학습 주제: {theme}
+학습 목표:
+{chr(10).join([f"- {obj}" for obj in objectives])}
+
+오늘 배운 내용을 바탕으로 객관식 퀴즈 3문제를 생성하세요.
+
+각 문제는 다음 형식을 따르세요:
+
+---
+**문제 1:** (질문 내용)
+
+A) (선택지 1)
+B) (선택지 2)
+C) (선택지 3)
+D) (선택지 4)
+
+**정답:** B
+
+**해설:** (정답인 이유와 오답 선택지가 왜 틀렸는지 설명)
+
+---
+
+**중요 규칙:**
+1. {goal} 분야의 핵심 개념을 묻는 문제
+2. 오늘 학습 목표와 직접 관련된 내용만
+3. 초보자가 이해할 수 있는 수준
+4. 오답 선택지도 그럴듯하게 작성
+5. 해설은 100-150자로 명확하게
+6. 모두 한국어로 작성
+7. 정확히 3문제 생성
+"""
+            
+            response = await provider.generate_response(
+                prompt=quiz_prompt,
+                temperature=0.7,
+                max_tokens=2000
             )
+
+            quiz_content = self._extract_response_text(response)
             
-            questions = await self.question_generator.generate_questions(request, db)
+            # 퀴즈 파싱
+            questions = self._parse_quiz_content(quiz_content)
+            
+            if not questions or len(questions) == 0:
+                raise ValueError("퀴즈 생성 실패")
+            
+            logger.info(f"퀴즈 생성 완료: {len(questions)}문제")
             
             return {
                 "type": "quiz",
                 "title": "✍️ 퀴즈",
                 "available": True,
                 "question_count": len(questions),
-                "questions": [
-                    {
-                        "id": i,
-                        "text": q.question_text,
-                        "options": q.options,
-                        "type": q.question_type.value,
-                        "estimated_time": q.estimated_time or 2  # 분
-                    }
-                    for i, q in enumerate(questions, 1)
-                ],
-                "passing_score": 60,  # 60% 이상
-                "estimated_time": sum(q.estimated_time or 2 for q in questions)
+                "questions": questions,
+                "passing_score": 60,
+                "estimated_time": len(questions) * 2
             }
             
         except Exception as e:
             logger.error(f"퀴즈 섹션 생성 실패: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            
+            # 폴백: 기본 퀴즈
             return {
                 "type": "quiz",
                 "title": "✍️ 퀴즈",
-                "available": False,
-                "message": "퀴즈를 불러올 수 없습니다."
+                "available": True,
+                "question_count": 1,
+                "questions": [
+                    {
+                        "id": 1,
+                        "text": f"{daily_task.get('theme', '')}에서 가장 중요한 개념은 무엇인가요?",
+                        "options": [
+                            "기본 개념 이해",
+                            "실습을 통한 학습",
+                            "꾸준한 복습",
+                            "모두 중요함"
+                        ],
+                        "correct": 3,
+                        "explanation": "모든 요소가 함께 어우러질 때 효과적인 학습이 가능합니다."
+                    }
+                ],
+                "passing_score": 60,
+                "estimated_time": 2
             }
     
     async def _get_daily_progress(
@@ -478,6 +692,147 @@ class DailyLearningService:
             }
             for lang, code in code_blocks
         ]
+    
+    def _extract_learning_tips(self, content: str) -> List[str]:
+        """교재에서 학습 팁 추출"""
+        import re
+        
+        # "💡 학습 팁" 섹션 찾기
+        tips_section = re.search(r'##\s*💡\s*학습 팁\s*\n(.*?)(?=\n##|\Z)', content, re.DOTALL)
+        
+        if not tips_section:
+            return ["천천히 읽으며 이해하세요", "예제 코드를 직접 실행해보세요"]
+        
+        tips_text = tips_section.group(1)
+        # - 로 시작하는 항목 추출
+        tips = re.findall(r'^-\s*(.+)$', tips_text, re.MULTILINE)
+        
+        return tips if tips else ["천천히 읽으며 이해하세요"]
+    
+    def _extract_starter_code(self, content: str) -> str:
+        """실습 문제에서 시작 코드 추출"""
+        import re
+        
+        # "## 시작 코드" 섹션 찾기
+        starter_section = re.search(r'##\s*시작 코드\s*\n```\w*\n(.*?)```', content, re.DOTALL)
+        
+        if starter_section:
+            return starter_section.group(1).strip()
+        
+        # 첫 번째 코드 블록 사용
+        first_code = re.search(r'```\w*\n(.*?)```', content, re.DOTALL)
+        if first_code:
+            return first_code.group(1).strip()
+        
+        return ""
+    
+    def _extract_hints(self, content: str) -> List[str]:
+        """실습 문제에서 힌트 추출"""
+        import re
+        
+        # "## 힌트" 섹션 찾기
+        hints_section = re.search(r'##\s*힌트\s*\n(.*?)(?=\n##|\Z)', content, re.DOTALL)
+        
+        if not hints_section:
+            return ["교재에서 배운 내용을 활용하세요", "천천히 단계별로 구현하세요"]
+        
+        hints_text = hints_section.group(1)
+        # - 로 시작하는 항목 추출
+        hints = re.findall(r'^-\s*(.+)$', hints_text, re.MULTILINE)
+        
+        return hints if hints else ["교재에서 배운 내용을 활용하세요"]
+    
+    def _parse_quiz_content(self, content: str) -> List[Dict[str, Any]]:
+        """LLM이 생성한 퀴즈 텍스트를 파싱"""
+        import re
+        
+        questions = []
+        
+        # "**문제 N:**" 패턴으로 문제 분리
+        problem_pattern = r'\*\*문제\s+(\d+):\*\*\s*(.*?)(?=\*\*문제\s+\d+:|\Z)'
+        matches = re.findall(problem_pattern, content, re.DOTALL)
+        
+        for idx, (num, problem_text) in enumerate(matches, 1):
+            try:
+                # 질문 텍스트 추출 (첫 줄)
+                lines = problem_text.strip().split('\n')
+                question_text = lines[0].strip()
+                
+                # 선택지 추출 (A), B), C), D))
+                options = []
+                for line in lines[1:]:
+                    option_match = re.match(r'^[A-D]\)\s*(.+)$', line.strip())
+                    if option_match:
+                        options.append(option_match.group(1))
+                
+                if len(options) < 2:
+                    continue
+                
+                # 정답 추출
+                answer_match = re.search(r'\*\*정답:\*\*\s*([A-D])', problem_text)
+                correct_index = 0
+                if answer_match:
+                    correct_letter = answer_match.group(1)
+                    correct_index = ord(correct_letter) - ord('A')
+                
+                # 해설 추출
+                explanation_match = re.search(r'\*\*해설:\*\*\s*(.+?)(?=\n\n|\Z)', problem_text, re.DOTALL)
+                explanation = explanation_match.group(1).strip() if explanation_match else ""
+                
+                questions.append({
+                    "id": idx,
+                    "text": question_text,
+                    "options": options,
+                    "correct": correct_index,
+                    "explanation": explanation
+                })
+                
+            except Exception as e:
+                logger.error(f"퀴즈 문제 파싱 실패 #{idx}: {str(e)}")
+                continue
+        
+        return questions
+    
+    def _generate_fallback_textbook(self, daily_task: Dict[str, Any], curriculum: Dict[str, Any]) -> str:
+        """폴백 교재 생성"""
+        theme = daily_task.get("theme", "")
+        task = daily_task.get("task", "")
+        objectives = daily_task.get("learning_objectives", [])
+        
+        content = f"""# {theme}
+
+## 📚 학습 목표
+{chr(10).join([f"- {obj}" for obj in objectives])}
+
+## 🎯 핵심 개념
+
+오늘은 **{theme}**에 대해 학습합니다.
+
+{task}
+
+## 💻 실습 예제
+
+아래 예제를 통해 개념을 이해해보세요:
+
+```python
+# 예제 코드
+def example():
+    print("Hello, World!")
+```
+
+## 💡 학습 팁
+
+- 교재를 천천히 읽으며 이해하세요
+- 예제 코드를 직접 실행해보세요
+- 이해가 안 되는 부분은 AI 멘토에게 질문하세요
+
+## ✅ 체크포인트
+
+- [ ] 핵심 개념을 이해했나요?
+- [ ] 예제 코드를 실행해봤나요?
+- [ ] 실습 문제를 풀 준비가 되었나요?
+"""
+        return content
     
     async def submit_practice(
         self,
