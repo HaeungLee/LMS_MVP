@@ -454,50 +454,54 @@ class DailyLearningService:
             task = daily_task.get("task", "")
             deliverable = daily_task.get("deliverable", "")
             
-            # 실습 문제 생성 프롬프트
+            # 실습 문제 생성 프롬프트 (JSON 구조화)
             practice_prompt = f"""당신은 {goal} 분야의 실습 문제 출제 전문가입니다.
 
 학습 주제: {theme}
 오늘의 과제: {task}
 목표 결과물: {deliverable}
 
-다음 형식으로 실습 문제를 생성하세요:
+아래 JSON 형식으로 실습 문제를 생성하세요:
 
-## 문제 제목
-{task}
-
-## 문제 설명
-(초보자가 이해할 수 있게 구체적으로 설명 - 200-300자)
-
-## 요구사항
-1. (구체적인 구현 요구사항 3-5개)
-
-## 시작 코드
-```language
-# 기본 구조 제공 (학생이 완성할 부분 주석 처리)
-# TODO: 여기를 구현하세요
-```
-
-## 예제 입출력
-**입력:**
-```
-(예제 입력)
-```
-
-**출력:**
-```
-(예제 출력)
-```
-
-## 힌트
-- (문제 해결 힌트 2-3개)
+{{
+  "title": "{task}",
+  "description": "초보자가 이해할 수 있는 구체적인 문제 설명 (200-300자)",
+  "requirements": [
+    "구체적인 구현 요구사항 1",
+    "구체적인 구현 요구사항 2",
+    "구체적인 구현 요구사항 3"
+  ],
+  "starter_code": "# 기본 구조\\n# TODO: 여기를 구현하세요\\n\\ndef solution():\\n    pass",
+  "test_cases": [
+    {{
+      "input": "예제 입력 데이터",
+      "expected_output": "예제 출력 데이터",
+      "description": "기본 케이스"
+    }}
+  ],
+  "hints": [
+    "문제 해결 힌트 1",
+    "문제 해결 힌트 2"
+  ],
+  "difficulty": "easy",
+  "estimated_time_minutes": 30,
+  "examples": [
+    {{
+      "input": "입력 예시",
+      "output": "출력 예시",
+      "explanation": "설명"
+    }}
+  ]
+}}
 
 **중요 규칙:**
-1. {goal} 분야와 직접 관련된 문제만
-2. 초보자가 30분 내에 풀 수 있는 난이도
-3. 실제 동작하는 코드만
-4. 모두 한국어로 작성
-5. 시작 코드는 최소한의 구조만 제공
+1. 반드시 유효한 JSON 형식으로만 출력
+2. {goal} 분야와 직접 관련된 문제만
+3. 초보자가 30분 내에 풀 수 있는 난이도
+4. 실제 동작하는 코드만
+5. 모두 한국어로 작성
+6. starter_code는 Python 코드로 작성
+7. test_cases는 최소 1개 이상 제공
 """
             
             response = await provider.generate_response(
@@ -508,25 +512,45 @@ class DailyLearningService:
 
             practice_content = self._extract_response_text(response)
             
-            # 시작 코드 추출
-            starter_code = self._extract_starter_code(practice_content)
-            if not starter_code:
-                starter_code = f"# {task}\n# TODO: 여기에 코드를 작성하세요\n\ndef solution():\n    pass"
+            # JSON 파싱 시도
+            practice_data = self._parse_practice_json(practice_content)
             
-            logger.info(f"실습 문제 생성 완료")
-            
-            return {
-                "type": "practice",
-                "title": "💻 실습",
-                "available": True,
-                "problem_id": None,
-                "description": practice_content,
-                "starter_code": starter_code,
-                "test_cases": [],
-                "difficulty": daily_task.get("difficulty", "medium"),
-                "estimated_time": 30,
-                "hints": self._extract_hints(practice_content)
-            }
+            if practice_data:
+                # JSON 형식으로 파싱 성공
+                logger.info(f"실습 문제 생성 완료 (구조화된 데이터)")
+                return {
+                    "type": "practice",
+                    "title": "💻 실습",
+                    "available": True,
+                    "problem_id": None,
+                    "description": practice_data.get("description", practice_content),
+                    "requirements": practice_data.get("requirements", []),
+                    "starter_code": practice_data.get("starter_code", f"# {task}\n# TODO: 여기에 코드를 작성하세요\n\ndef solution():\n    pass"),
+                    "test_cases": practice_data.get("test_cases", []),
+                    "difficulty": practice_data.get("difficulty", daily_task.get("difficulty", "easy")),
+                    "estimated_time": practice_data.get("estimated_time_minutes", 30),
+                    "hints": practice_data.get("hints", []),
+                    "examples": practice_data.get("examples", [])
+                }
+            else:
+                # 텍스트 형식 파싱 (폴백)
+                starter_code = self._extract_starter_code(practice_content)
+                if not starter_code:
+                    starter_code = f"# {task}\n# TODO: 여기에 코드를 작성하세요\n\ndef solution():\n    pass"
+                
+                logger.info(f"실습 문제 생성 완료 (텍스트 파싱)")
+                return {
+                    "type": "practice",
+                    "title": "💻 실습",
+                    "available": True,
+                    "problem_id": None,
+                    "description": practice_content,
+                    "starter_code": starter_code,
+                    "test_cases": [],
+                    "difficulty": daily_task.get("difficulty", "easy"),
+                    "estimated_time": 30,
+                    "hints": self._extract_hints(practice_content)
+                }
             
         except Exception as e:
             logger.error(f"실습 섹션 생성 실패: {str(e)}")
@@ -569,39 +593,45 @@ class DailyLearningService:
             theme = daily_task.get("theme", "")
             objectives = daily_task.get("learning_objectives", [])
             
-            # 퀴즈 생성 프롬프트
+            # 퀴즈 생성 프롬프트 (JSON 구조화)
             quiz_prompt = f"""당신은 {goal} 분야의 평가 전문가입니다.
 
 학습 주제: {theme}
 학습 목표:
 {chr(10).join([f"- {obj}" for obj in objectives])}
 
-오늘 배운 내용을 바탕으로 객관식 퀴즈 3문제를 생성하세요.
+오늘 배운 내용을 바탕으로 객관식 퀴즈 3문제를 아래 JSON 형식으로 생성하세요:
 
-각 문제는 다음 형식을 따르세요:
-
----
-**문제 1:** (질문 내용)
-
-A) (선택지 1)
-B) (선택지 2)
-C) (선택지 3)
-D) (선택지 4)
-
-**정답:** B
-
-**해설:** (정답인 이유와 오답 선택지가 왜 틀렸는지 설명)
-
----
+{{
+  "questions": [
+    {{
+      "id": 1,
+      "text": "질문 내용을 명확하게 작성",
+      "options": [
+        "선택지 1",
+        "선택지 2",
+        "선택지 3",
+        "선택지 4"
+      ],
+      "correct": 1,
+      "explanation": "정답인 이유와 오답이 왜 틀렸는지 100-150자로 설명",
+      "difficulty": "easy",
+      "topic": "{theme}"
+    }}
+  ]
+}}
 
 **중요 규칙:**
-1. {goal} 분야의 핵심 개념을 묻는 문제
-2. 오늘 학습 목표와 직접 관련된 내용만
-3. 초보자가 이해할 수 있는 수준
-4. 오답 선택지도 그럴듯하게 작성
-5. 해설은 100-150자로 명확하게
-6. 모두 한국어로 작성
-7. 정확히 3문제 생성
+1. 반드시 유효한 JSON 형식으로만 출력
+2. {goal} 분야의 핵심 개념을 묻는 문제
+3. 오늘 학습 목표와 직접 관련된 내용만
+4. 초보자가 이해할 수 있는 수준
+5. 오답 선택지도 그럴듯하게 작성
+6. options는 정확히 4개 제공
+7. correct는 0-3 사이의 인덱스 (0=첫번째 선택지)
+8. 해설은 100-150자로 명확하게
+9. 모두 한국어로 작성
+10. 정확히 3문제 생성
 """
             
             response = await provider.generate_response(
@@ -612,13 +642,19 @@ D) (선택지 4)
 
             quiz_content = self._extract_response_text(response)
             
-            # 퀴즈 파싱
-            questions = self._parse_quiz_content(quiz_content)
+            # JSON 파싱 시도
+            quiz_data = self._parse_quiz_json(quiz_content)
+            
+            if quiz_data and "questions" in quiz_data:
+                questions = quiz_data["questions"]
+                logger.info(f"퀴즈 생성 완료 (구조화된 데이터): {len(questions)}문제")
+            else:
+                # 텍스트 형식 파싱 (폴백)
+                questions = self._parse_quiz_content(quiz_content)
+                logger.info(f"퀴즈 생성 완료 (텍스트 파싱): {len(questions)}문제")
             
             if not questions or len(questions) == 0:
                 raise ValueError("퀴즈 생성 실패")
-            
-            logger.info(f"퀴즈 생성 완료: {len(questions)}문제")
             
             return {
                 "type": "quiz",
@@ -677,6 +713,93 @@ D) (선택지 4)
             "completion_percentage": 0,
             "overall_status": "not_started"  # not_started, in_progress, completed
         }
+    
+    def _parse_practice_json(self, content: str) -> Optional[Dict[str, Any]]:
+        """실습 문제 JSON 파싱"""
+        try:
+            # JSON 추출 시도
+            content = content.strip()
+            
+            # JSON이 코드 블록 안에 있을 수 있음
+            if '```json' in content or '```' in content:
+                import re
+                json_match = re.search(r'```(?:json)?\s*\n(.*?)```', content, re.DOTALL)
+                if json_match:
+                    content = json_match.group(1).strip()
+            
+            # JSON 파싱
+            if content.startswith('{'):
+                parsed = json.loads(content)
+                
+                # 필수 필드 검증
+                if isinstance(parsed, dict) and "description" in parsed:
+                    return parsed
+            
+            return None
+            
+        except json.JSONDecodeError as e:
+            logger.debug(f"실습 JSON 파싱 실패: {str(e)}")
+            return None
+        except Exception as e:
+            logger.debug(f"실습 JSON 파싱 오류: {str(e)}")
+            return None
+    
+    def _parse_quiz_json(self, content: str) -> Optional[Dict[str, Any]]:
+        """퀴즈 JSON 파싱"""
+        try:
+            # JSON 추출 시도
+            content = content.strip()
+            
+            # JSON이 코드 블록 안에 있을 수 있음
+            if '```json' in content or '```' in content:
+                import re
+                json_match = re.search(r'```(?:json)?\s*\n(.*?)```', content, re.DOTALL)
+                if json_match:
+                    content = json_match.group(1).strip()
+            
+            # JSON 파싱
+            if content.startswith('{'):
+                parsed = json.loads(content)
+                
+                # 필수 필드 검증
+                if isinstance(parsed, dict) and "questions" in parsed:
+                    questions = parsed["questions"]
+                    
+                    # 각 문제 검증 및 정규화
+                    normalized_questions = []
+                    for q in questions:
+                        if not isinstance(q, dict):
+                            continue
+                        
+                        # 필수 필드 확인
+                        if "text" not in q or "options" not in q or "correct" not in q:
+                            continue
+                        
+                        # options가 4개인지 확인
+                        if not isinstance(q["options"], list) or len(q["options"]) < 2:
+                            continue
+                        
+                        normalized_questions.append({
+                            "id": q.get("id", len(normalized_questions) + 1),
+                            "text": q["text"],
+                            "options": q["options"],
+                            "correct": q["correct"],
+                            "explanation": q.get("explanation", ""),
+                            "difficulty": q.get("difficulty", "easy"),
+                            "topic": q.get("topic", "")
+                        })
+                    
+                    if normalized_questions:
+                        return {"questions": normalized_questions}
+            
+            return None
+            
+        except json.JSONDecodeError as e:
+            logger.debug(f"퀴즈 JSON 파싱 실패: {str(e)}")
+            return None
+        except Exception as e:
+            logger.debug(f"퀴즈 JSON 파싱 오류: {str(e)}")
+            return None
     
     def _extract_code_examples(self, content: str) -> List[Dict[str, str]]:
         """텍스트에서 코드 예제 추출"""
