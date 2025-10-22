@@ -5,9 +5,9 @@
  * 탭 전환 없이 스크롤만으로 학습 완료
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   BookOpen, 
   Code, 
@@ -64,11 +64,13 @@ interface DailyLearning {
 export default function UnifiedLearningPage() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const curriculumId = searchParams.get('curriculum_id');
 
   const [currentSection, setCurrentSection] = useState<'textbook' | 'practice' | 'quiz'>('textbook');
   const [completedSections, setCompletedSections] = useState<Set<string>>(new Set());
+  const [localProgress, setLocalProgress] = useState(0);
 
   // 오늘의 학습 데이터 조회
   const { data: dailyLearning, isLoading, error } = useQuery<DailyLearning>({
@@ -81,11 +83,37 @@ export default function UnifiedLearningPage() {
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
+    refetchOnWindowFocus: true, // 포커스 시 재조회
   });
+
+  // 서버 진도와 로컬 state 동기화
+  useEffect(() => {
+    if (dailyLearning?.sections) {
+      const completed = new Set<string>();
+      if (dailyLearning.sections.textbook?.completed) completed.add('textbook');
+      if (dailyLearning.sections.practice?.completed) completed.add('practice');
+      if (dailyLearning.sections.quiz?.completed) completed.add('quiz');
+      setCompletedSections(completed);
+      
+      // 서버 진도율로 초기화
+      setLocalProgress(dailyLearning.progress?.percentage || 0);
+    }
+  }, [dailyLearning]);
+
+  // 실시간 진도율 계산
+  useEffect(() => {
+    const completedCount = completedSections.size;
+    const newProgress = Math.round((completedCount / 3) * 100);
+    setLocalProgress(newProgress);
+  }, [completedSections]);
 
   // 섹션 완료 처리
   const handleSectionComplete = (section: 'textbook' | 'practice' | 'quiz') => {
     setCompletedSections(prev => new Set([...prev, section]));
+    
+    // React Query 캐시 무효화 - 대시보드 자동 갱신
+    queryClient.invalidateQueries({ queryKey: ['daily-learning', curriculumId] });
+    queryClient.invalidateQueries({ queryKey: ['today-learning'] });
   };
 
   // 다음 섹션으로 이동
@@ -184,18 +212,21 @@ export default function UnifiedLearningPage() {
             </div>
           </div>
 
-          {/* 진행률 바 */}
+          {/* 진행률 바 - 실시간 업데이트 */}
           <div className="mt-6">
             <div className="flex items-center justify-between text-sm mb-2">
               <span className="text-gray-600">전체 진행률</span>
-              <span className="font-semibold text-indigo-600">{Math.round(progress.percentage)}%</span>
+              <span className="font-semibold text-indigo-600">{localProgress}%</span>
             </div>
             <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-500"
-                style={{ width: `${progress.percentage}%` }}
+                style={{ width: `${localProgress}%` }}
               />
             </div>
+            <p className="text-xs text-gray-500 mt-2">
+              {completedSections.size} / 3 섹션 완료
+            </p>
           </div>
         </div>
 

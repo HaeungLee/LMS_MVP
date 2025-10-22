@@ -1,8 +1,8 @@
 /**
- * 교재 섹션 - 콘텐츠 렌더링
+ * 교재 섹션 - 콘텐츠 렌더링 (IntersectionObserver 자동 추적)
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { BookOpen, CheckCircle } from 'lucide-react';
 import { api } from '../../../shared/services/apiClient';
 
@@ -14,6 +14,36 @@ interface TextbookSectionProps {
 
 export default function TextbookSection({ content, curriculumId, onComplete }: TextbookSectionProps) {
   const [isCompleted, setIsCompleted] = useState(false);
+  const endMarkerRef = useRef<HTMLDivElement>(null);
+  const hasTrackedRef = useRef(false);
+
+  // IntersectionObserver로 교재 끝 지점 감지
+  useEffect(() => {
+    const endMarker = endMarkerRef.current;
+    if (!endMarker || hasTrackedRef.current || isCompleted) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          // 교재 끝이 뷰포트에 보이면 자동 완료
+          if (entry.isIntersecting && !hasTrackedRef.current && !isCompleted) {
+            hasTrackedRef.current = true;
+            handleComplete();
+          }
+        });
+      },
+      {
+        threshold: 0.5, // 50% 이상 보이면 트리거
+        rootMargin: '0px',
+      }
+    );
+
+    observer.observe(endMarker);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [curriculumId, isCompleted]);
 
   const handleComplete = () => {
     // 서버에 읽음 상태 전송
@@ -77,9 +107,12 @@ export default function TextbookSection({ content, curriculumId, onComplete }: T
               .replace(/\n\n/g, '<br/><br/>')
           }}
         />
+        
+        {/* IntersectionObserver 감지용 마커 - 교재 끝 지점 */}
+        <div ref={endMarkerRef} className="h-1 w-full" aria-hidden="true" />
       </div>
 
-      {/* 완료 버튼 */}
+      {/* 완료 버튼 (수동 완료도 가능) */}
       <div className="mt-8 pt-6 border-t border-gray-200">
         {!isCompleted ? (
           <button
@@ -94,6 +127,13 @@ export default function TextbookSection({ content, curriculumId, onComplete }: T
             <CheckCircle className="w-5 h-5" />
             <span className="font-semibold">✅ 완료했습니다!</span>
           </div>
+        )}
+        
+        {/* 자동 추적 안내 */}
+        {!isCompleted && (
+          <p className="text-center text-sm text-gray-500 mt-3">
+            💡 교재를 끝까지 스크롤하면 자동으로 완료됩니다
+          </p>
         )}
       </div>
     </div>

@@ -46,12 +46,20 @@ export default function PracticeSection({ problems, curriculumId, onComplete }: 
       const res: any = await api.post('/mvp/practice/submit', payload, { timeoutMs: 60000 });
 
       // 예상 응답: { success: boolean, output: string, passed: number, total: number }
+      const isSuccess = !!res.success;
       setResult({
-        success: !!res.success,
+        success: isSuccess,
         output: res.output || res.message || JSON.stringify(res),
         passed: res.passed ?? 0,
         total: res.total ?? 0,
       });
+
+      // 성공 시 자동 완료 처리 (3초 후)
+      if (isSuccess && !isCompleted) {
+        setTimeout(() => {
+          handleComplete();
+        }, 3000);
+      }
     } catch (err: any) {
       setResult({
         success: false,

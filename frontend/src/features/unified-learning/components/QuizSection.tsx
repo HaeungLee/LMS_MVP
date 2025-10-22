@@ -55,10 +55,26 @@ export default function QuizSection({ questions, curriculumId, onComplete }: Qui
 
       // 서버 설명이 있으면 current.explanation 대체
       if (res.explanation) current.explanation = res.explanation;
+      
+      // 마지막 문제면 3초 후 자동 완료
+      if (currentQuestion === quizData.length - 1) {
+        setTimeout(() => {
+          setIsCompleted(true);
+          onComplete();
+        }, 3000);
+      }
     } catch (err: any) {
       // 네트워크 에러일 때는 기존 로컬 비교 사용
       if (idx === current.correct) {
         setScore(score + 1);
+      }
+      
+      // 마지막 문제면 3초 후 자동 완료
+      if (currentQuestion === quizData.length - 1) {
+        setTimeout(() => {
+          setIsCompleted(true);
+          onComplete();
+        }, 3000);
       }
     }
   };

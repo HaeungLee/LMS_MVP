@@ -95,13 +95,15 @@ export default function DashboardPage() {
   // 현재 활성 커리큘럼 (첫 번째 것)
   const currentCurriculum = curricula?.[0];
 
-  // 오늘의 학습 조회
+  // 오늘의 학습 조회 (30초마다 자동 갱신)
   const { data: todayLearning, isLoading: isLearningLoading, error } = useQuery<DailyLearning>({
     queryKey: ['today-learning', currentCurriculum?.curriculum_id],
     queryFn: () => api.get<DailyLearning>(
       `/mvp/daily-learning?curriculum_id=${currentCurriculum?.curriculum_id}`
     ),
     enabled: !!currentCurriculum,
+    refetchInterval: 30000, // 30초마다 자동 갱신
+    refetchOnWindowFocus: true, // 포커스 시 재조회
   });
 
   // 학습 달성 통계 조회
