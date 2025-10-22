@@ -1,35 +1,96 @@
 /**
  * 인라인 AI 멘토 - 학습 중 즉시 질문 가능
+ * RAG로 현재 교재 내용 기반 답변
  */
 
 import { useState } from 'react';
-import { Send, Sparkles } from 'lucide-react';
+import { Send, Sparkles, Loader2 } from 'lucide-react';
+import useAuthStore from '../../../shared/hooks/useAuthStore';
 
 interface InlineAIMentorProps {
   context: 'textbook' | 'practice' | 'quiz';
   topic: string;
+  currentContent?: string; // 현재 보고 있는 교재 내용
 }
 
-export default function InlineAIMentor({ topic }: InlineAIMentorProps) {
+export default function InlineAIMentor({ topic, currentContent }: InlineAIMentorProps) {
+  const { user } = useAuthStore();
   const [isExpanded, setIsExpanded] = useState(false);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'ai', text: string }>>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
-  const handleSend = () => {
-    if (!message.trim()) return;
+  const handleSend = async () => {
+    if (!message.trim() || isLoading) return;
 
     // 사용자 메시지 추가
-    setMessages(prev => [...prev, { role: 'user', text: message }]);
+    const userMessage = message;
+    setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+    setMessage('');
+    setIsLoading(true);
 
-    // AI 응답 (임시)
-    setTimeout(() => {
+    try {
+      // 세션이 없으면 새로 시작
+      if (!sessionId) {
+        const startRes = await fetch(`/api/v1/ai-features/mentoring/start-session/${user?.id || 1}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            initial_question: `현재 학습 주제: ${topic}\n\n교재 내용:\n${currentContent?.substring(0, 500) || ''}...\n\n질문: ${userMessage}`,
+            text_style: 'default',
+            line_height: 'comfortable'
+          })
+        });
+
+        if (!startRes.ok) throw new Error('세션 시작 실패');
+        
+        const startData = await startRes.json();
+        if (startData.success && startData.session) {
+          setSessionId(startData.session.session_id);
+          
+          // 인사말이 있으면 AI 응답으로 추가
+          if (startData.session.greeting) {
+            setMessages(prev => [...prev, { 
+              role: 'ai', 
+              text: startData.session.greeting 
+            }]);
+          }
+        }
+      } else {
+        // 기존 세션으로 대화 계속
+        const chatRes = await fetch(`/api/v1/ai-features/mentoring/chat/${sessionId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            message: `${userMessage}\n\n(참고: 현재 "${topic}" 학습 중)`,
+            conversation_mode: 'explanation',
+            text_style: 'default',
+            line_height: 'comfortable'
+          })
+        });
+
+        if (!chatRes.ok) throw new Error('응답 생성 실패');
+        
+        const chatData = await chatRes.json();
+        if (chatData.success && chatData.response) {
+          setMessages(prev => [...prev, { 
+            role: 'ai', 
+            text: chatData.response 
+          }]);
+        }
+      }
+    } catch (error) {
+      console.error('AI 멘토 오류:', error);
       setMessages(prev => [...prev, {
         role: 'ai',
-        text: `좋은 질문이에요! "${message}"에 대해 설명드리자면...\n\n(실제로는 여기에 AI 멘토의 답변이 나타납니다)`
+        text: `죄송합니다. 일시적인 문제가 발생했습니다.\n\n**오류:** ${error instanceof Error ? error.message : '알 수 없는 오류'}\n\n잠시 후 다시 시도해주세요.`
       }]);
-    }, 500);
-
-    setMessage('');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -84,15 +145,21 @@ export default function InlineAIMentor({ topic }: InlineAIMentorProps) {
               type="text"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+              onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSend()}
               placeholder={`"${topic}"에 대해 궁금한 점을 물어보세요...`}
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+              disabled={isLoading}
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
             />
             <button
               onClick={handleSend}
-              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 flex items-center gap-2"
+              disabled={isLoading || !message.trim()}
+              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Send className="w-4 h-4" />
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
             </button>
           </div>
 

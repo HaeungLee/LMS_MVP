@@ -33,6 +33,7 @@ from app.services.ai_question_generator_enhanced import (
 from app.models.ai_curriculum import AIGeneratedCurriculum, AITeachingSession
 from app.models.orm import User
 from app.models.code_problem import CodeProblem, CodeSubmission
+from app.services.redis_service import get_redis_service
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,7 @@ class DailyLearningService:
         self.teaching_agent = SyllabusBasedTeachingAgent()
         self.code_executor = CodeExecutionService()
         self.question_generator = AIQuestionGeneratorEnhanced()
+        self.redis_service = get_redis_service()
 
     def _extract_response_text(self, response: Any) -> str:
         """
@@ -181,14 +183,51 @@ class DailyLearningService:
             )
             logger.info(f"⏱️ [2/6] 날짜 계산: {time.time() - step_start:.2f}초")
             
-            # 3. 해당 날짜의 학습 콘텐츠 가져오기
+            # 3. Redis 캐시 확인 (curriculum_id + week + day 기준)
+            cache_key = f"daily_learning:{curriculum_id}:w{current_day_info['week']}d{current_day_info['day']}"
+            cached_sections = self.redis_service.get_cache(cache_key)
+            
+            if cached_sections:
+                logger.info(f"✅ Redis 캐시 히트: {cache_key} (생성 비용 절약: ~7-8초)")
+                # 캐시된 섹션 사용 (progress는 실시간 조회)
+                step_start = time.time()
+                daily_task = self._get_daily_task_from_curriculum(
+                    curriculum, current_day_info["week"], current_day_info["day"]
+                )
+                logger.info(f"⏱️ [3/6] 태스크 추출: {time.time() - step_start:.2f}초")
+                
+                step_start = time.time()
+                progress_data = await self._calculate_progress(
+                    user_id, curriculum_id, current_day_info["week"], current_day_info["day"], db
+                )
+                logger.info(f"⏱️ [4/6] 진도 계산: {time.time() - step_start:.2f}초")
+                
+                total_time = time.time() - start_time
+                logger.info(f"⏱️ [DONE] 캐시 사용 총 소요시간: {total_time:.2f}초")
+                
+                return {
+                    "date": current_day_info["date"].strftime("%Y-%m-%d"),
+                    "week": current_day_info["week"],
+                    "day": current_day_info["day"],
+                    "theme": daily_task.get("theme", ""),
+                    "task": daily_task.get("task", ""),
+                    "deliverable": daily_task.get("deliverable", ""),
+                    "status": self._determine_status(progress_data),
+                    "sections": cached_sections,
+                    "progress": progress_data
+                }
+            
+            # 캐시 미스 - 새로 생성
+            logger.info(f"❌ Redis 캐시 미스: {cache_key} (LLM 호출하여 생성 중...)")
+            
+            # 4. 해당 날짜의 학습 콘텐츠 가져오기
             step_start = time.time()
             daily_task = self._get_daily_task_from_curriculum(
                 curriculum, current_day_info["week"], current_day_info["day"]
             )
             logger.info(f"⏱️ [3/6] 태스크 추출: {time.time() - step_start:.2f}초")
             
-            # 4. 3가지 섹션 병렬 생성 (성능 최적화)
+            # 5. 3가지 섹션 병렬 생성 (성능 최적화)
             step_start = time.time()
             import asyncio
             textbook_section, practice_section, quiz_section = await asyncio.gather(
@@ -198,14 +237,23 @@ class DailyLearningService:
             )
             logger.info(f"⏱️ [4-6/6] 3개 섹션 병렬 생성: {time.time() - step_start:.2f}초 (이전 방식 대비 ~60% 단축)")
             
-            # 5. 진도 상태 조회
+            # 6. 섹션 데이터 Redis에 저장 (24시간 TTL)
+            sections_data = {
+                "textbook": textbook_section,
+                "practice": practice_section,
+                "quiz": quiz_section
+            }
+            self.redis_service.set_cache(cache_key, sections_data, 86400)  # 24시간
+            logger.info(f"💾 Redis 캐시 저장: {cache_key} (TTL: 24시간)")
+            
+            # 7. 진도 상태 조회
             step_start = time.time()
             progress = await self._get_daily_progress(
                 user_id, curriculum_id, current_day_info, db
             )
-            logger.info(f"⏱️ [보너스] 진도 조회: {time.time() - step_start:.2f}초")
+            logger.info(f"⏱️ [7/7] 진도 조회: {time.time() - step_start:.2f}초")
             
-            # 6. 결과 조합
+            # 8. 결과 조합
             today_learning = {
                 "date": (target_date or datetime.utcnow()).strftime("%Y-%m-%d"),
                 "week": current_day_info["week"],
@@ -216,11 +264,7 @@ class DailyLearningService:
                 "learning_objectives": daily_task.get("learning_objectives", []),
                 "study_time_minutes": daily_task.get("study_time_minutes", 60),
                 "status": progress["overall_status"],
-                "sections": {
-                    "textbook": textbook_section,
-                    "practice": practice_section,
-                    "quiz": quiz_section
-                },
+                "sections": sections_data,
                 "progress": progress
             }
             

@@ -35,8 +35,25 @@ services:
       -c effective_cache_size=1GB
       -c work_mem=4MB
 
+  # Redis 캐시 서비스 (학습 콘텐츠 캐싱용)
+  lms-mvp-redis:
+    image: redis:7-alpine  # Redis 7.x 경량 버전
+    container_name: lms_mvp_redis_container
+    ports:
+      - "6379:6379"
+    volumes:
+      - lms_mvp_redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+
 volumes:
   # 테스트용 볼륨을 명시적으로 선언합니다.
   lms_mvp_test_postgres_data:
+  lms_mvp_redis_data:
 
 #docker-compose up -d

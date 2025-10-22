@@ -304,7 +304,11 @@ export default function UnifiedLearningPage() {
                 curriculumId={curriculumId ? parseInt(curriculumId) : undefined}
                 onComplete={() => handleSectionComplete('textbook')}
               />
-              <InlineAIMentor context="textbook" topic={theme} />
+              <InlineAIMentor 
+                context="textbook" 
+                topic={theme} 
+                currentContent={typeof sections.textbook.content === 'string' ? sections.textbook.content : sections.textbook.content?.text || ''}
+              />
             </>
           )}
 
@@ -315,7 +319,11 @@ export default function UnifiedLearningPage() {
                 curriculumId={curriculumId ? parseInt(curriculumId) : undefined}
                 onComplete={() => handleSectionComplete('practice')}
               />
-              <InlineAIMentor context="practice" topic={theme} />
+              <InlineAIMentor 
+                context="practice" 
+                topic={theme}
+                currentContent={JSON.stringify(sections.practice.problems || [])}
+              />
             </>
           )}
 
