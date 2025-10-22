@@ -206,7 +206,7 @@ class DailyLearningService:
                 logger.info(f"⏱️ [DONE] 캐시 사용 총 소요시간: {total_time:.2f}초")
                 
                 return {
-                    "date": current_day_info["date"].strftime("%Y-%m-%d"),
+                    "date": (target_date or datetime.utcnow()).strftime("%Y-%m-%d"),
                     "week": current_day_info["week"],
                     "day": current_day_info["day"],
                     "theme": daily_task.get("theme", ""),
