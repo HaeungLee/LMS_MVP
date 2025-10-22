@@ -1073,6 +1073,93 @@ def example():
 """
         return content
     
+    async def _generate_code_feedback(
+        self,
+        code: str,
+        result: Any,
+        curriculum_id: int,
+        db: Session
+    ) -> str:
+        """
+        AI를 활용한 코드 피드백 생성
+        
+        - 코드 품질 분석
+        - 실행 결과 해석
+        - 학습 가이드 제공
+        """
+        try:
+            from app.services.langchain_hybrid_provider import get_langchain_hybrid_provider
+            
+            provider = get_langchain_hybrid_provider()
+            
+            # 커리큘럼 정보 가져오기
+            curriculum = await self._get_curriculum(curriculum_id, None, db)
+            goal = curriculum.get("goal", "프로그래밍") if curriculum else "프로그래밍"
+            
+            # 실행 결과 요약
+            if result.success:
+                result_summary = f"✅ 코드가 성공적으로 실행되었습니다 (실행 시간: {result.execution_time_ms}ms)"
+            else:
+                result_summary = f"❌ 코드 실행 실패\n에러: {result.error or '알 수 없는 오류'}"
+            
+            if result.output:
+                result_summary += f"\n\n출력 결과:\n{result.output[:500]}"  # 최대 500자
+            
+            # AI 피드백 요청
+            feedback_prompt = f"""당신은 친절한 코딩 튜터입니다. 학생이 제출한 코드를 리뷰하고 건설적인 피드백을 제공하세요.
+
+**학습 목표**: {goal}
+
+**학생 코드**:
+```python
+{code}
+```
+
+**실행 결과**:
+{result_summary}
+
+**피드백 작성 가이드**:
+1. 첫 문장: 긍정적인 피드백 (잘한 점 1가지)
+2. 코드 분석: 간결하게 2-3줄로 요약
+3. 개선 제안: 구체적인 조언 1-2가지
+4. 다음 단계: 학습 방향 제시
+
+**중요 규칙**:
+- 마크다운 코드 블록(```)은 사용하지 마세요
+- 각 섹션은 한 줄 띄우기로 구분
+- 전문 용어는 쉽게 설명
+- 친근하고 격려하는 톤
+- 150-250자 분량
+- 이모지 사용 가능 (1-2개만)
+
+피드백:"""
+
+            response = await provider.generate_response(
+                prompt=feedback_prompt,
+                temperature=0.7,
+                max_tokens=400
+            )
+            
+            feedback = self._extract_response_text(response)
+            
+            # 최소 피드백 보장 (LLM 실패 시)
+            if not feedback or len(feedback) < 20:
+                if result.success:
+                    feedback = "✅ 코드가 정상적으로 실행되었습니다! 잘하셨어요. 계속해서 다음 단계로 진행해보세요."
+                else:
+                    feedback = f"❌ 코드 실행에 실패했습니다. 에러 메시지를 확인하고 다시 시도해보세요.\n\n💡 힌트: {result.error[:100] if result.error else '문법을 다시 확인해보세요.'}"
+            
+            logger.info(f"AI 피드백 생성 완료: {len(feedback)}자")
+            return feedback
+            
+        except Exception as e:
+            logger.error(f"AI 피드백 생성 실패: {str(e)}")
+            # 폴백 피드백
+            if result.success:
+                return "✅ 정답입니다! 코드가 성공적으로 실행되었습니다."
+            else:
+                return f"❌ 코드 실행에 실패했습니다. 에러를 확인하고 다시 시도해보세요."
+    
     async def submit_practice(
         self,
         user_id: int,
@@ -1093,6 +1180,22 @@ def example():
             }
         """
         try:
+            # 코드 유효성 검사
+            code_stripped = code.strip()
+            
+            # 빈 코드 또는 TODO만 있는 경우 체크
+            if not code_stripped or code_stripped == 'pass' or 'TODO' in code_stripped and code_stripped.count('\n') < 5:
+                return {
+                    "success": False,
+                    "output": "",
+                    "error": None,
+                    "test_results": None,
+                    "execution_time_ms": 0,
+                    "feedback": "⚠️ 코드를 작성해주세요!\n\n아직 구현이 되어 있지 않습니다. TODO 주석을 참고해서 코드를 작성해보세요.\n\n💡 힌트: 문제 설명을 다시 읽어보고, 요구사항에 맞게 코드를 구현해보세요.",
+                    "passed": 0,
+                    "total": 0
+                }
+            
             # 코드 실행
             if problem_id:
                 # 문제의 테스트 케이스로 실행
@@ -1136,13 +1239,21 @@ def example():
                 db.add(submission)
                 db.commit()
             
+            # AI 피드백 생성 (성공/실패 무관하게 제공)
+            ai_feedback = await self._generate_code_feedback(
+                code=code,
+                result=result,
+                curriculum_id=curriculum_id,
+                db=db
+            )
+            
             return {
                 "success": result.success,
                 "output": result.output,
                 "error": result.error,
                 "test_results": result.test_results,
                 "execution_time_ms": result.execution_time_ms if hasattr(result, 'execution_time_ms') else None,
-                "feedback": "✅ 정답입니다!" if result.success else "❌ 다시 시도해보세요.",
+                "feedback": ai_feedback,
                 "passed": len([t for t in (result.test_results or []) if t.get('passed', False)]),
                 "total": len(result.test_results or [])
             }

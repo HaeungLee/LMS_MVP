@@ -49,7 +49,9 @@ export default function PracticeSection({ problems, curriculumId, onComplete }: 
       const isSuccess = !!res.success;
       setResult({
         success: isSuccess,
-        output: res.output || res.message || JSON.stringify(res),
+        output: res.output || '',
+        error: res.error || null,
+        feedback: res.feedback || '',
         passed: res.passed ?? 0,
         total: res.total ?? 0,
       });
@@ -241,24 +243,97 @@ export default function PracticeSection({ problems, curriculumId, onComplete }: 
 
       {/* 실행 결과 */}
       {result && (
-        <div className={`mb-6 p-4 rounded-xl ${result.success ? 'bg-green-50 border-2 border-green-200' : 'bg-red-50 border-2 border-red-200'}`}>
-          <div className="flex items-center gap-2 mb-2">
-            {result.success ? (
-              <CheckCircle className="w-5 h-5 text-green-600" />
-            ) : (
-              <AlertCircle className="w-5 h-5 text-red-600" />
-            )}
-            <h4 className={`font-bold ${result.success ? 'text-green-900' : 'text-red-900'}`}>
-              {result.success ? '✅ 성공!' : '❌ 실패'}
-            </h4>
-          </div>
-          <pre className="text-sm font-mono text-gray-700 whitespace-pre-wrap">
-            {result.output}
-          </pre>
-          {result.success && (
-            <p className="text-sm text-green-700 mt-2">
-              테스트 케이스: {result.passed}/{result.total} 통과
-            </p>
+        <div className={`mb-6 rounded-xl ${result.success ? 'bg-green-50 border-2 border-green-200' : 'bg-red-50 border-2 border-red-200'}`}>
+          {/* 실행 출력 */}
+          {result.output && (
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="font-semibold text-gray-900">📤 출력 결과</h4>
+              </div>
+              <pre className="text-sm font-mono text-gray-700 whitespace-pre-wrap bg-gray-900 text-green-400 p-3 rounded">
+                {result.output}
+              </pre>
+            </div>
+          )}
+          
+          {/* AI 피드백 */}
+          {result.feedback && (
+            <div className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                {result.success ? (
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                )}
+                <h4 className={`font-bold ${result.success ? 'text-green-900' : 'text-red-900'}`}>
+                  {result.success ? '✅ AI 튜터 피드백' : '❌ AI 튜터 피드백'}
+                </h4>
+              </div>
+              <div className="prose prose-sm max-w-none">
+                {result.feedback.split('\n').map((line: string, idx: number) => {
+                  const trimmedLine = line.trim();
+                  
+                  // 빈 줄은 공백으로
+                  if (!trimmedLine) {
+                    return <div key={idx} className="h-2"></div>;
+                  }
+                  
+                  // 코드 블록 마커는 숨김
+                  if (trimmedLine.startsWith('```')) {
+                    return null;
+                  }
+                  
+                  // 섹션 제목 (** 로 시작하고 끝나는 경우)
+                  if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
+                    const title = trimmedLine.replace(/\*\*/g, '');
+                    return (
+                      <h5 key={idx} className="font-bold text-gray-900 mt-3 mb-1">
+                        {title}
+                      </h5>
+                    );
+                  }
+                  
+                  // 볼드 텍스트 포함 (**text**)
+                  if (trimmedLine.includes('**')) {
+                    const parts = trimmedLine.split('**');
+                    return (
+                      <p key={idx} className="text-gray-700 mb-2 leading-relaxed">
+                        {parts.map((part, i) => 
+                          i % 2 === 1 ? <strong key={i} className="font-semibold text-gray-900">{part}</strong> : part
+                        )}
+                      </p>
+                    );
+                  }
+                  
+                  // 리스트 항목 (- 로 시작)
+                  if (trimmedLine.startsWith('-') || trimmedLine.startsWith('•')) {
+                    const text = trimmedLine.replace(/^[-•]\s*/, '');
+                    return (
+                      <li key={idx} className="text-gray-700 mb-1 ml-4">
+                        {text}
+                      </li>
+                    );
+                  }
+                  
+                  // 일반 텍스트
+                  return (
+                    <p key={idx} className="text-gray-700 mb-2 leading-relaxed">
+                      {trimmedLine}
+                    </p>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          
+          {/* 에러 메시지 */}
+          {result.error && (
+            <div className="p-4 bg-red-100 border-t border-red-200">
+              <h4 className="font-semibold text-red-900 mb-2">⚠️ 에러 메시지</h4>
+              <pre className="text-sm font-mono text-red-700 whitespace-pre-wrap">
+                {result.error}
+              </pre>
+            </div>
           )}
         </div>
       )}
