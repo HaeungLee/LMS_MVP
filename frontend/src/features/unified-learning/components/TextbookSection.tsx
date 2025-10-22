@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import { BookOpen, CheckCircle } from 'lucide-react';
+import { api } from '../../../shared/services/apiClient';
 
 interface TextbookSectionProps {
   content?: any;
@@ -14,8 +15,17 @@ export default function TextbookSection({ content, onComplete }: TextbookSection
   const [isCompleted, setIsCompleted] = useState(false);
 
   const handleComplete = () => {
-    setIsCompleted(true);
-    onComplete();
+    // 서버에 읽음 상태 전송
+    (async () => {
+      try {
+        await api.post('/mvp/textbook/track', { /* optional: curriculum_id, textbook_id */ }, { timeoutMs: 15000 });
+      } catch (e) {
+        // 실패해도 UX는 진행
+        console.warn('Textbook track failed', e);
+      }
+      setIsCompleted(true);
+      onComplete();
+    })();
   };
 
   // 교재 콘텐츠가 없을 때 안내

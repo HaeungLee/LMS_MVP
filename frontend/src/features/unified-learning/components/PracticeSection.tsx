@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import { Code, CheckCircle, Play, AlertCircle } from 'lucide-react';
+import { api } from '../../../shared/services/apiClient';
 
 interface PracticeSectionProps {
   problems: any[];
@@ -14,8 +15,9 @@ export default function PracticeSection({ problems, onComplete }: PracticeSectio
   const [code, setCode] = useState('');
   const [result, setResult] = useState<any>(null);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
 
-  const handleRun = () => {
+  const handleRun = async () => {
     // 실제 코드 실행은 백엔드 API 호출 필요
     if (!problem.title || problem.title === "실습 문제 준비 중") {
       setResult({
@@ -27,13 +29,37 @@ export default function PracticeSection({ problems, onComplete }: PracticeSectio
       return;
     }
     
-    // TODO: 백엔드 코드 실행 API 호출
-    setResult({
-      success: false,
-      output: "코드 실행 기능은 개발 중입니다.\n현재는 교재를 통해 학습해주세요.",
-      passed: 0,
-      total: 0
-    });
+    // 백엔드 코드 실행 API 호출
+    // 백엔드 코드 실행 API 호출
+    try {
+      setIsRunning(true);
+      setResult(null);
+
+      const payload = {
+        // backend expects: curriculum_id (optional), problem_id, code
+        problem_id: problem.id ?? null,
+        code: code || problem.starter_code || ''
+      };
+
+      const res: any = await api.post('/mvp/practice/submit', payload, { timeoutMs: 60000 });
+
+      // 예상 응답: { success: boolean, output: string, passed: number, total: number }
+      setResult({
+        success: !!res.success,
+        output: res.output || res.message || JSON.stringify(res),
+        passed: res.passed ?? 0,
+        total: res.total ?? 0,
+      });
+    } catch (err: any) {
+      setResult({
+        success: false,
+        output: err?.message || '서버 오류가 발생했습니다.',
+        passed: 0,
+        total: 0,
+      });
+    } finally {
+      setIsRunning(false);
+    }
   };
 
   const handleComplete = () => {
@@ -78,8 +104,8 @@ export default function PracticeSection({ problems, onComplete }: PracticeSectio
               onClick={handleRun}
               className="px-4 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-2"
             >
-              <Play className="w-4 h-4" />
-              실행
+              {!isRunning ? <Play className="w-4 h-4" /> : null}
+              {isRunning ? '실행 중...' : '실행'}
             </button>
           </div>
           <textarea

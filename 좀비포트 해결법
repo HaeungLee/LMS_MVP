@@ -1,0 +1,51 @@
+내가 taskkill 했을 때,
+✅ 장점: 즉각적 해결, 간단함
+❌ 단점: 문제가 반복 발생, 매번 수동 개입 필요
+
+근본 원인 해결
+
+1단계: 원인 분석
+로그 확인 → AbortError 발생 → apiClient.ts 52번 라인
+→ fetchWithTimeout의 중복 요청 취소 로직 발견
+→ 로그인 같은 POST 요청까지 abort() 호출됨
+
+2단계: 코드 수정
+// 수정 전: 모든 중복 요청 취소
+if (existingController) {
+  existingController.abort();  // ← 이게 문제!
+}
+
+// 수정 후: GET만 취소, POST/PUT/DELETE는 보존
+if (existingController && method === 'GET') {
+  existingController.abort();
+} else if (existingController) {
+  console.log(`⏳ POST 요청 진행 중`);  // 로그만 남김
+}
+
+3단계: 추가 안전장치
+// LoginPage에서 중복 클릭 방지
+if (loading) {
+  return;  // 이미 로그인 중이면 무시
+}
+
+왜 이렇게 했을까?
+1. 재발 방지
+좀비 프로세스 문제의 근본 원인은 중복 요청 취소 로직
+프로세스만 죽이면 다음 로그인 때 또 발생
+코드를 고치면 영구적 해결
+
+2. 사용자 경험 개선
+// 시나리오: 사용자가 실수로 로그인 버튼 2번 클릭
+// 수정 전: 첫 번째 요청 취소 → AbortError → 로그인 실패
+// 수정 후: 두 번째 클릭 무시 → 첫 번째 요청 정상 완료
+
+3. 디버깅 정보 수집
+console.log(`⏳ POST 요청 진행 중: ${requestKey}`);
+
+어떤 상황에서 중복 요청이 발생하는지 로그로 추적
+나중에 패턴 분석 가능
+
+4. 개발 환경 안정성
+React StrictMode는 의도적으로 컴포넌트를 2번 렌더링
+Hot Reload 시 요청이 중복 발생 가능
+코드 수정으로 이런 환경에서도 안정적

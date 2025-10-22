@@ -1272,9 +1272,110 @@ def example():
             
             return {
                 "success": False,
-                "message": "교재 읽기 기록 중 오류가 발생했습니다.",
-                "error": str(e)
+                "error": str(e),
+                "message": "교재 읽기 추적에 실패했습니다."
             }
+    
+    async def _verify_answer_with_llm(
+        self,
+        question: Any,
+        user_answer: str
+    ) -> tuple[bool, str]:
+        """
+        LLM을 사용하여 사용자 답변을 유연하게 검증
+        
+        Args:
+            question: Question 모델 객체
+            user_answer: 사용자가 제출한 답변
+            
+        Returns:
+            (is_correct, explanation) 튜플
+        """
+        try:
+            from app.services.langchain_hybrid_provider import LangChainHybridProvider
+            
+            # 문제 유형별 검증 프롬프트
+            question_type = question.question_type.lower()
+            
+            # 객관식 (Multiple Choice)
+            if "multiple" in question_type or "choice" in question_type:
+                # 객관식은 정확한 매칭
+                user_answer_clean = str(user_answer).strip().upper()
+                correct_answer_clean = str(question.correct_answer).strip().upper()
+                
+                is_correct = user_answer_clean == correct_answer_clean
+                
+                if is_correct:
+                    explanation = f"정답입니다! {question.explanation or '잘 이해하셨네요.'}"
+                else:
+                    explanation = f"정답은 '{question.correct_answer}'입니다. {question.explanation or '다시 한번 복습해보세요.'}"
+                
+                return is_correct, explanation
+            
+            # 주관식 (Short Answer, Essay 등) - LLM 평가
+            else:
+                provider = LangChainHybridProvider()
+                llm = provider.get_llm()
+                
+                verification_prompt = f"""당신은 공정하고 정확한 채점 전문가입니다.
+
+학생의 답변이 정답과 의미상 일치하는지 평가해주세요.
+
+**문제:**
+{question.code_snippet}
+
+**정답:**
+{question.correct_answer}
+
+**학생 답변:**
+{user_answer}
+
+**평가 기준:**
+1. 핵심 개념이 정확히 포함되어 있는가?
+2. 의미상 정답과 동일한가? (표현이 다르더라도 의미가 같으면 정답)
+3. 오타나 사소한 표현 차이는 무시
+4. 완전히 틀린 개념이나 반대 의미는 오답
+
+**응답 형식 (반드시 이 형식을 따라주세요):**
+정답여부: [정답/오답]
+설명: [학생에게 피드백할 한글 설명 2-3문장]
+
+예시:
+정답여부: 정답
+설명: 완벽합니다! 핵심 개념을 정확히 이해하고 계시네요.
+
+또는:
+정답여부: 오답
+설명: 아쉽게도 핵심 개념이 빠졌습니다. [정답]은 [설명]을 의미합니다."""
+
+                response = await llm.ainvoke(verification_prompt)
+                response_text = self._extract_response_text(response)
+                
+                # 응답 파싱
+                is_correct = "정답여부: 정답" in response_text or "정답여부:정답" in response_text
+                
+                # 설명 추출
+                if "설명:" in response_text:
+                    explanation = response_text.split("설명:")[-1].strip()
+                else:
+                    explanation = response_text
+                
+                # 설명이 너무 길면 자르기
+                if len(explanation) > 300:
+                    explanation = explanation[:300] + "..."
+                
+                return is_correct, explanation
+                
+        except Exception as e:
+            logger.error(f"LLM 답변 검증 실패: {str(e)}")
+            # 폴백: 단순 문자열 비교
+            user_clean = str(user_answer).strip().lower()
+            correct_clean = str(question.correct_answer).strip().lower()
+            
+            is_correct = user_clean == correct_clean
+            explanation = "정답입니다!" if is_correct else f"정답은 '{question.correct_answer}'입니다."
+            
+            return is_correct, explanation
 
 
 # 싱글톤 인스턴스

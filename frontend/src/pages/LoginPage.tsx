@@ -13,6 +13,12 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // 로딩 중이면 중복 제출 방지
+    if (loading) {
+      console.log('⏳ 로그인 진행 중 - 중복 제출 무시');
+      return;
+    }
+    
     try {
       await login(email, password);
       navigate('/dashboard'); // 로그인 성공 시 대시보드로 이동

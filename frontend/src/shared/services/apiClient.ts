@@ -31,17 +31,22 @@ function getCsrfToken(): string | null {
 
 // 타임아웃이 있는 fetch 래퍼
 async function fetchWithTimeout(resource: string, options: RequestInit & { timeoutMs?: number } = {}) {
-  const { timeoutMs = 5000, ...rest } = options; // 10초 → 5초로 단축
+  const { timeoutMs = 10000, ...rest } = options; // 기본 타임아웃 10초로 복원
   
   // 요청 식별자 생성 (메소드 + URL)
   const requestKey = `${rest.method || 'GET'}:${resource}`;
   
-  // 기존 동일한 요청이 있으면 취소
+  // 기존 동일한 GET 요청만 취소 (POST/PUT/DELETE는 보존)
   const existingController = activeRequests.get(requestKey);
-  if (existingController) {
-    console.log(`🔄 중복 요청 취소: ${requestKey}`);
+  const method = (rest.method || 'GET').toUpperCase();
+  
+  if (existingController && method === 'GET') {
+    console.log(`🔄 중복 GET 요청 취소: ${requestKey}`);
     existingController.abort();
     activeRequests.delete(requestKey);
+  } else if (existingController) {
+    console.log(`⏳ POST/PUT/DELETE 요청 진행 중: ${requestKey}`);
+    // POST/PUT/DELETE는 중복 방지 - 즉시 반환하지 않고 단순 로그만
   }
   
   const controller = new AbortController();

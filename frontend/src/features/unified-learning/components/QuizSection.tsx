@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import { CheckCircle, XCircle, HelpCircle } from 'lucide-react';
+import { api } from '../../../shared/services/apiClient';
 
 interface QuizSectionProps {
   questions: any[];
@@ -35,12 +36,28 @@ export default function QuizSection({ questions, onComplete }: QuizSectionProps)
   const quizData = questions?.length > 0 ? questions : defaultQuestions;
   const current = quizData[currentQuestion];
 
-  const handleAnswer = (idx: number) => {
+  const handleAnswer = async (idx: number) => {
     setSelectedAnswer(idx);
     setShowFeedback(true);
 
-    if (idx === current.correct) {
-      setScore(score + 1);
+    try {
+      const payload = {
+        question_id: current.id ?? null,
+        answer: current.options ? current.options[idx] : String(idx)
+      };
+
+      const res: any = await api.post('/mvp/quiz/submit', payload, { timeoutMs: 30000 });
+
+      // 서버는 { correct: boolean, score?: number, explanation?: string }
+      if (res.correct) setScore(prev => prev + 1);
+
+      // 서버 설명이 있으면 current.explanation 대체
+      if (res.explanation) current.explanation = res.explanation;
+    } catch (err: any) {
+      // 네트워크 에러일 때는 기존 로컬 비교 사용
+      if (idx === current.correct) {
+        setScore(score + 1);
+      }
     }
   };
 
