@@ -114,6 +114,22 @@ export default function UnifiedLearningPage() {
     // React Query 캐시 무효화 - 대시보드 자동 갱신
     queryClient.invalidateQueries({ queryKey: ['daily-learning', curriculumId] });
     queryClient.invalidateQueries({ queryKey: ['today-learning'] });
+    
+    /* 자동 섹션 전환 (선택적 기능 - 필요시 활성화)
+     * 사용자가 다시 위로 스크롤해서 내용을 확인하거나
+     * 오늘의 학습 내용을 훑어보는 경우를 고려하여 비활성화
+     * 사용자가 명시적으로 "다음 단계로" 버튼을 클릭하도록 유도
+     * 
+    setTimeout(() => {
+      if (section === 'textbook' && currentSection === 'textbook') {
+        setCurrentSection('practice');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (section === 'practice' && currentSection === 'practice') {
+        setCurrentSection('quiz');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 2000);
+    */
   };
 
   // 다음 섹션으로 이동
