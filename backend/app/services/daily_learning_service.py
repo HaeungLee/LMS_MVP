@@ -1063,12 +1063,15 @@ def example():
             # 제출 기록 저장
             submission = CodeSubmission(
                 user_id=user_id,
-                problem_id=problem_id,
+                problem_id=problem_id or 0,  # None인 경우 0으로 설정
                 code=code,
-                status="passed" if result.success else "failed",
-                output=result.output,
-                error_message=result.error,
-                execution_time_ms=result.execution_time_ms
+                language="python",
+                status="accepted" if result.success else "wrong_answer",
+                execution_time_ms=result.execution_time_ms if hasattr(result, 'execution_time_ms') else None,
+                passed_tests=len([t for t in (result.test_results or []) if t.get('passed', False)]),
+                total_tests=len(result.test_results or []),
+                test_results=result.test_results,
+                judged_at=datetime.utcnow()
             )
             db.add(submission)
             db.commit()
@@ -1138,18 +1141,33 @@ def example():
                 db.add(quiz_session)
                 db.flush()  # ID 생성
             
-            # 2. 퀴즈 정답 확인 (현재는 간단히 Mock으로 처리, 나중에 Question 테이블과 연동)
-            # TODO: Question 테이블에서 실제 정답을 조회하여 비교
-            is_correct = True  # 임시로 항상 정답 처리
+            # 2. Question 조회 및 LLM 기반 정답 확인
+            from app.models.orm import Question
+            
+            question = db.query(Question).filter(Question.id == question_id).first()
+            
+            if not question:
+                return {
+                    "success": False,
+                    "error": "문제를 찾을 수 없습니다.",
+                    "correct": False,
+                    "score": 0.0
+                }
+            
+            # LLM을 사용한 유연한 정답 검증
+            is_correct, explanation = await self._verify_answer_with_llm(
+                question=question,
+                user_answer=answer
+            )
+            
             score = 10.0 if is_correct else 0.0
-            explanation = "정답입니다! 잘 이해하셨네요." if is_correct else "아쉽게도 틀렸습니다. 다시 한번 확인해보세요."
             
             # 3. QuizAnswer 레코드 저장
             quiz_answer = QuizAnswer(
                 session_id=quiz_session.id,
                 question_id=question_id,
                 user_answer=answer,
-                correct_answer="임시정답",  # TODO: 실제 정답으로 교체
+                correct_answer=question.correct_answer,
                 is_correct=is_correct,
                 is_skipped=False,
                 score=score,
