@@ -31,7 +31,7 @@ function getCsrfToken(): string | null {
 
 // 타임아웃이 있는 fetch 래퍼
 async function fetchWithTimeout(resource: string, options: RequestInit & { timeoutMs?: number } = {}) {
-  const { timeoutMs = 10000, ...rest } = options; // 기본 타임아웃 10초로 복원
+  const { timeoutMs = 30000, ...rest } = options; // 기본 타임아웃 30초 (LLM 호출 고려)
   
   // 요청 식별자 생성 (메소드 + URL)
   const requestKey = `${rest.method || 'GET'}:${resource}`;

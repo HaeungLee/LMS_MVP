@@ -163,40 +163,56 @@ class DailyLearningService:
             }
         """
         try:
-            logger.info(f"오늘의 학습 조회: user_id={user_id}, curriculum_id={curriculum_id}")
+            import time
+            start_time = time.time()
+            logger.info(f"⏱️ [START] 오늘의 학습 조회: user_id={user_id}, curriculum_id={curriculum_id}")
             
             # 1. 커리큘럼 조회
+            step_start = time.time()
             curriculum = await self._get_curriculum(curriculum_id, user_id, db)
+            logger.info(f"⏱️ [1/6] 커리큘럼 조회: {time.time() - step_start:.2f}초")
             if not curriculum:
                 raise ValueError("커리큘럼을 찾을 수 없습니다")
             
             # 2. 학습 시작일 기준 현재 학습 날짜 계산
+            step_start = time.time()
             current_day_info = self._calculate_current_day(
                 curriculum, target_date
             )
+            logger.info(f"⏱️ [2/6] 날짜 계산: {time.time() - step_start:.2f}초")
             
             # 3. 해당 날짜의 학습 콘텐츠 가져오기
+            step_start = time.time()
             daily_task = self._get_daily_task_from_curriculum(
                 curriculum, current_day_info["week"], current_day_info["day"]
             )
+            logger.info(f"⏱️ [3/6] 태스크 추출: {time.time() - step_start:.2f}초")
             
             # 4. 3가지 섹션 생성
+            step_start = time.time()
             textbook_section = await self._generate_textbook_section(
                 daily_task, curriculum, user_id, db
             )
+            logger.info(f"⏱️ [4/6] 교재 섹션 생성: {time.time() - step_start:.2f}초")
             
+            step_start = time.time()
             practice_section = await self._generate_practice_section(
                 daily_task, curriculum, user_id, db
             )
+            logger.info(f"⏱️ [5/6] 실습 섹션 생성: {time.time() - step_start:.2f}초")
             
+            step_start = time.time()
             quiz_section = await self._generate_quiz_section(
                 daily_task, curriculum, user_id, db
             )
+            logger.info(f"⏱️ [6/6] 퀴즈 섹션 생성: {time.time() - step_start:.2f}초")
             
             # 5. 진도 상태 조회
+            step_start = time.time()
             progress = await self._get_daily_progress(
                 user_id, curriculum_id, current_day_info, db
             )
+            logger.info(f"⏱️ [보너스] 진도 조회: {time.time() - step_start:.2f}초")
             
             # 6. 결과 조합
             today_learning = {
@@ -217,11 +233,17 @@ class DailyLearningService:
                 "progress": progress
             }
             
-            logger.info(f"오늘의 학습 생성 완료: Week {current_day_info['week']} Day {current_day_info['day']}")
+            total_time = time.time() - start_time
+            logger.info(f"✅ [DONE] 오늘의 학습 생성 완료: Week {current_day_info['week']} Day {current_day_info['day']} (총 {total_time:.2f}초)")
+            
+            # 10초 이상 걸리면 경고
+            if total_time > 10:
+                logger.warning(f"⚠️ 느린 응답 감지: {total_time:.2f}초 (교재:{textbook_section.get('available')}, 실습:{practice_section.get('available')}, 퀴즈:{quiz_section.get('available')})")
+            
             return today_learning
             
         except Exception as e:
-            logger.error(f"오늘의 학습 조회 실패: {str(e)}")
+            logger.error(f"❌ 오늘의 학습 조회 실패: {str(e)}")
             raise
     
     async def _get_curriculum(

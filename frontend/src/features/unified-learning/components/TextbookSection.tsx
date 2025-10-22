@@ -8,17 +8,20 @@ import { api } from '../../../shared/services/apiClient';
 
 interface TextbookSectionProps {
   content?: any;
+  curriculumId?: number;
   onComplete: () => void;
 }
 
-export default function TextbookSection({ content, onComplete }: TextbookSectionProps) {
+export default function TextbookSection({ content, curriculumId, onComplete }: TextbookSectionProps) {
   const [isCompleted, setIsCompleted] = useState(false);
 
   const handleComplete = () => {
     // 서버에 읽음 상태 전송
     (async () => {
       try {
-        await api.post('/mvp/textbook/track', { /* optional: curriculum_id, textbook_id */ }, { timeoutMs: 15000 });
+        if (curriculumId) {
+          await api.post('/mvp/textbook/track', { curriculum_id: curriculumId }, { timeoutMs: 15000 });
+        }
       } catch (e) {
         // 실패해도 UX는 진행
         console.warn('Textbook track failed', e);

@@ -8,10 +8,11 @@ import { api } from '../../../shared/services/apiClient';
 
 interface PracticeSectionProps {
   problems: any[];
+  curriculumId?: number;
   onComplete: () => void;
 }
 
-export default function PracticeSection({ problems, onComplete }: PracticeSectionProps) {
+export default function PracticeSection({ problems, curriculumId, onComplete }: PracticeSectionProps) {
   const [code, setCode] = useState('');
   const [result, setResult] = useState<any>(null);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -36,7 +37,8 @@ export default function PracticeSection({ problems, onComplete }: PracticeSectio
       setResult(null);
 
       const payload = {
-        // backend expects: curriculum_id (optional), problem_id, code
+        // backend expects: curriculum_id, problem_id, code
+        curriculum_id: curriculumId || 0,
         problem_id: problem.id ?? null,
         code: code || problem.starter_code || ''
       };

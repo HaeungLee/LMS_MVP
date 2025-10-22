@@ -75,10 +75,12 @@ export default function UnifiedLearningPage() {
     queryKey: ['daily-learning', curriculumId],
     queryFn: async () => {
       const params = curriculumId ? `?curriculum_id=${curriculumId}` : '';
-      const response = await api.get(`/mvp/daily-learning${params}`);
+      // LLM 호출로 시간이 오래 걸리므로 60초 타임아웃 설정
+      const response = await api.get(`/mvp/daily-learning${params}`, { timeoutMs: 60000 });
       return response as DailyLearning;
     },
     enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
   });
 
   // 섹션 완료 처리
@@ -252,6 +254,7 @@ export default function UnifiedLearningPage() {
             <>
               <TextbookSection 
                 content={sections.textbook.content}
+                curriculumId={curriculumId ? parseInt(curriculumId) : undefined}
                 onComplete={() => handleSectionComplete('textbook')}
               />
               <InlineAIMentor context="textbook" topic={theme} />
@@ -262,6 +265,7 @@ export default function UnifiedLearningPage() {
             <>
               <PracticeSection 
                 problems={sections.practice.problems || []}
+                curriculumId={curriculumId ? parseInt(curriculumId) : undefined}
                 onComplete={() => handleSectionComplete('practice')}
               />
               <InlineAIMentor context="practice" topic={theme} />
@@ -272,6 +276,7 @@ export default function UnifiedLearningPage() {
             <>
               <QuizSection 
                 questions={sections.quiz.questions || []}
+                curriculumId={curriculumId ? parseInt(curriculumId) : undefined}
                 onComplete={() => handleSectionComplete('quiz')}
               />
             </>

@@ -8,10 +8,11 @@ import { api } from '../../../shared/services/apiClient';
 
 interface QuizSectionProps {
   questions: any[];
+  curriculumId?: number;
   onComplete: () => void;
 }
 
-export default function QuizSection({ questions, onComplete }: QuizSectionProps) {
+export default function QuizSection({ questions, curriculumId, onComplete }: QuizSectionProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -42,6 +43,7 @@ export default function QuizSection({ questions, onComplete }: QuizSectionProps)
 
     try {
       const payload = {
+        curriculum_id: curriculumId || 0,
         question_id: current.id ?? null,
         answer: current.options ? current.options[idx] : String(idx)
       };

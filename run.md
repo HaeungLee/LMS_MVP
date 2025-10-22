@@ -43,8 +43,10 @@ python -m scripts.seed_teacher       # 교사 계정 생성
 python -m scripts.seed_questions     # 퀴즈 문제 데이터
 python -m scripts.seed_curriculum_phase1  # 코딩 테스트 문제
 
-# 백엔드 서버 시작
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+# 백엔드 서버 시작 (성능 최적화 옵션)
+# --timeout-keep-alive: 좀비 연결 방지
+# --workers: 병렬 처리 (개발 시에는 1개 권장, 프로덕션에서는 4개)
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 --timeout-keep-alive 30
 ```
 
 ### 4단계: 프론트엔드 실행 (새 터미널)
