@@ -715,14 +715,26 @@ class DailyLearningService:
             if not questions or len(questions) == 0:
                 raise ValueError("퀴즈 생성 실패")
             
+            # 프론트엔드 형식에 맞게 변환 (text → question)
+            formatted_questions = []
+            for q in questions:
+                formatted_q = {
+                    "id": q.get("id", 0),
+                    "question": q.get("text", q.get("question", "")),  # text를 question으로 변환
+                    "options": q.get("options", []),
+                    "correct": q.get("correct", 0),
+                    "explanation": q.get("explanation", "")
+                }
+                formatted_questions.append(formatted_q)
+            
             return {
                 "type": "quiz",
                 "title": "✍️ 퀴즈",
                 "available": True,
-                "question_count": len(questions),
-                "questions": questions,
+                "question_count": len(formatted_questions),
+                "questions": formatted_questions,
                 "passing_score": 60,
-                "estimated_time": len(questions) * 2
+                "estimated_time": len(formatted_questions) * 2
             }
             
         except Exception as e:
@@ -730,7 +742,7 @@ class DailyLearningService:
             import traceback
             traceback.print_exc()
             
-            # 폴백: 기본 퀴즈
+            # 폴백: 기본 퀴즈 (프론트엔드 형식에 맞춤)
             return {
                 "type": "quiz",
                 "title": "✍️ 퀴즈",
@@ -739,7 +751,7 @@ class DailyLearningService:
                 "questions": [
                     {
                         "id": 1,
-                        "text": f"{daily_task.get('theme', '')}에서 가장 중요한 개념은 무엇인가요?",
+                        "question": f"{daily_task.get('theme', '')}에서 가장 중요한 개념은 무엇인가요?",
                         "options": [
                             "기본 개념 이해",
                             "실습을 통한 학습",
