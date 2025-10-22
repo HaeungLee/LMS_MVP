@@ -89,7 +89,7 @@ export default function TextbookSection({ content, curriculumId, onComplete }: T
           <BookOpen className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">📖 교재 학습</h2>
+          <h2 className="text-2xl font-bold text-gray-900">교재 학습</h2>
           <p className="text-sm text-gray-600">차근차근 읽어보세요</p>
         </div>
       </div>
@@ -97,14 +97,21 @@ export default function TextbookSection({ content, curriculumId, onComplete }: T
       {/* 콘텐츠 */}
       <div className="prose prose-indigo max-w-none">
         <div 
-          className="whitespace-pre-wrap text-gray-800 leading-relaxed"
+          className="text-gray-800 leading-relaxed"
           dangerouslySetInnerHTML={{ 
             __html: displayContent
-              .replace(/#{1,6}\s+(.*)/g, '<h2 class="text-2xl font-bold mt-6 mb-3 text-gray-900">$1</h2>')
-              .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="bg-gray-900 text-white p-4 rounded-lg overflow-x-auto my-4 border-2 border-gray-700"><code class="text-white">$2</code></pre>')
-              .replace(/`([^`]+)`/g, '<code class="bg-gray-100 text-red-600 px-2 py-1 rounded">$1</code>')
-              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-              .replace(/\n\n/g, '<br/><br/>')
+              // 제목 처리
+              .replace(/#{1,6}\s+(.*)/g, '<h2 class="text-2xl font-bold mt-6 mb-3 text-grey-100">$1</h2>')
+              // 코드 블록 처리 - 흰색 글씨, 검은 배경
+              .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="bg-gray-900 text-white p-4 rounded-lg overflow-x-auto my-4 border-2 border-gray-700"><code class="text-white font-mono">$2</code></pre>')
+              // 인라인 코드 처리 - 빨간색
+              .replace(/`([^`]+)`/g, '<code class="bg-gray-100 text-red-600 px-2 py-1 rounded font-mono text-sm">$1</code>')
+              // 볼드 처리
+              .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
+              // 일반 줄바꿈을 <p> 태그로 감싸기 (가독성 향상)
+              .split('\n\n')
+              .map((para: string) => para.trim() ? `<p class="text-gray-800 mb-4">${para.replace(/\n/g, '<br/>')}</p>` : '')
+              .join('')
           }}
         />
         
@@ -132,7 +139,7 @@ export default function TextbookSection({ content, curriculumId, onComplete }: T
         {/* 자동 추적 안내 */}
         {!isCompleted && (
           <p className="text-center text-sm text-gray-500 mt-3">
-            💡 교재를 끝까지 스크롤하면 자동으로 완료됩니다
+            교재를 끝까지 스크롤하면 자동으로 완료됩니다
           </p>
         )}
       </div>

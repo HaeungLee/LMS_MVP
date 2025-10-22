@@ -82,7 +82,7 @@ export default function ReviewSessionPage() {
   // 세션이 없으면 복습 페이지로 리다이렉트
   useEffect(() => {
     if (!session) {
-      navigate('/review');
+      navigate('/dashboard/review');
     }
   }, [session, navigate]);
 
@@ -239,7 +239,7 @@ export default function ReviewSessionPage() {
         {/* 액션 버튼 */}
         <div className="flex gap-4">
           <button
-            onClick={() => navigate('/review')}
+            onClick={() => navigate('/dashboard/review')}
             className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
           >
             <RefreshCw className="w-5 h-5" />

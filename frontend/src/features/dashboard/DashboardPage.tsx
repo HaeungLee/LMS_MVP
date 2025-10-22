@@ -290,7 +290,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <button
-            onClick={() => navigate('/review')}
+            onClick={() => navigate('/dashboard/review')}
             className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
           >
             <Sparkles className="w-5 h-5" />

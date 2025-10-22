@@ -160,6 +160,10 @@ const AIMentorChat: React.FC<AIMentorChatProps> = ({ userId }) => {
         })
       });
       
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       console.log('멘토링 세션 시작 성공:', data); // 디버깅용
       
@@ -192,6 +196,15 @@ ${conversationModes.find(m => m.id === conversationMode)?.label} 모드로 대�
       }
     } catch (error) {
       console.error('멘토링 세션 시작 오류:', error);
+      
+      // 에러 메시지 표시
+      const errorMessage: Message = {
+        id: `mentor-error-${Date.now()}`,
+        type: 'mentor',
+        content: `죄송합니다. 세션을 시작할 수 없습니다.\n\n**오류 상세:** ${error instanceof Error ? error.message : '알 수 없는 오류'}\n\n잠시 후 다시 시도해주세요.`,
+        timestamp: new Date(),
+      };
+      setMessages([errorMessage]);
     } finally {
       setLoading(false);
     }
@@ -230,6 +243,10 @@ ${conversationModes.find(m => m.id === conversationMode)?.label} 모드로 대�
         })
       });
       
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       console.log('멘토링 대화 응답:', data); // 디버깅용
       
@@ -249,11 +266,11 @@ ${conversationModes.find(m => m.id === conversationMode)?.label} 모드로 대�
     } catch (error) {
       console.error('메시지 전송 실패:', error);
       
-      // 에러 시 기본 응답
+      // 에러 시 상세 응답
       const errorMessage: Message = {
         id: `mentor-error-${Date.now()}`,
         type: 'mentor',
-        content: '죄송합니다. 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.',
+        content: `죄송합니다. 응답을 생성할 수 없습니다.\n\n**오류:** ${error instanceof Error ? error.message : '알 수 없는 오류'}\n\n- 네트워크 연결을 확인해주세요\n- 백엔드 서버가 실행 중인지 확인해주세요 (port 8000)\n- 잠시 후 다시 시도해주세요`,
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
