@@ -71,7 +71,7 @@ export default function TextbookSection({ content, curriculumId, onComplete }: T
           dangerouslySetInnerHTML={{ 
             __html: displayContent
               .replace(/#{1,6}\s+(.*)/g, '<h2 class="text-2xl font-bold mt-6 mb-3 text-gray-900">$1</h2>')
-              .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4"><code>$2</code></pre>')
+              .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="bg-gray-900 text-white p-4 rounded-lg overflow-x-auto my-4 border-2 border-gray-700"><code class="text-white">$2</code></pre>')
               .replace(/`([^`]+)`/g, '<code class="bg-gray-100 text-red-600 px-2 py-1 rounded">$1</code>')
               .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
               .replace(/\n\n/g, '<br/><br/>')

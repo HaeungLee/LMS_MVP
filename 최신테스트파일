@@ -2,3 +2,5 @@ python test_llm_quiz_verification.py
 
 python test_full_progress_100.py
 
+왼쪽에 교재를 주고, 화면을 넓게 쓰고, 오른쪽에는 코드(혹은 메모장)을 쓸 수 있게 하고, 등록된 내 이메일로 바로 보낼 수 있고
+교재를 읽고, 왼쪽에서 퀴즈를 생성하면 오른쪽에서 바로 퀴즈를 풀 수 있게 하는 시스템.

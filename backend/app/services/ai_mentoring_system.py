@@ -394,20 +394,34 @@ class AIMentoringSystem:
             }
     
     async def _generate_greeting(self, session: MentorSession, initial_question: Optional[str]) -> MentorResponse:
-        """인사말 생성"""
+        """인사말 생성 (커리큘럼 정보 반영)"""
         
         personality = self.mentor_personalities[session.mentor_personality]
+        
+        # RAG: 사용자 학습 컨텍스트 조회
+        try:
+            learning_context = await self.get_user_learning_context(session.user_id)
+            curriculum_info = learning_context.get('curriculum_progress', {})
+            current_goal = curriculum_info.get('goal', '프로그래밍 학습')
+            current_topics = ', '.join(learning_context.get('strong_topics', [])[:2]) if learning_context.get('strong_topics') else None
+        except:
+            current_goal = '프로그래밍 학습'
+            current_topics = None
         
         # 세션 고유 식별자 추가
         session_timestamp = int(datetime.utcnow().timestamp())
 
         greeting_prompt = f"""당신은 한국의 프로그래밍 교육 플랫폼의 따뜻하고 지식이 풍부한 AI 학습 멘토입니다.
 
-세션 목표: {', '.join(session.session_goals)}
-{f"학생의 첫 질문: {initial_question}" if initial_question else ""}
+학습자 정보:
+- 현재 목표: {current_goal}
+{f"- 학습 중인 주제: {current_topics}" if current_topics else ""}
+- 세션 목표: {', '.join(session.session_goals)}
+{f"- 학생의 첫 질문: {initial_question}" if initial_question else ""}
 
 지침:
 - 한국어로 따뜻하고 전문적으로 인사하세요
+- 학습자의 현재 목표({current_goal})를 언급하며 맞춤형 인사
 - 자연스럽고 환영하는 분위기로 (150-250자)
 - 학습을 돕는 것에 대한 진심 어린 열정을 표현하세요
 - 오늘 무엇을 도와드릴지 물어보세요
