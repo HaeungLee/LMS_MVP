@@ -702,17 +702,74 @@ class DailyLearningService:
         day_info: Dict[str, int],
         db: Session
     ) -> Dict[str, Any]:
-        """일일 진도 상태 조회"""
-        # TODO: 실제 진도 추적 테이블에서 조회
-        # 지금은 Mock 데이터
+        """
+        일일 진도 상태 조회
         
-        return {
-            "textbook_read": False,
-            "practice_submitted": False,
-            "quiz_completed": False,
-            "completion_percentage": 0,
-            "overall_status": "not_started"  # not_started, in_progress, completed
-        }
+        AITeachingSession을 활용하여 오늘의 학습 상태 확인
+        """
+        try:
+            from datetime import datetime, timedelta
+            from app.models.orm import QuizSession, QuizAnswer
+            from app.models.code_problem import CodeSubmission
+            
+            # 오늘 날짜 범위
+            today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+            today_end = today_start + timedelta(days=1)
+            
+            # 1. 퀴즈 완료 여부 확인
+            quiz_completed = db.query(QuizSession).filter(
+                QuizSession.user_id == user_id,
+                QuizSession.completed_at >= today_start,
+                QuizSession.completed_at < today_end,
+                QuizSession.answered_questions > 0
+            ).first() is not None
+            
+            # 2. 실습 제출 여부 확인
+            practice_submitted = db.query(CodeSubmission).filter(
+                CodeSubmission.user_id == user_id,
+                CodeSubmission.submitted_at >= today_start,
+                CodeSubmission.submitted_at < today_end
+            ).first() is not None
+            
+            # 3. 교재 읽음 여부 (AITeachingSession의 last_activity_at 확인)
+            teaching_session = db.query(AITeachingSession).filter(
+                AITeachingSession.user_id == user_id,
+                AITeachingSession.curriculum_id == curriculum_id,
+                AITeachingSession.last_activity_at >= today_start
+            ).first()
+            
+            textbook_read = teaching_session is not None
+            
+            # 4. 완료율 계산
+            completed_count = sum([textbook_read, practice_submitted, quiz_completed])
+            completion_percentage = int((completed_count / 3) * 100)
+            
+            # 5. 전체 상태 결정
+            if completion_percentage == 0:
+                overall_status = "not_started"
+            elif completion_percentage == 100:
+                overall_status = "completed"
+            else:
+                overall_status = "in_progress"
+            
+            return {
+                "textbook_read": textbook_read,
+                "practice_submitted": practice_submitted,
+                "quiz_completed": quiz_completed,
+                "completion_percentage": completion_percentage,
+                "overall_status": overall_status
+            }
+            
+        except Exception as e:
+            logger.error(f"진도 조회 실패: {str(e)}")
+            # 에러 시 기본값 반환
+            return {
+                "textbook_read": False,
+                "practice_submitted": False,
+                "quiz_completed": False,
+                "completion_percentage": 0,
+                "overall_status": "not_started"
+            }
     
     def _parse_practice_json(self, content: str) -> Optional[Dict[str, Any]]:
         """실습 문제 JSON 파싱"""
@@ -1042,23 +1099,164 @@ def example():
         db: Session
     ) -> Dict[str, Any]:
         """
-        퀴즈 답변 제출
+        퀴즈 답변 제출 및 DB 저장
         
         Returns:
             {
                 "correct": True/False,
                 "explanation": "...",
-                "score": 10
+                "score": 10,
+                "session_id": 123
             }
         """
-        # TODO: 실제 답변 검증 및 저장
-        # 지금은 Mock
+        try:
+            from app.models.orm import QuizSession, QuizAnswer
+            from datetime import datetime, timedelta
+            
+            # 1. 오늘의 학습 세션 찾기 또는 생성
+            today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+            today_end = today_start + timedelta(days=1)
+            
+            quiz_session = db.query(QuizSession).filter(
+                QuizSession.user_id == user_id,
+                QuizSession.completed_at >= today_start,
+                QuizSession.completed_at < today_end
+            ).order_by(QuizSession.completed_at.desc()).first()
+            
+            # 세션이 없으면 새로 생성
+            if not quiz_session:
+                quiz_session = QuizSession(
+                    user_id=user_id,
+                    session_type=f"curriculum_{curriculum_id}",
+                    total_questions=0,
+                    answered_questions=0,
+                    skipped_questions=0,
+                    total_score=0.0,
+                    time_taken=0,
+                    completed_at=datetime.utcnow()
+                )
+                db.add(quiz_session)
+                db.flush()  # ID 생성
+            
+            # 2. 퀴즈 정답 확인 (현재는 간단히 Mock으로 처리, 나중에 Question 테이블과 연동)
+            # TODO: Question 테이블에서 실제 정답을 조회하여 비교
+            is_correct = True  # 임시로 항상 정답 처리
+            score = 10.0 if is_correct else 0.0
+            explanation = "정답입니다! 잘 이해하셨네요." if is_correct else "아쉽게도 틀렸습니다. 다시 한번 확인해보세요."
+            
+            # 3. QuizAnswer 레코드 저장
+            quiz_answer = QuizAnswer(
+                session_id=quiz_session.id,
+                question_id=question_id,
+                user_answer=answer,
+                correct_answer="임시정답",  # TODO: 실제 정답으로 교체
+                is_correct=is_correct,
+                is_skipped=False,
+                score=score,
+                answered_at=datetime.utcnow()
+            )
+            db.add(quiz_answer)
+            
+            # 4. 세션 통계 업데이트
+            quiz_session.total_questions += 1
+            quiz_session.answered_questions += 1
+            quiz_session.total_score += score
+            
+            db.commit()
+            
+            logger.info(f"퀴즈 답변 저장 완료: user={user_id}, question={question_id}, correct={is_correct}")
+            
+            return {
+                "correct": is_correct,
+                "explanation": explanation,
+                "score": score,
+                "session_id": quiz_session.id,
+                "total_score": quiz_session.total_score,
+                "answered_count": quiz_session.answered_questions
+            }
+            
+        except Exception as e:
+            db.rollback()
+            logger.error(f"퀴즈 답변 저장 실패: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            
+            # 저장 실패 시에도 사용자에게 피드백은 제공
+            return {
+                "correct": True,
+                "explanation": "답변이 제출되었습니다.",
+                "score": 0,
+                "error": "저장 중 오류가 발생했습니다."
+            }
+
+    async def track_textbook_reading(
+        self,
+        user_id: int,
+        curriculum_id: int,
+        db: Session
+    ) -> Dict[str, Any]:
+        """
+        교재 읽기 추적
         
-        return {
-            "correct": True,
-            "explanation": "정답입니다! 잘 이해하셨네요.",
-            "score": 10
-        }
+        사용자가 교재 탭을 열었을 때 호출되어 진도에 반영됩니다.
+        AITeachingSession의 last_activity_at을 업데이트하여 
+        _get_daily_progress에서 textbook_read 플래그가 True가 되도록 합니다.
+        
+        Returns:
+            {
+                "success": True,
+                "message": "교재 읽기가 기록되었습니다.",
+                "last_activity_at": "2025-10-22T10:30:00"
+            }
+        """
+        try:
+            from app.models.ai_curriculum import AITeachingSession
+            from datetime import datetime
+            
+            # 1. 현재 커리큘럼의 AITeachingSession 찾기
+            teaching_session = db.query(AITeachingSession).filter(
+                AITeachingSession.user_id == user_id,
+                AITeachingSession.curriculum_id == curriculum_id
+            ).first()
+            
+            # 2. 세션이 없으면 새로 생성
+            if not teaching_session:
+                teaching_session = AITeachingSession(
+                    user_id=user_id,
+                    curriculum_id=curriculum_id,
+                    current_week=1,
+                    current_day=1,
+                    completion_percentage=0,
+                    started_at=datetime.utcnow(),
+                    last_activity_at=datetime.utcnow()
+                )
+                db.add(teaching_session)
+                logger.info(f"새로운 AITeachingSession 생성: user={user_id}, curriculum={curriculum_id}")
+            else:
+                # 3. 기존 세션의 last_activity_at 업데이트
+                teaching_session.last_activity_at = datetime.utcnow()
+                logger.info(f"AITeachingSession last_activity_at 업데이트: user={user_id}, curriculum={curriculum_id}")
+            
+            db.commit()
+            
+            return {
+                "success": True,
+                "message": "교재 읽기가 기록되었습니다.",
+                "last_activity_at": teaching_session.last_activity_at.isoformat(),
+                "teaching_session_id": teaching_session.id
+            }
+            
+        except Exception as e:
+            db.rollback()
+            logger.error(f"교재 읽기 추적 실패: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            
+            return {
+                "success": False,
+                "message": "교재 읽기 기록 중 오류가 발생했습니다.",
+                "error": str(e)
+            }
 
 
 # 싱글톤 인스턴스

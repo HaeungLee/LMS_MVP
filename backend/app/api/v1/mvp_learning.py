@@ -77,6 +77,11 @@ class QuizAnswerRequest(BaseModel):
     answer: str
 
 
+class TextbookTrackRequest(BaseModel):
+    """교재 읽기 추적 요청"""
+    curriculum_id: int
+
+
 # ============= 온보딩 API =============
 
 @router.get("/onboarding/goals")
@@ -335,6 +340,30 @@ async def submit_quiz_answer(
             curriculum_id=request.curriculum_id,
             question_id=request.question_id,
             answer=request.answer,
+            db=db
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/textbook/track")
+async def track_textbook_reading(
+    request: TextbookTrackRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    service: DailyLearningService = Depends(get_daily_learning_service)
+) -> Dict[str, Any]:
+    """
+    교재 읽기 추적
+    
+    학습 페이지 - 교재 탭에서 사용
+    사용자가 교재를 열었을 때 호출하여 진도에 반영
+    """
+    try:
+        result = await service.track_textbook_reading(
+            user_id=current_user.id,
+            curriculum_id=request.curriculum_id,
             db=db
         )
         return result

@@ -263,6 +263,136 @@ class AIMentoringSystem:
         
         return goals or ["전반적인 학습 지원"]
     
+    async def get_user_learning_context(self, user_id: int, curriculum_id: Optional[int] = None) -> Dict[str, Any]:
+        """
+        사용자 학습 기록 조회 (RAG 컨텍스트용)
+        
+        퀴즈, 실습, 교재 진도를 종합하여 사용자의 취약점과 강점을 파악
+        
+        Returns:
+            {
+                "quiz_performance": {...},
+                "practice_performance": {...},
+                "curriculum_progress": {...},
+                "weak_topics": [...],
+                "strong_topics": [...],
+                "recommendations": [...]
+            }
+        """
+        try:
+            from app.models.orm import QuizSession, QuizAnswer
+            from app.models.code_problem import CodeSubmission
+            from app.models.ai_curriculum import AITeachingSession
+            from datetime import datetime, timedelta
+            
+            context = {
+                "user_id": user_id,
+                "curriculum_id": curriculum_id,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+            # 1. 퀴즈 성과 분석
+            recent_week = datetime.utcnow() - timedelta(days=7)
+            quiz_sessions = self.db.query(QuizSession).filter(
+                QuizSession.user_id == user_id,
+                QuizSession.completed_at >= recent_week
+            ).all()
+            
+            if quiz_sessions:
+                total_questions = sum(s.total_questions or 0 for s in quiz_sessions)
+                answered_questions = sum(s.answered_questions or 0 for s in quiz_sessions)
+                total_score = sum(s.total_score or 0 for s in quiz_sessions)
+                
+                context["quiz_performance"] = {
+                    "sessions_count": len(quiz_sessions),
+                    "total_questions": total_questions,
+                    "answered_questions": answered_questions,
+                    "average_score": total_score / len(quiz_sessions) if quiz_sessions else 0,
+                    "completion_rate": (answered_questions / total_questions * 100) if total_questions > 0 else 0
+                }
+            else:
+                context["quiz_performance"] = {"sessions_count": 0, "message": "최근 퀴즈 기록 없음"}
+            
+            # 2. 실습 성과 분석
+            practice_submissions = self.db.query(CodeSubmission).filter(
+                CodeSubmission.user_id == user_id,
+                CodeSubmission.submitted_at >= recent_week
+            ).all()
+            
+            if practice_submissions:
+                passed_count = sum(1 for s in practice_submissions if s.status == "passed")
+                context["practice_performance"] = {
+                    "submissions_count": len(practice_submissions),
+                    "passed_count": passed_count,
+                    "success_rate": (passed_count / len(practice_submissions) * 100) if practice_submissions else 0,
+                    "average_execution_time": sum(s.execution_time_ms or 0 for s in practice_submissions) / len(practice_submissions)
+                }
+            else:
+                context["practice_performance"] = {"submissions_count": 0, "message": "최근 실습 기록 없음"}
+            
+            # 3. 커리큘럼 진도 분석
+            if curriculum_id:
+                teaching_session = self.db.query(AITeachingSession).filter(
+                    AITeachingSession.user_id == user_id,
+                    AITeachingSession.curriculum_id == curriculum_id
+                ).first()
+                
+                if teaching_session:
+                    context["curriculum_progress"] = {
+                        "completion_percentage": teaching_session.completion_percentage or 0,
+                        "last_activity": teaching_session.last_activity_at.isoformat() if teaching_session.last_activity_at else None,
+                        "started_at": teaching_session.started_at.isoformat() if teaching_session.started_at else None
+                    }
+                else:
+                    context["curriculum_progress"] = {"message": "커리큘럼 세션 없음"}
+            
+            # 4. 취약점 및 강점 분석
+            weak_topics = []
+            strong_topics = []
+            
+            # 퀴즈 정답률 기반 분석
+            quiz_perf = context.get("quiz_performance", {})
+            if quiz_perf.get("average_score", 0) < 5.0:  # 평균 점수가 5점 미만
+                weak_topics.append("퀴즈 이해도 부족")
+            elif quiz_perf.get("average_score", 0) >= 8.0:
+                strong_topics.append("퀴즈 이해도 우수")
+            
+            # 실습 성공률 기반 분석
+            practice_perf = context.get("practice_performance", {})
+            if practice_perf.get("success_rate", 0) < 50:
+                weak_topics.append("코드 실습 어려움")
+            elif practice_perf.get("success_rate", 0) >= 80:
+                strong_topics.append("코드 실습 능숙")
+            
+            context["weak_topics"] = weak_topics
+            context["strong_topics"] = strong_topics
+            
+            # 5. 맞춤형 추천
+            recommendations = []
+            if weak_topics:
+                if "퀴즈 이해도 부족" in weak_topics:
+                    recommendations.append("기초 개념 복습을 권장합니다")
+                if "코드 실습 어려움" in weak_topics:
+                    recommendations.append("간단한 예제부터 천천히 연습해보세요")
+            
+            if not quiz_sessions and not practice_submissions:
+                recommendations.append("학습을 시작해보세요! 교재부터 읽어보는 것을 추천합니다")
+            
+            context["recommendations"] = recommendations
+            
+            logger.info(f"학습 컨텍스트 조회 완료: user={user_id}, curriculum={curriculum_id}")
+            return context
+            
+        except Exception as e:
+            logger.error(f"학습 컨텍스트 조회 실패: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return {
+                "error": str(e),
+                "user_id": user_id,
+                "message": "학습 기록을 불러올 수 없습니다"
+            }
+    
     async def _generate_greeting(self, session: MentorSession, initial_question: Optional[str]) -> MentorResponse:
         """인사말 생성"""
         
@@ -310,7 +440,7 @@ class AIMentoringSystem:
         user_message: str, 
         mode: ConversationMode
     ) -> Dict[str, Any]:
-        """대화 맥락 분석"""
+        """대화 맥락 분석 (학습 기록 통합)"""
         
         context = {
             'user_message': user_message,
@@ -335,6 +465,20 @@ class AIMentoringSystem:
         # 감정 분석
         emotional_tone = await self._analyze_emotional_tone(user_message)
         context['emotional_tone'] = emotional_tone
+        
+        # ✨ 새로 추가: 학습 기록 통합
+        try:
+            learning_context = await self.get_user_learning_context(session.user_id)
+            context['learning_record'] = {
+                'quiz_performance': learning_context.get('quiz_performance', {}),
+                'practice_performance': learning_context.get('practice_performance', {}),
+                'weak_topics': learning_context.get('weak_topics', []),
+                'strong_topics': learning_context.get('strong_topics', []),
+                'recommendations': learning_context.get('recommendations', [])
+            }
+        except Exception as e:
+            logger.warning(f"학습 기록 조회 실패: {str(e)}")
+            context['learning_record'] = None
         
         return context
     
@@ -379,14 +523,31 @@ class AIMentoringSystem:
         context: Dict[str, Any],
         mode: ConversationMode
     ) -> MentorResponse:
-        """멘토 응답 생성"""
+        """멘토 응답 생성 (학습 기록 기반)"""
         
         personality = self.mentor_personalities[session.mentor_personality]
         
         # 고유한 대화 식별자 추가 (캐시 충돌 방지)
         conversation_id = f"{session.session_id}_{len(session.conversation_history)}_{int(datetime.utcnow().timestamp())}"
 
-        # 프롬프트 구성 - 자세하고 친절하게
+        # 학습 기록 요약
+        learning_summary = ""
+        if context.get('learning_record'):
+            lr = context['learning_record']
+            quiz_perf = lr.get('quiz_performance', {})
+            practice_perf = lr.get('practice_performance', {})
+            weak_topics = lr.get('weak_topics', [])
+            strong_topics = lr.get('strong_topics', [])
+            
+            learning_summary = f"""
+Student's Recent Learning Performance:
+- Quiz: {quiz_perf.get('sessions_count', 0)} sessions, avg score: {quiz_perf.get('average_score', 0):.1f}
+- Practice: {practice_perf.get('submissions_count', 0)} submissions, success rate: {practice_perf.get('success_rate', 0):.1f}%
+- Weak areas: {', '.join(weak_topics) if weak_topics else 'None identified'}
+- Strong areas: {', '.join(strong_topics) if strong_topics else 'None identified'}
+"""
+
+        # 프롬프트 구성 - 학습 기록 기반 맞춤형 응답
         response_prompt = f"""당신은 프로그래밍과 기술 교육을 위한 지식이 풍부하고 친근한 AI 학습 멘토입니다. 반드시 한국어로만 응답하세요.
 
 Student's question: "{context['user_message']}"
@@ -396,8 +557,13 @@ Previous conversation:
 
 Session goals: {', '.join(session.session_goals)}
 
+{learning_summary}
+
 Instructions:
 - Answer the student's question thoroughly and clearly in Korean
+- Consider the student's learning performance when giving advice
+- If they have weak areas, provide encouragement and specific improvement tips
+- If they have strong areas, acknowledge their progress
 - Provide detailed explanations with examples when appropriate
 - Keep response between 200-400 characters for balance
 - Be friendly, encouraging, and show genuine interest in teaching
