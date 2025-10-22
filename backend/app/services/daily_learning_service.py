@@ -1119,29 +1119,32 @@ def example():
                 # 자유 실행
                 result = await self.code_executor.execute_python_code(code)
             
-            # 제출 기록 저장
-            submission = CodeSubmission(
-                user_id=user_id,
-                problem_id=problem_id or 0,  # None인 경우 0으로 설정
-                code=code,
-                language="python",
-                status="accepted" if result.success else "wrong_answer",
-                execution_time_ms=result.execution_time_ms if hasattr(result, 'execution_time_ms') else None,
-                passed_tests=len([t for t in (result.test_results or []) if t.get('passed', False)]),
-                total_tests=len(result.test_results or []),
-                test_results=result.test_results,
-                judged_at=datetime.utcnow()
-            )
-            db.add(submission)
-            db.commit()
+            # 제출 기록 저장 (problem_id가 있는 경우만)
+            if problem_id:
+                submission = CodeSubmission(
+                    user_id=user_id,
+                    problem_id=problem_id,
+                    code=code,
+                    language="python",
+                    status="accepted" if result.success else "wrong_answer",
+                    execution_time_ms=result.execution_time_ms if hasattr(result, 'execution_time_ms') else None,
+                    passed_tests=len([t for t in (result.test_results or []) if t.get('passed', False)]),
+                    total_tests=len(result.test_results or []),
+                    test_results=result.test_results,
+                    judged_at=datetime.utcnow()
+                )
+                db.add(submission)
+                db.commit()
             
             return {
                 "success": result.success,
                 "output": result.output,
                 "error": result.error,
                 "test_results": result.test_results,
-                "execution_time_ms": result.execution_time_ms,
-                "feedback": "✅ 정답입니다!" if result.success else "❌ 다시 시도해보세요."
+                "execution_time_ms": result.execution_time_ms if hasattr(result, 'execution_time_ms') else None,
+                "feedback": "✅ 정답입니다!" if result.success else "❌ 다시 시도해보세요.",
+                "passed": len([t for t in (result.test_results or []) if t.get('passed', False)]),
+                "total": len(result.test_results or [])
             }
             
         except Exception as e:

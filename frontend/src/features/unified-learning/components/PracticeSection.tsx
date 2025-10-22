@@ -1,9 +1,10 @@
 /**
- * 실습 섹션 - 코딩 문제 풀이
+ * 실습 섹션 - 코딩 문제 풀이 (Monaco Editor 사용)
  */
 
-import { useState } from 'react';
-import { Code, CheckCircle, Play, AlertCircle } from 'lucide-react';
+import { useState, useRef } from 'react';
+import Editor from '@monaco-editor/react';
+import { Code, CheckCircle, Play, AlertCircle, Settings } from 'lucide-react';
 import { api } from '../../../shared/services/apiClient';
 
 interface PracticeSectionProps {
@@ -17,6 +18,9 @@ export default function PracticeSection({ problems, curriculumId, onComplete }: 
   const [result, setResult] = useState<any>(null);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [editorTheme, setEditorTheme] = useState<'light' | 'vs-dark'>('vs-dark');
+  const [showSettings, setShowSettings] = useState(false);
+  const editorRef = useRef<any>(null);
 
   const handleRun = async () => {
     // 실제 코드 실행은 백엔드 API 호출 필요
@@ -30,14 +34,11 @@ export default function PracticeSection({ problems, curriculumId, onComplete }: 
       return;
     }
     
-    // 백엔드 코드 실행 API 호출
-    // 백엔드 코드 실행 API 호출
     try {
       setIsRunning(true);
       setResult(null);
 
       const payload = {
-        // backend expects: curriculum_id, problem_id, code
         curriculum_id: curriculumId || 0,
         problem_id: problem.id ?? null,
         code: code || problem.starter_code || ''
@@ -45,7 +46,6 @@ export default function PracticeSection({ problems, curriculumId, onComplete }: 
 
       const res: any = await api.post('/mvp/practice/submit', payload, { timeoutMs: 60000 });
 
-      // 예상 응답: { success: boolean, output: string, passed: number, total: number }
       const isSuccess = !!res.success;
       setResult({
         success: isSuccess,
@@ -77,6 +77,50 @@ export default function PracticeSection({ problems, curriculumId, onComplete }: 
     onComplete();
   };
 
+  // Monaco Editor 마운트 시
+  const handleEditorDidMount = (editor: any, monaco: any) => {
+    editorRef.current = editor;
+    
+    // Ctrl+Enter로 실행
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+      if (!isRunning) {
+        handleRun();
+      }
+    });
+
+    editor.focus();
+  };
+
+  // Monaco Editor 옵션
+  const editorOptions = {
+    selectOnLineNumbers: true,
+    roundedSelection: false,
+    readOnly: false,
+    cursorStyle: 'line' as const,
+    automaticLayout: true,
+    wordWrap: 'on' as const,
+    fontSize: 14,
+    lineHeight: 20,
+    minimap: {
+      enabled: false
+    },
+    scrollBeyondLastLine: false,
+    folding: true,
+    foldingHighlight: true,
+    showFoldingControls: 'always' as const,
+    bracketPairColorization: {
+      enabled: true
+    },
+    suggestOnTriggerCharacters: true,
+    acceptSuggestionOnEnter: 'on' as const,
+    tabCompletion: 'on' as const,
+    mouseWheelZoom: true,
+    smoothScrolling: true,
+    cursorBlinking: 'smooth' as const,
+    tabSize: 4,
+    insertSpaces: true
+  };
+
   // 문제가 없으면 안내 메시지
   const defaultProblem = {
     title: "실습 문제 준비 중",
@@ -85,6 +129,11 @@ export default function PracticeSection({ problems, curriculumId, onComplete }: 
   };
 
   const problem = problems?.[0] || defaultProblem;
+
+  // 에디터 초기값 설정
+  if (!code && problem.starter_code) {
+    setCode(problem.starter_code);
+  }
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-8">
@@ -102,27 +151,90 @@ export default function PracticeSection({ problems, curriculumId, onComplete }: 
       {/* 문제 설명 */}
       <div className="mb-6">
         <h3 className="text-lg font-bold text-gray-900 mb-2">{problem.title}</h3>
-        <p className="text-gray-600">{problem.description}</p>
+        <p className="text-gray-600 whitespace-pre-wrap">{problem.description}</p>
+        
+        {/* 요구사항 */}
+        {problem.requirements && problem.requirements.length > 0 && (
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+            <h4 className="font-semibold text-blue-900 mb-2">📋 구현 요구사항</h4>
+            <ul className="space-y-1 text-sm text-blue-800">
+              {problem.requirements.map((req: string, idx: number) => (
+                <li key={idx} className="flex items-start gap-2">
+                  <span className="text-blue-600">•</span>
+                  <span>{req}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
-      {/* 코드 에디터 */}
+      {/* Monaco Editor */}
       <div className="mb-4">
-        <div className="bg-gray-900 rounded-xl overflow-hidden">
+        <div className="rounded-xl overflow-hidden border-2 border-gray-200">
+          {/* 에디터 헤더 */}
           <div className="bg-gray-800 px-4 py-2 flex items-center justify-between">
-            <span className="text-sm text-gray-400">Python</span>
-            <button
-              onClick={handleRun}
-              className="px-4 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-2"
-            >
-              {!isRunning ? <Play className="w-4 h-4" /> : null}
-              {isRunning ? '실행 중...' : '실행'}
-            </button>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-green-500"></span>
+              <span className="text-sm text-gray-300">Python</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleRun}
+                disabled={isRunning}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${
+                  isRunning
+                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700 text-white'
+                }`}
+                title="실행 (Ctrl+Enter)"
+              >
+                {!isRunning && <Play className="w-4 h-4" />}
+                {isRunning ? '실행 중...' : '실행'}
+              </button>
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
+                title="에디터 설정"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-          <textarea
-            value={code || problem.starter_code}
-            onChange={(e) => setCode(e.target.value)}
-            className="w-full h-64 p-4 bg-gray-900 text-gray-100 font-mono text-sm resize-none focus:outline-none"
-            placeholder="여기에 코드를 작성하세요..."
+
+          {/* 설정 패널 */}
+          {showSettings && (
+            <div className="bg-gray-100 px-4 py-3 border-b border-gray-300">
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <span>테마:</span>
+                  <select
+                    value={editorTheme}
+                    onChange={(e) => setEditorTheme(e.target.value as 'light' | 'vs-dark')}
+                    className="px-2 py-1 border rounded text-sm"
+                  >
+                    <option value="light">라이트</option>
+                    <option value="vs-dark">다크</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* Monaco Editor */}
+          <Editor
+            height="400px"
+            language="python"
+            value={code}
+            theme={editorTheme}
+            onChange={(value: string | undefined) => setCode(value || '')}
+            onMount={handleEditorDidMount}
+            options={editorOptions}
+            loading={
+              <div className="flex items-center justify-center h-full bg-gray-900">
+                <div className="text-gray-400">에디터 로딩 중...</div>
+              </div>
+            }
           />
         </div>
       </div>
@@ -148,6 +260,21 @@ export default function PracticeSection({ problems, curriculumId, onComplete }: 
               테스트 케이스: {result.passed}/{result.total} 통과
             </p>
           )}
+        </div>
+      )}
+
+      {/* 힌트 (있는 경우) */}
+      {problem.hints && problem.hints.length > 0 && !result?.success && (
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+          <h4 className="font-semibold text-yellow-900 mb-2">💡 힌트</h4>
+          <ul className="space-y-1 text-sm text-yellow-800">
+            {problem.hints.map((hint: string, idx: number) => (
+              <li key={idx} className="flex items-start gap-2">
+                <span className="text-yellow-600">•</span>
+                <span>{hint}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

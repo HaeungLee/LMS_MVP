@@ -315,14 +315,14 @@ export default function UnifiedLearningPage() {
           {currentSection === 'practice' && (
             <>
               <PracticeSection 
-                problems={sections.practice.problems || []}
+                problems={sections.practice ? [sections.practice] : []}
                 curriculumId={curriculumId ? parseInt(curriculumId) : undefined}
                 onComplete={() => handleSectionComplete('practice')}
               />
               <InlineAIMentor 
                 context="practice" 
                 topic={theme}
-                currentContent={JSON.stringify(sections.practice.problems || [])}
+                currentContent={JSON.stringify(sections.practice || {})}
               />
             </>
           )}
