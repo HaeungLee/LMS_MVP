@@ -197,8 +197,8 @@ class DailyLearningService:
                 logger.info(f"⏱️ [3/6] 태스크 추출: {time.time() - step_start:.2f}초")
                 
                 step_start = time.time()
-                progress_data = await self._calculate_progress(
-                    user_id, curriculum_id, current_day_info["week"], current_day_info["day"], db
+                progress = await self._get_daily_progress(
+                    user_id, curriculum_id, current_day_info, db
                 )
                 logger.info(f"⏱️ [4/6] 진도 계산: {time.time() - step_start:.2f}초")
                 
@@ -212,9 +212,11 @@ class DailyLearningService:
                     "theme": daily_task.get("theme", ""),
                     "task": daily_task.get("task", ""),
                     "deliverable": daily_task.get("deliverable", ""),
-                    "status": self._determine_status(progress_data),
+                    "learning_objectives": daily_task.get("learning_objectives", []),
+                    "study_time_minutes": daily_task.get("study_time_minutes", 60),
+                    "status": progress["overall_status"],
                     "sections": cached_sections,
-                    "progress": progress_data
+                    "progress": progress
                 }
             
             # 캐시 미스 - 새로 생성
