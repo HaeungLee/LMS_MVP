@@ -12,9 +12,7 @@ import {
   BookOpen, 
   Code, 
   CheckCircle, 
-  Clock,
-  ArrowRight,
-  Lock
+  Clock
 } from 'lucide-react';
 import useAuthStore from '../../shared/hooks/useAuthStore';
 import { api } from '../../shared/services/apiClient';
@@ -65,8 +63,9 @@ export default function UnifiedLearningPage() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const curriculumId = searchParams.get('curriculum_id');
+  const targetDate = searchParams.get('target_date'); // 특정 날짜 학습 조회용
 
   const [currentSection, setCurrentSection] = useState<'textbook' | 'practice' | 'quiz'>('textbook');
   const [completedSections, setCompletedSections] = useState<Set<string>>(new Set());
@@ -74,9 +73,12 @@ export default function UnifiedLearningPage() {
 
   // 오늘의 학습 데이터 조회
   const { data: dailyLearning, isLoading, error } = useQuery<DailyLearning>({
-    queryKey: ['daily-learning', curriculumId],
+    queryKey: ['daily-learning', curriculumId, targetDate],
     queryFn: async () => {
-      const params = curriculumId ? `?curriculum_id=${curriculumId}` : '';
+      let params = curriculumId ? `?curriculum_id=${curriculumId}` : '';
+      if (targetDate) {
+        params += curriculumId ? `&target_date=${targetDate}` : `?target_date=${targetDate}`;
+      }
       // LLM 호출로 시간이 오래 걸리므로 60초 타임아웃 설정
       const response = await api.get(`/mvp/daily-learning${params}`, { timeoutMs: 60000 });
       return response as DailyLearning;
@@ -132,14 +134,61 @@ export default function UnifiedLearningPage() {
     */
   };
 
-  // 다음 섹션으로 이동
-  const moveToNextSection = () => {
-    if (currentSection === 'textbook') {
-      setCurrentSection('practice');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else if (currentSection === 'practice') {
-      setCurrentSection('quiz');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  // DAY 네비게이션
+  const handlePrevDay = () => {
+    if (!dailyLearning) return;
+    const prevDate = new Date(dailyLearning.date);
+    prevDate.setDate(prevDate.getDate() - 1);
+    const dateStr = prevDate.toISOString().split('T')[0];
+    
+    const params = new URLSearchParams(searchParams);
+    params.set('target_date', dateStr);
+    setSearchParams(params);
+    
+    // 섹션 상태 초기화
+    setCurrentSection('textbook');
+    setCompletedSections(new Set());
+  };
+
+  const handleNextDay = () => {
+    if (!dailyLearning) return;
+    const nextDate = new Date(dailyLearning.date);
+    nextDate.setDate(nextDate.getDate() + 1);
+    const dateStr = nextDate.toISOString().split('T')[0];
+    
+    const params = new URLSearchParams(searchParams);
+    params.set('target_date', dateStr);
+    setSearchParams(params);
+    
+    // 섹션 상태 초기화
+    setCurrentSection('textbook');
+    setCompletedSections(new Set());
+  };
+
+  const canGoPrevDay = dailyLearning ? dailyLearning.day > 1 : false;
+  const canGoNextDay = true; // 항상 다음 날로 이동 가능
+
+  // 콘텐츠 새로고침 (실습/퀴즈 재생성)
+  const handleRefreshContent = async (section: 'practice' | 'quiz') => {
+    if (!curriculumId) return;
+    
+    try {
+      const confirmed = window.confirm(
+        `${section === 'practice' ? '실습 문제' : '퀴즈'}를 새로 생성하시겠습니까?\n\n` +
+        '기존 진도는 유지되지만, 문제가 완전히 새로 생성됩니다.'
+      );
+      
+      if (!confirmed) return;
+      
+      await api.post(`/mvp/refresh-content?curriculum_id=${curriculumId}&section=${section}`);
+      
+      // React Query 캐시 무효화하여 새로운 데이터 가져오기
+      queryClient.invalidateQueries({ queryKey: ['daily-learning', curriculumId, targetDate] });
+      
+      alert(`${section === 'practice' ? '실습 문제' : '퀴즈'}가 재생성되었습니다! 🎉`);
+    } catch (err) {
+      console.error('콘텐츠 재생성 실패:', err);
+      alert('콘텐츠 재생성에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -189,6 +238,10 @@ export default function UnifiedLearningPage() {
         day={day}
         theme={theme}
         progress={progress.percentage}
+        onPrevDay={handlePrevDay}
+        onNextDay={handleNextDay}
+        canGoPrev={canGoPrevDay}
+        canGoNext={canGoNextDay}
       />
 
       {/* 메인 컨텐츠 */}
@@ -246,8 +299,13 @@ export default function UnifiedLearningPage() {
           </div>
         </div>
 
-        {/* 섹션 네비게이션 */}
+        {/* 섹션 네비게이션 - 자유 이동 가능 */}
         <div className="bg-white rounded-2xl shadow-lg p-4 mb-8">
+          <div className="mb-3">
+            <p className="text-xs text-gray-500">
+              💡 원하는 순서대로 학습하세요! 교재→실습→퀴즈 순서를 따를 필요는 없습니다.
+            </p>
+          </div>
           <div className="grid grid-cols-3 gap-4">
             {[
               { key: 'textbook', icon: BookOpen, label: '📖 교재 학습', color: 'blue' },
@@ -256,24 +314,18 @@ export default function UnifiedLearningPage() {
             ].map(({ key, icon: Icon, label, color }) => {
               const isActive = currentSection === key;
               const isCompleted = completedSections.has(key);
-              const isLocked = 
-                (key === 'practice' && !completedSections.has('textbook')) ||
-                (key === 'quiz' && !completedSections.has('practice'));
 
               return (
                 <button
                   key={key}
-                  onClick={() => !isLocked && setCurrentSection(key as any)}
-                  disabled={isLocked}
+                  onClick={() => setCurrentSection(key as any)}
                   className={`
                     relative p-4 rounded-xl transition-all duration-200
                     ${isActive 
                       ? `bg-gradient-to-br from-${color}-500 to-${color}-600 text-white shadow-lg scale-105` 
                       : isCompleted
                         ? `bg-${color}-50 text-${color}-700 hover:shadow-md`
-                        : isLocked
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                     }
                   `}
                 >
@@ -282,9 +334,6 @@ export default function UnifiedLearningPage() {
                       <div className="absolute top-2 right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                         <CheckCircle className="w-4 h-4 text-white" />
                       </div>
-                    )}
-                    {isLocked && (
-                      <Lock className="absolute top-2 right-2 w-5 h-5 text-gray-400" />
                     )}
                     <Icon className="w-6 h-6" />
                     <span className="text-sm font-medium">{label}</span>
@@ -318,6 +367,7 @@ export default function UnifiedLearningPage() {
                 problems={sections.practice ? [sections.practice] : []}
                 curriculumId={curriculumId ? parseInt(curriculumId) : undefined}
                 onComplete={() => handleSectionComplete('practice')}
+                onRefresh={() => handleRefreshContent('practice')}
               />
               <InlineAIMentor 
                 context="practice" 
@@ -333,29 +383,11 @@ export default function UnifiedLearningPage() {
                 questions={sections.quiz.questions || []}
                 curriculumId={curriculumId ? parseInt(curriculumId) : undefined}
                 onComplete={() => handleSectionComplete('quiz')}
+                onRefresh={() => handleRefreshContent('quiz')}
               />
             </>
           )}
         </div>
-
-        {/* 다음 단계 버튼 */}
-        {!allSectionsCompleted && (
-          <div className="mt-8 flex justify-center">
-            <button
-              onClick={moveToNextSection}
-              disabled={
-                (currentSection === 'textbook' && !completedSections.has('textbook')) ||
-                (currentSection === 'practice' && !completedSections.has('practice'))
-              }
-              className="group px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-            >
-              <span className="flex items-center gap-2">
-                다음 단계로
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </span>
-            </button>
-          </div>
-        )}
 
         {/* 완료 요약 */}
         {allSectionsCompleted && (

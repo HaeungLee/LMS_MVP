@@ -4,16 +4,17 @@
 
 import { useState, useRef } from 'react';
 import Editor from '@monaco-editor/react';
-import { Code, CheckCircle, Play, AlertCircle, Settings } from 'lucide-react';
+import { Code, CheckCircle, Play, AlertCircle, Settings, RefreshCw } from 'lucide-react';
 import { api } from '../../../shared/services/apiClient';
 
 interface PracticeSectionProps {
   problems: any[];
   curriculumId?: number;
   onComplete: () => void;
+  onRefresh?: () => void;
 }
 
-export default function PracticeSection({ problems, curriculumId, onComplete }: PracticeSectionProps) {
+export default function PracticeSection({ problems, curriculumId, onComplete, onRefresh }: PracticeSectionProps) {
   const [code, setCode] = useState('');
   const [result, setResult] = useState<any>(null);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -140,14 +141,28 @@ export default function PracticeSection({ problems, curriculumId, onComplete }: 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-8">
       {/* 헤더 */}
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
-        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-          <Code className="w-6 h-6 text-white" />
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+            <Code className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">💻 실습 코딩</h2>
+            <p className="text-sm text-gray-600">직접 코드를 작성해보세요</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">💻 실습 코딩</h2>
-          <p className="text-sm text-gray-600">직접 코드를 작성해보세요</p>
-        </div>
+        
+        {/* 새로고침 버튼 */}
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+            title="새로운 문제로 재생성"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>새 문제</span>
+          </button>
+        )}
       </div>
 
       {/* 문제 설명 */}

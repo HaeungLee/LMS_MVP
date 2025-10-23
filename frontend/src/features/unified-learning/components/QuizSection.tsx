@@ -3,16 +3,16 @@
  */
 
 import { useState } from 'react';
-import { CheckCircle, XCircle, HelpCircle } from 'lucide-react';
-import { api } from '../../../shared/services/apiClient';
+import { CheckCircle, XCircle, HelpCircle, RefreshCw } from 'lucide-react';
 
 interface QuizSectionProps {
   questions: any[];
   curriculumId?: number;
   onComplete: () => void;
+  onRefresh?: () => void;
 }
 
-export default function QuizSection({ questions, curriculumId, onComplete }: QuizSectionProps) {
+export default function QuizSection({ questions, onComplete, onRefresh }: QuizSectionProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -41,42 +41,23 @@ export default function QuizSection({ questions, curriculumId, onComplete }: Qui
     setSelectedAnswer(idx);
     setShowFeedback(true);
 
-    try {
-      const payload = {
-        curriculum_id: curriculumId || 0,
-        question_id: current.id ?? null,
-        answer: current.options ? current.options[idx] : String(idx)
-      };
-
-      const res: any = await api.post('/mvp/quiz/submit', payload, { timeoutMs: 30000 });
-
-      // 서버는 { correct: boolean, score?: number, explanation?: string }
-      if (res.correct) setScore(prev => prev + 1);
-
-      // 서버 설명이 있으면 current.explanation 대체
-      if (res.explanation) current.explanation = res.explanation;
-      
-      // 마지막 문제면 3초 후 자동 완료
-      if (currentQuestion === quizData.length - 1) {
-        setTimeout(() => {
-          setIsCompleted(true);
-          onComplete();
-        }, 3000);
-      }
-    } catch (err: any) {
-      // 네트워크 에러일 때는 기존 로컬 비교 사용
-      if (idx === current.correct) {
-        setScore(score + 1);
-      }
-      
-      // 마지막 문제면 3초 후 자동 완료
-      if (currentQuestion === quizData.length - 1) {
-        setTimeout(() => {
-          setIsCompleted(true);
-          onComplete();
-        }, 3000);
-      }
+    // 로컬 정답 확인 (객관식이므로 인덱스 비교로 충분)
+    const isCorrect = idx === current.correct;
+    
+    if (isCorrect) {
+      setScore(prev => prev + 1);
     }
+    
+    // 마지막 문제면 3초 후 자동 완료
+    if (currentQuestion === quizData.length - 1) {
+      setTimeout(() => {
+        setIsCompleted(true);
+        onComplete();
+      }, 3000);
+    }
+    
+    // TODO: 향후 DB 저장이 필요하면 백엔드 API 수정 필요
+    // (정답 인덱스를 함께 보내서 단순 비교하도록)
   };
 
   const handleNext = () => {
@@ -133,16 +114,30 @@ export default function QuizSection({ questions, curriculumId, onComplete }: Qui
   return (
     <div className="bg-white rounded-2xl shadow-lg p-8">
       {/* 헤더 */}
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
-        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-          <HelpCircle className="w-6 h-6 text-white" />
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+            <HelpCircle className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">✍️ 이해도 퀴즈</h2>
+            <p className="text-sm text-gray-600">
+              문제 {currentQuestion + 1}/{quizData.length}
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">✍️ 이해도 퀴즈</h2>
-          <p className="text-sm text-gray-600">
-            문제 {currentQuestion + 1}/{quizData.length}
-          </p>
-        </div>
+        
+        {/* 새로고침 버튼 */}
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+            title="새로운 퀴즈로 재생성"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>새 퀴즈</span>
+          </button>
+        )}
       </div>
 
       {/* 질문 */}

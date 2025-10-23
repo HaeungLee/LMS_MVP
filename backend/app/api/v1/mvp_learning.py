@@ -371,6 +371,63 @@ async def track_textbook_reading(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/refresh-content")
+async def refresh_content(
+    curriculum_id: int,
+    section: str = "all",  # 'practice', 'quiz', 'all'
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> dict:
+    """
+    실습/퀴즈 콘텐츠 재생성 (캐시 삭제)
+    
+    - section: 'practice', 'quiz', 'all'
+    - Redis 캐시 삭제
+    - 다음 조회 시 새로운 문제 생성
+    """
+    try:
+        from app.models.orm import Curriculum
+        from datetime import datetime
+        from app.services.redis_service import get_redis_service
+        
+        # Curriculum 조회
+        curriculum = db.query(Curriculum).filter(
+            Curriculum.id == curriculum_id,
+            Curriculum.user_id == current_user.id
+        ).first()
+        
+        if not curriculum:
+            raise HTTPException(status_code=404, detail="커리큘럼을 찾을 수 없습니다")
+        
+        # Week/Day 계산
+        start_date = curriculum.start_date
+        today = datetime.utcnow().date()
+        days_diff = (today - start_date).days
+        week = (days_diff // 7) + 1
+        day = (days_diff % 7) + 1
+        
+        # Redis 캐시 삭제
+        redis_service = get_redis_service()
+        cache_key = f"daily_learning:{curriculum_id}:w{week}d{day}"
+        deleted = redis_service.delete_cache(cache_key)
+        
+        logger.info(f"콘텐츠 재생성: curriculum_id={curriculum_id}, section={section}, cache_deleted={deleted}")
+        
+        return {
+            "message": f"{section} 콘텐츠가 재생성됩니다",
+            "cache_deleted": deleted,
+            "curriculum_id": curriculum_id,
+            "week": week,
+            "day": day
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"콘텐츠 재생성 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============= 헬스 체크 =============
 
 @router.get("/health")
