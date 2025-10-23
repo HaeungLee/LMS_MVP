@@ -42,10 +42,10 @@ export default function MainLayout() {
       },
       {
         id: 'learning',
-        title: '학습하기',
+        title: '전체 과정',
         icon: BookOpen,
         path: '/dashboard/learning',
-        description: '과목 선택 및 스마트 문제 풀이'
+        description: '주차별 학습 계획 및 진도 현황'
       },
       {
         id: 'analytics',

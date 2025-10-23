@@ -347,33 +347,40 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">
-              전체 학습 로드맵
+              📚 {currentCurriculum?.goal || '학습 로드맵'}
             </h3>
             <p className="text-gray-600">
-              {currentCurriculum?.total_weeks || 12}주 완성 코스 • {currentCurriculum?.core_technologies?.length || 0}개 핵심 기술
+              Week {todayLearning?.week || 1}, Day {todayLearning?.day || 1} 진행 중 • {currentCurriculum?.total_weeks || 12}주 완성 코스
             </p>
           </div>
           <button
             onClick={() => navigate('/dashboard/learning')}
             className="flex items-center gap-2 px-6 py-3 bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow"
           >
-            <span className="font-medium text-gray-900">과목 목록 보기</span>
+            <span className="font-medium text-gray-900">전체 과정 보기</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
 
         {/* 핵심 기술 */}
-        <div className="mt-6 flex flex-wrap gap-2">
-          {currentCurriculum?.core_technologies?.map((tech, idx) => (
-            <span
-              key={idx}
-              className="px-3 py-1 bg-white rounded-full text-sm font-medium text-gray-700 shadow-sm"
-            >
-              {tech}
-            </span>
-          )) || (
-            <p className="text-gray-500 text-sm">기술 스택 정보를 불러오는 중...</p>
-          )}
+        <div className="mt-6">
+          <p className="text-sm font-semibold text-gray-700 mb-3">핵심 학습 기술</p>
+          <div className="flex flex-wrap gap-2">
+            {currentCurriculum?.core_technologies && currentCurriculum.core_technologies.length > 0 ? (
+              currentCurriculum.core_technologies.map((tech, idx) => (
+                <span
+                  key={idx}
+                  className="px-4 py-2 bg-white rounded-lg text-sm font-medium text-gray-700 shadow-sm border border-gray-200"
+                >
+                  {tech}
+                </span>
+              ))
+            ) : (
+              <span className="text-gray-500 text-sm">
+                Linux 기초, Shell 스크립팅, Git, Docker, Kubernetes 등 {currentCurriculum?.total_weeks || 12}주 과정
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -1561,6 +1561,101 @@ def example():
             explanation = "정답입니다!" if is_correct else f"정답은 '{question.correct_answer}'입니다."
             
             return is_correct, explanation
+    
+    async def get_curriculum_schedule(
+        self,
+        user_id: int,
+        curriculum_id: int,
+        db: Session
+    ) -> Dict[str, Any]:
+        """
+        커리큘럼 전체 일정 조회 (주차별/일별)
+        
+        Returns:
+            주차별로 그룹화된 일별 학습 계획 + 완료 여부
+        """
+        try:
+            from app.models.ai_curriculum import AIGeneratedCurriculum, AITeachingSession
+            
+            # 커리큘럼 조회
+            curriculum = db.query(AIGeneratedCurriculum).filter(
+                AIGeneratedCurriculum.id == curriculum_id
+            ).first()
+            
+            if not curriculum:
+                raise ValueError("커리큘럼을 찾을 수 없습니다")
+            
+            # 주차별 테마 파싱 (generated_syllabus에서 추출)
+            syllabus = curriculum.generated_syllabus or {}
+            weekly_themes = syllabus.get('weekly_themes', [])
+            
+            # weekly_themes가 없으면 빈 리스트로 처리
+            if not weekly_themes:
+                logger.warning(f"커리큘럼 {curriculum_id}에 weekly_themes가 없습니다")
+                weekly_themes = []
+            
+            total_weeks = len(weekly_themes)
+            
+            # Teaching Session 조회 (완료 여부 확인용)
+            teaching_session = db.query(AITeachingSession).filter(
+                AITeachingSession.user_id == user_id,
+                AITeachingSession.curriculum_id == curriculum_id
+            ).first()
+            
+            current_week = teaching_session.current_week if teaching_session else 1
+            current_day = teaching_session.current_day if teaching_session else 1
+            
+            # 주차별 일정 생성
+            weeks = []
+            for week_idx, week_data in enumerate(weekly_themes, 1):
+                # week_data가 딕셔너리인지 확인
+                if not isinstance(week_data, dict):
+                    logger.warning(f"Week {week_idx} 데이터가 딕셔너리가 아닙니다: {type(week_data)}")
+                    continue
+                
+                week_theme = week_data.get('theme', f'Week {week_idx}')
+                daily_tasks = week_data.get('daily_tasks', [])
+                
+                days = []
+                for day_idx, task in enumerate(daily_tasks, 1):
+                    # task가 딕셔너리인지 확인
+                    if not isinstance(task, dict):
+                        logger.warning(f"Week {week_idx}, Day {day_idx} 데이터가 딕셔너리가 아닙니다")
+                        continue
+                    
+                    # 완료 여부 판단: 현재 진도보다 이전이면 완료
+                    completed = (week_idx < current_week) or (week_idx == current_week and day_idx < current_day)
+                    in_progress = (week_idx == current_week and day_idx == current_day)
+                    
+                    days.append({
+                        "day": day_idx,
+                        "task": task.get('task', f'Day {day_idx}'),
+                        "deliverable": task.get('deliverable', ''),
+                        "study_time_minutes": task.get('study_time_minutes', syllabus.get('daily_study_minutes', 60)),
+                        "completed": completed,
+                        "in_progress": in_progress
+                    })
+                
+                weeks.append({
+                    "week": week_idx,
+                    "theme": week_theme,
+                    "days": days
+                })
+            
+            return {
+                "curriculum_id": curriculum_id,
+                "goal": curriculum.goal,
+                "total_weeks": total_weeks,
+                "current_week": current_week,
+                "current_day": current_day,
+                "weeks": weeks
+            }
+            
+        except Exception as e:
+            logger.error(f"전체 일정 조회 실패: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise
 
 
 # 싱글톤 인스턴스

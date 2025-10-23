@@ -5,6 +5,7 @@ import { ThemeProvider } from './shared/hooks/useTheme';
 import MainLayout from './layouts/MainLayout';
 import DashboardPage from './features/dashboard/DashboardPage';
 import LearningPage from './features/learning/LearningPage';
+import CurriculumSchedulePage from './features/learning/CurriculumSchedulePage';
 import AnalyticsPage from './features/analytics/AnalyticsPage';
 import AIAssistantPage from './features/ai-assistant/AIAssistantPage';
 import SettingsPage from './features/settings/SettingsPage';
@@ -57,7 +58,8 @@ function App() {
               <Route path="payment/success" element={<PaymentSuccessPage />} />
               <Route path="payment/fail" element={<PaymentFailPage />} />
               <Route path="settings/subscription" element={<SubscriptionSettingsPage />} />
-              <Route path="learning" element={<LearningPage />} />
+              <Route path="learning" element={<CurriculumSchedulePage />} />
+              <Route path="learning/old" element={<LearningPage />} />
               <Route path="learning/questions/:subjectKey" element={<QuestionsPage />} />
               <Route path="analytics/*" element={<AnalyticsPage />} />
               <Route path="ai-assistant/*" element={<AIAssistantPage />} />

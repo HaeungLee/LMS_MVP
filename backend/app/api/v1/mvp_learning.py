@@ -260,6 +260,50 @@ async def get_curriculum(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/curricula/{curriculum_id}/schedule")
+async def get_curriculum_schedule(
+    curriculum_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    service: DailyLearningService = Depends(get_daily_learning_service)
+) -> Dict[str, Any]:
+    """
+    커리큘럼 전체 일정 조회 (주차별/일별 학습 계획)
+    
+    Returns:
+        {
+            "curriculum_id": 1,
+            "total_weeks": 12,
+            "weeks": [
+                {
+                    "week": 1,
+                    "theme": "Linux 기초",
+                    "days": [
+                        {
+                            "day": 1,
+                            "task": "리눅스 기초 명령어",
+                            "deliverable": "명령어 치트시트 작성",
+                            "completed": true
+                        },
+                        ...
+                    ]
+                },
+                ...
+            ]
+        }
+    """
+    try:
+        schedule = await service.get_curriculum_schedule(
+            user_id=current_user.id,
+            curriculum_id=curriculum_id,
+            db=db
+        )
+        return schedule
+    except Exception as e:
+        logger.error(f"전체 일정 조회 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============= 일일 학습 API =============
 
 @router.get("/daily-learning")
