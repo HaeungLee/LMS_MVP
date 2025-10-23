@@ -9,9 +9,10 @@ interface CompletionSummaryProps {
   day: number;
   theme: string;
   onContinue: () => void;
+  onNextDay?: () => void;
 }
 
-export default function CompletionSummary({ week, day, theme, onContinue }: CompletionSummaryProps) {
+export default function CompletionSummary({ week, day, theme, onContinue, onNextDay }: CompletionSummaryProps) {
   return (
     <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl shadow-2xl p-8 text-white text-center">
       {/* 트로피 아이콘 */}
@@ -52,19 +53,32 @@ export default function CompletionSummary({ week, day, theme, onContinue }: Comp
           <Calendar className="w-8 h-8" />
           <div>
             <p className="text-sm opacity-80">다음 학습</p>
-            <p className="font-semibold">내일 Day {day + 1}에서 만나요!</p>
+            <p className="font-semibold">Day {day + 1}로 계속 학습하세요!</p>
           </div>
         </div>
       </div>
 
-      {/* 계속하기 버튼 */}
-      <button
-        onClick={onContinue}
-        className="w-full bg-white text-purple-600 py-4 px-6 rounded-xl hover:shadow-xl transition-all duration-200 font-bold flex items-center justify-center gap-2"
-      >
-        대시보드로 돌아가기
-        <ArrowRight className="w-5 h-5" />
-      </button>
+      {/* 버튼 그룹 */}
+      <div className="space-y-3">
+        {/* 다음 Day로 버튼 */}
+        {onNextDay && (
+          <button
+            onClick={onNextDay}
+            className="w-full bg-white text-purple-600 py-4 px-6 rounded-xl hover:shadow-xl transition-all duration-200 font-bold flex items-center justify-center gap-2"
+          >
+            다음 Day {day + 1} 시작하기 🚀
+            <ArrowRight className="w-5 h-5" />
+          </button>
+        )}
+        
+        {/* 대시보드 버튼 */}
+        <button
+          onClick={onContinue}
+          className="w-full bg-white/20 text-white border-2 border-white py-3 px-6 rounded-xl hover:bg-white/30 transition-all duration-200 font-semibold flex items-center justify-center gap-2"
+        >
+          대시보드로 돌아가기
+        </button>
+      </div>
 
       {/* 격려 메시지 */}
       <p className="mt-6 text-sm opacity-80">

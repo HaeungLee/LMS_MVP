@@ -10,9 +10,10 @@ interface TextbookSectionProps {
   content?: any;
   curriculumId?: number;
   onComplete: () => void;
+  onNextSection?: () => void;
 }
 
-export default function TextbookSection({ content, curriculumId, onComplete }: TextbookSectionProps) {
+export default function TextbookSection({ content, curriculumId, onComplete, onNextSection }: TextbookSectionProps) {
   const [isCompleted, setIsCompleted] = useState(false);
   const endMarkerRef = useRef<HTMLDivElement>(null);
   const hasTrackedRef = useRef(false);
@@ -119,21 +120,29 @@ export default function TextbookSection({ content, curriculumId, onComplete }: T
         <div ref={endMarkerRef} className="h-1 w-full" aria-hidden="true" />
       </div>
 
-      {/* 완료 버튼 (수동 완료도 가능) */}
+      {/* 완료 및 다음 섹션 버튼 */}
       <div className="mt-8 pt-6 border-t border-gray-200">
         {!isCompleted ? (
           <button
-            onClick={handleComplete}
+            onClick={() => {
+              handleComplete();
+              if (onNextSection) {
+                setTimeout(() => onNextSection(), 500);
+              }
+            }}
             className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-4 px-6 rounded-xl hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
           >
             <CheckCircle className="w-5 h-5" />
-            <span className="font-semibold">이해했습니다! 다음으로</span>
+            <span className="font-semibold">이해했습니다! 실습으로 →</span>
           </button>
         ) : (
-          <div className="w-full bg-green-50 text-green-700 py-4 px-6 rounded-xl flex items-center justify-center gap-2">
+          <button
+            onClick={onNextSection}
+            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 px-6 rounded-xl hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
+          >
             <CheckCircle className="w-5 h-5" />
-            <span className="font-semibold">✅ 완료했습니다!</span>
-          </div>
+            <span className="font-semibold">✅ 완료! 다음: 실습 코딩 →</span>
+          </button>
         )}
         
         {/* 자동 추적 안내 */}

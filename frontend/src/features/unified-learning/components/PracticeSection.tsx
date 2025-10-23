@@ -12,9 +12,10 @@ interface PracticeSectionProps {
   curriculumId?: number;
   onComplete: () => void;
   onRefresh?: () => void;
+  onNextSection?: () => void;
 }
 
-export default function PracticeSection({ problems, curriculumId, onComplete, onRefresh }: PracticeSectionProps) {
+export default function PracticeSection({ problems, curriculumId, onComplete, onRefresh, onNextSection }: PracticeSectionProps) {
   const [code, setCode] = useState('');
   const [result, setResult] = useState<any>(null);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -380,10 +381,13 @@ export default function PracticeSection({ problems, curriculumId, onComplete, on
             <span className="font-semibold">실습 완료! 다음으로</span>
           </button>
         ) : (
-          <div className="w-full bg-green-50 text-green-700 py-4 px-6 rounded-xl flex items-center justify-center gap-2">
+          <button
+            onClick={onNextSection}
+            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 px-6 rounded-xl hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
+          >
             <CheckCircle className="w-5 h-5" />
-            <span className="font-semibold">✅ 완료했습니다!</span>
-          </div>
+            <span className="font-semibold">✅ 완료! 다음: 퀴즈 →</span>
+          </button>
         )}
       </div>
     </div>

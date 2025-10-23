@@ -170,7 +170,7 @@ export default function UnifiedLearningPage() {
 
   // 콘텐츠 새로고침 (실습/퀴즈 재생성)
   const handleRefreshContent = async (section: 'practice' | 'quiz') => {
-    if (!curriculumId) return;
+    if (!curriculumId || !dailyLearning) return;
     
     try {
       const confirmed = window.confirm(
@@ -180,7 +180,10 @@ export default function UnifiedLearningPage() {
       
       if (!confirmed) return;
       
-      await api.post(`/mvp/refresh-content?curriculum_id=${curriculumId}&section=${section}`);
+      // week와 day 정보를 함께 전송
+      await api.post(
+        `/mvp/refresh-content?curriculum_id=${curriculumId}&section=${section}&week=${dailyLearning.week}&day=${dailyLearning.day}`
+      );
       
       // React Query 캐시 무효화하여 새로운 데이터 가져오기
       queryClient.invalidateQueries({ queryKey: ['daily-learning', curriculumId, targetDate] });
@@ -352,6 +355,7 @@ export default function UnifiedLearningPage() {
                 content={sections.textbook.content}
                 curriculumId={curriculumId ? parseInt(curriculumId) : undefined}
                 onComplete={() => handleSectionComplete('textbook')}
+                onNextSection={() => setCurrentSection('practice')}
               />
               <InlineAIMentor 
                 context="textbook" 
@@ -368,6 +372,7 @@ export default function UnifiedLearningPage() {
                 curriculumId={curriculumId ? parseInt(curriculumId) : undefined}
                 onComplete={() => handleSectionComplete('practice')}
                 onRefresh={() => handleRefreshContent('practice')}
+                onNextSection={() => setCurrentSection('quiz')}
               />
               <InlineAIMentor 
                 context="practice" 
@@ -396,6 +401,7 @@ export default function UnifiedLearningPage() {
             day={day}
             theme={theme}
             onContinue={() => navigate('/dashboard')}
+            onNextDay={handleNextDay}
           />
         )}
       </div>

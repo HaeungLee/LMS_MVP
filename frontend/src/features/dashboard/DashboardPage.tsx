@@ -111,9 +111,12 @@ export default function DashboardPage() {
     queryKey: ['achievement-stats', user?.id],
     queryFn: async () => {
       const data = await api.get<AchievementStats>('/achievement/stats');
+      console.log('[Dashboard] Achievement stats:', data);
       return data;
     },
     enabled: !!user,
+    refetchInterval: 30000, // 30초마다 자동 갱신
+    refetchOnWindowFocus: true, // 포커스 시 재조회
   });
 
   // 로딩 상태

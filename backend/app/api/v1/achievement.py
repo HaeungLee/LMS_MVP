@@ -13,12 +13,15 @@ from sqlalchemy import func, and_, desc
 from datetime import datetime, timedelta
 from pydantic import BaseModel
 from typing import Optional
+import logging
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.orm import User
+from app.models.orm import User, QuizSession
+from app.models.code_problem import CodeSubmission
 from app.models.ai_curriculum import AITeachingSession
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -51,23 +54,57 @@ async def get_achievement_stats(
     - 총 학습 시간 합산 (세션 활동 기준)
     """
     
-    # 사용자의 모든 AI Teaching Session 조회 (날짜별 그룹화)
-    # last_activity_at을 기준으로 학습한 날짜 추출
-    session_records = db.query(
-        func.date(AITeachingSession.last_activity_at).label('study_date'),
-        func.count(AITeachingSession.id).label('sessions'),
-        func.sum(AITeachingSession.completion_percentage).label('total_progress')
+    # MVP 시스템: AITeachingSession (교재) + QuizSession (퀴즈) + CodeSubmission (실습) 통합 추적
+    study_dates_set = set()
+    
+    # 1. AITeachingSession (교재 읽기)
+    teaching_dates = db.query(
+        func.date(AITeachingSession.last_activity_at).label('study_date')
     ).filter(
         AITeachingSession.user_id == current_user.id,
         AITeachingSession.last_activity_at.isnot(None)
     ).group_by(
         func.date(AITeachingSession.last_activity_at)
-    ).order_by(
-        desc('study_date')
     ).all()
     
-    # 학습한 날짜들 (오늘부터 역순)
-    study_dates = [record.study_date for record in session_records]
+    for record in teaching_dates:
+        study_dates_set.add(record.study_date)
+    
+    # 2. QuizSession (퀴즈 제출)
+    quiz_dates = db.query(
+        func.date(QuizSession.completed_at).label('study_date')
+    ).filter(
+        QuizSession.user_id == current_user.id,
+        QuizSession.completed_at.isnot(None)
+    ).group_by(
+        func.date(QuizSession.completed_at)
+    ).all()
+    
+    for record in quiz_dates:
+        study_dates_set.add(record.study_date)
+    
+    # 3. CodeSubmission (실습 제출)
+    code_dates = db.query(
+        func.date(CodeSubmission.judged_at).label('study_date')
+    ).filter(
+        CodeSubmission.user_id == current_user.id,
+        CodeSubmission.judged_at.isnot(None)
+    ).group_by(
+        func.date(CodeSubmission.judged_at)
+    ).all()
+    
+    for record in code_dates:
+        study_dates_set.add(record.study_date)
+    
+    # 학습한 날짜들 (오늘부터 역순 정렬)
+    study_dates = sorted(list(study_dates_set), reverse=True)
+    
+    logger.info(f"[Achievement] user_id={current_user.id}")
+    logger.info(f"[Achievement] Teaching dates: {len(teaching_dates)}")
+    logger.info(f"[Achievement] Quiz dates: {len(quiz_dates)}")
+    logger.info(f"[Achievement] Code dates: {len(code_dates)}")
+    logger.info(f"[Achievement] Total unique study dates: {len(study_dates)}")
+    logger.info(f"[Achievement] Study dates: {study_dates[:5] if len(study_dates) > 5 else study_dates}")
     
     # 1. 연속 학습일 계산
     streak = calculate_streak(study_dates)
@@ -84,20 +121,29 @@ async def get_achievement_stats(
     # 4. 총 학습일
     total_days_learned = len(study_dates)
     
-    # 5. 총 학습 시간 추정
-    # 세션 생성부터 마지막 활동까지의 시간을 합산
+    # 5. 총 학습 시간 추정 (MVP: AITeachingSession + QuizSession 시간 합산)
+    total_minutes = 0
+    
+    # Teaching Session 시간
     total_sessions = db.query(AITeachingSession).filter(
         AITeachingSession.user_id == current_user.id,
         AITeachingSession.session_status.in_(['active', 'completed'])
     ).all()
     
-    total_minutes = 0
     for session in total_sessions:
         if session.started_at and session.last_activity_at:
             duration = (session.last_activity_at - session.started_at).total_seconds() / 60
-            # 최소 1분, 최대 180분으로 제한 (이상치 제거)
-            duration = max(1, min(duration, 180))
+            duration = max(1, min(duration, 180))  # 1~180분 제한
             total_minutes += duration
+    
+    # Quiz Session 시간 (time_taken은 초 단위)
+    quiz_times = db.query(func.sum(QuizSession.time_taken)).filter(
+        QuizSession.user_id == current_user.id,
+        QuizSession.time_taken.isnot(None)
+    ).scalar()
+    
+    if quiz_times:
+        total_minutes += quiz_times / 60  # 초 → 분
     
     total_study_hours = round(total_minutes / 60, 1)
     
