@@ -1644,7 +1644,7 @@ def example():
             
             return {
                 "curriculum_id": curriculum_id,
-                "goal": curriculum.goal,
+                "goal": syllabus.get('goal', f'커리큘럼 {curriculum_id}'),
                 "total_weeks": total_weeks,
                 "current_week": current_week,
                 "current_day": current_day,

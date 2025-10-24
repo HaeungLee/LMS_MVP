@@ -113,10 +113,10 @@ async def get_achievement_stats(
     today = datetime.now().date()
     today_completed = today in study_dates
     
-    # 3. 주간 목표 달성률 (주 5일 학습 목표)
+    # 3. 주간 목표 달성률 (주 7일 학습 목표)
     week_start = today - timedelta(days=today.weekday())  # 이번 주 월요일
     this_week_days = sum(1 for d in study_dates if d >= week_start)
-    weekly_progress = min(int((this_week_days / 5) * 100), 100)  # 최대 100%
+    weekly_progress = min(int((this_week_days / 7) * 100), 100)  # 최대 100%
     
     # 4. 총 학습일
     total_days_learned = len(study_dates)
@@ -174,18 +174,29 @@ def calculate_streak(study_dates: list) -> int:
     
     예:
     - 오늘, 어제, 그제 학습 → streak = 3
-    - 오늘 학습 안 함, 어제 학습 → streak = 1
+    - 오늘 학습 안 함, 어제 학습 → streak = 1 (어제까지의 streak 유지)
     - 오늘, 어제 학습 안 함 → streak = 0
+    
+    개선: 오늘 학습하지 않았어도 어제까지의 연속 기록은 유지
     """
     if not study_dates:
         return 0
     
     today = datetime.now().date()
+    yesterday = today - timedelta(days=1)
     streak = 0
     
-    # 오늘부터 역순으로 확인
-    check_date = today
+    # 오늘 학습했는지 확인
+    if today in study_dates:
+        check_date = today
+    # 오늘은 안 했지만 어제 했다면 어제부터 시작
+    elif yesterday in study_dates:
+        check_date = yesterday
+    else:
+        # 어제도 안 했으면 streak = 0
+        return 0
     
+    # 역순으로 연속 학습일 계산
     for _ in range(365):  # 최대 365일까지
         if check_date in study_dates:
             streak += 1

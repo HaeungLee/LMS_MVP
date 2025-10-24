@@ -79,7 +79,7 @@ export default function CurriculumSchedulePage() {
     
     // Day 클릭 시 학습 페이지로 이동
     const targetDate = calculateTargetDate(week, day);
-    navigate(`/learning?curriculum_id=${currentCurriculum.curriculum_id}&target_date=${targetDate}`);
+    navigate(`/dashboard/learn?curriculum_id=${currentCurriculum.curriculum_id}&target_date=${targetDate}`);
   };
 
   const calculateTargetDate = (week: number, day: number): string => {

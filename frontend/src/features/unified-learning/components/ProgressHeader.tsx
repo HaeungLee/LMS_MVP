@@ -25,6 +25,9 @@ export default function ProgressHeader({
   canGoPrev = true,
   canGoNext = true
 }: ProgressHeaderProps) {
+  // NaN 방지: progress가 유효하지 않으면 0으로 설정
+  const safeProgress = isNaN(progress) || !isFinite(progress) ? 0 : progress;
+  
   return (
     <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 py-3">
@@ -76,12 +79,12 @@ export default function ProgressHeader({
             <div className="hidden sm:block w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-500"
-                style={{ width: `${progress}%` }}
+                style={{ width: `${safeProgress}%` }}
               />
             </div>
             <div className="flex items-center gap-1 text-sm font-semibold text-indigo-600">
               <TrendingUp className="w-4 h-4" />
-              <span>{Math.round(progress)}%</span>
+              <span>{Math.round(safeProgress)}%</span>
             </div>
           </div>
         </div>

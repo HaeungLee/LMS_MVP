@@ -3,7 +3,6 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Home, 
   BookOpen, 
-  BarChart3, 
   Bot, 
   Settings,
   LogOut,
@@ -46,13 +45,6 @@ export default function MainLayout() {
         icon: BookOpen,
         path: '/dashboard/learning',
         description: '주차별 학습 계획 및 진도 현황'
-      },
-      {
-        id: 'analytics',
-        title: '내 학습 분석',
-        icon: BarChart3,
-        path: '/dashboard/analytics',
-        description: '상세 진도 현황 및 성과 분석'
       },
       {
         id: 'ai-assistant',
