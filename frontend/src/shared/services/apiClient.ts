@@ -31,7 +31,7 @@ function getCsrfToken(): string | null {
 
 // 타임아웃이 있는 fetch 래퍼
 async function fetchWithTimeout(resource: string, options: RequestInit & { timeoutMs?: number } = {}) {
-  const { timeoutMs = 30000, ...rest } = options; // 기본 타임아웃 30초 (LLM 호출 고려)
+  const { timeoutMs = 60000, ...rest } = options; // 기본 타임아웃 60초 (Render Cold Start 고려)
   
   // 요청 식별자 생성 (메소드 + URL)
   const method = (rest.method || 'GET').toUpperCase();
@@ -218,15 +218,15 @@ export const api = {
 
 // 인증 관련 API - 올바른 엔드포인트 사용
 export const authApi = {
-  getMe: () => api.get<{ id: number; email: string; role: string; display_name?: string }>('/auth/me', { timeoutMs: 30000 }),
+  getMe: () => api.get<{ id: number; email: string; role: string; display_name?: string }>('/auth/me', { timeoutMs: 60000 }),
   
   login: (data: { email: string; password: string }) => 
-    api.post<{ id: number; email: string; role: string; display_name?: string }>('/auth/login', data, { timeoutMs: 30000 }),
+    api.post<{ id: number; email: string; role: string; display_name?: string }>('/auth/login', data, { timeoutMs: 60000 }),
   
-  logout: () => api.post<{ message: string }>('/auth/logout', undefined, { timeoutMs: 30000 }),
+  logout: () => api.post<{ message: string }>('/auth/logout', undefined, { timeoutMs: 60000 }),
   
   register: (data: { email: string; password: string; display_name?: string }) => 
-    api.post<{ id: number; email: string; role: string; display_name?: string }>('/auth/register', data, { timeoutMs: 30000 }),
+    api.post<{ id: number; email: string; role: string; display_name?: string }>('/auth/register', data, { timeoutMs: 60000 }),
 };
 
 // 대시보드 관련 API - 올바른 엔드포인트 사용
