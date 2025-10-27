@@ -1,0 +1,42 @@
+# Render Blueprint for LMS MVP
+# 완전 무료 배포 구성
+
+services:
+  # Backend API (FastAPI)
+  - type: web
+    name: lms-mvp-backend
+    runtime: python
+    plan: free
+    buildCommand: |
+      cd backend
+      pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: False
+      - key: DATABASE_URL
+        sync: false  # 수동으로 Neon URL 입력
+      - key: REDIS_URL
+        sync: false  # 수동으로 Upstash URL 입력
+      - key: SECRET_KEY
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: LLM_PROVIDER
+        value: hybrid
+      - key: LLM_ENABLED
+        value: true
+      - key: BACKEND_CORS_ORIGINS
+        value: '["https://lms-mvp-frontend.vercel.app"]'
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: ALGORITHM
+        value: HS256
+    healthCheckPath: /api/v1/health
