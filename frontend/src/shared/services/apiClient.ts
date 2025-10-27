@@ -127,6 +127,22 @@ async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let errorMessage = `HTTP ${response.status}`;
     
+    // 401 Unauthorized - 토큰 만료 처리
+    if (response.status === 401) {
+      console.warn('🔒 인증 만료 - 로그인 페이지로 리다이렉트');
+      localStorage.removeItem('token');
+      
+      // 현재 경로 저장 (로그인 후 돌아오기 위해)
+      const currentPath = window.location.pathname + window.location.search;
+      if (currentPath !== '/login') {
+        sessionStorage.setItem('redirectAfterLogin', currentPath);
+      }
+      
+      // 로그인 페이지로 리다이렉트
+      window.location.href = '/login?expired=true';
+      throw new Error('세션이 만료되었습니다. 다시 로그인해주세요.');
+    }
+    
     if (text) {
       try {
         const errorData = JSON.parse(text);

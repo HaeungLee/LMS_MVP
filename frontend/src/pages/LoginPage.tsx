@@ -1,14 +1,26 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Bot, Mail, Lock, RefreshCw, AlertCircle } from 'lucide-react';
 import useAuthStore from '../shared/hooks/useAuthStore';
+import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { login, loading, error } = useAuthStore();
+
+  // 토큰 만료로 리다이렉트된 경우 알림 표시
+  useEffect(() => {
+    if (searchParams.get('expired') === 'true') {
+      toast.error('세션이 만료되었습니다. 다시 로그인해주세요.', {
+        duration: 5000,
+        position: 'top-center',
+      });
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +33,15 @@ export default function LoginPage() {
     
     try {
       await login(email, password);
-      navigate('/dashboard'); // 로그인 성공 시 대시보드로 이동
+      
+      // 저장된 리다이렉트 경로 확인
+      const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+      if (redirectPath) {
+        sessionStorage.removeItem('redirectAfterLogin');
+        navigate(redirectPath);
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       // 에러는 useAuthStore에서 처리됨
       console.error('로그인 실패:', err);
