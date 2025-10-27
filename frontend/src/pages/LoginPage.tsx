@@ -60,6 +60,9 @@ export default function LoginPage() {
           </div>
           <h2 className="text-3xl font-bold text-gray-900">LMS Platform</h2>
           <p className="mt-2 text-gray-600">AI 중심 학습 플랫폼에 로그인하세요</p>
+          <p className="mt-3 text-lg font-medium text-blue-600">
+            완벽보다 꾸준함으로. 당신만의 속도로 성장하세요
+          </p>
         </div>
 
         {/* 로그인 폼 */}

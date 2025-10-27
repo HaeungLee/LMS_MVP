@@ -24,6 +24,7 @@ import InlineAIMentor from './components/InlineAIMentor';
 import PracticeSection from './components/PracticeSection';
 import QuizSection from './components/QuizSection';
 import CompletionSummary from './components/CompletionSummary';
+import MotivationalQuote from '../../shared/components/MotivationalQuote';
 
 interface DailyLearning {
   date: string;
@@ -404,6 +405,9 @@ export default function UnifiedLearningPage() {
             onNextDay={handleNextDay}
           />
         )}
+
+        {/* 명언 */}
+        <MotivationalQuote />
       </div>
     </div>
   );

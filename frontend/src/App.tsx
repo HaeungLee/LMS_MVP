@@ -10,6 +10,7 @@ import AnalyticsPage from './features/analytics/AnalyticsPage';
 import AIAssistantPage from './features/ai-assistant/AIAssistantPage';
 import SettingsPage from './features/settings/SettingsPage';
 import QuestionsPage from './features/learning/QuestionsPage';
+import CommunityPage from './features/community/CommunityPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import QuestionReviewSystem from './pages/admin/QuestionReviewSystem';
 import LoginPage from './pages/LoginPage';
@@ -57,6 +58,7 @@ function App() {
               <Route path="pricing" element={<PricingPage />} />
               <Route path="payment/success" element={<PaymentSuccessPage />} />
               <Route path="payment/fail" element={<PaymentFailPage />} />
+              <Route path="community" element={<CommunityPage />} />
               <Route path="settings/subscription" element={<SubscriptionSettingsPage />} />
               <Route path="learning" element={<CurriculumSchedulePage />} />
               <Route path="learning/old" element={<LearningPage />} />

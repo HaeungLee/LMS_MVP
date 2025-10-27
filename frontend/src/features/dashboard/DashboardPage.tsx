@@ -25,6 +25,7 @@ import { api } from '../../shared/services/apiClient';
 import DailyAchievementCard from './components/DailyAchievementCard';
 import StatsCard from './components/StatsCard';
 import SubscriptionCard from './components/SubscriptionCard';
+import MotivationalQuote from '../../shared/components/MotivationalQuote';
 
 interface DailyLearning {
   date: string;
@@ -280,8 +281,9 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Phase 3에서 MVP 테이블 기반 재구현 예정 */}
       {/* 복습 시스템 바로가기 */}
-      <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200">
+      {/* <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="p-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl text-white">
@@ -301,7 +303,7 @@ export default function DashboardPage() {
             <ArrowRight className="w-5 h-5" />
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* 오늘의 학습 3단계 */}
       <div>
@@ -383,6 +385,9 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* 명언 */}
+      <MotivationalQuote />
     </div>
   );
 }

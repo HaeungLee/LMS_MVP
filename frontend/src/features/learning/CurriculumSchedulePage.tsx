@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../shared/services/apiClient';
 import useAuthStore from '../../shared/hooks/useAuthStore';
+import MotivationalQuote from '../../shared/components/MotivationalQuote';
 
 interface DaySchedule {
   day: number;
@@ -250,6 +251,9 @@ export default function CurriculumSchedulePage() {
             </div>
           </div>
         ))}
+
+        {/* 명언 */}
+        <MotivationalQuote />
       </div>
     </div>
   );

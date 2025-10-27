@@ -9,7 +9,8 @@ import {
   User,
   RefreshCw,
   Shield,
-  CreditCard
+  CreditCard,
+  MessageCircle
 } from 'lucide-react';
 import useAuthStore from '../shared/hooks/useAuthStore';
 import { api } from '../shared/services/apiClient';
@@ -59,6 +60,13 @@ export default function MainLayout() {
         icon: CreditCard,
         path: '/dashboard/pricing',
         description: '₩9,900/월 • 7일 무료 체험'
+      },
+      {
+        id: 'community',
+        title: '커뮤니티',
+        icon: MessageCircle,
+        path: '/dashboard/community',
+        description: '피드백 & 소통 공간'
       },
       {
         id: 'settings',
