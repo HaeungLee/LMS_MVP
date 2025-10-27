@@ -14,6 +14,7 @@ from .middleware.request_id import RequestIDMiddleware
 from .middleware.rate_limit import RateLimitMiddleware
 from .middleware.logging import StructuredLoggingMiddleware
 from .middleware.security_headers import SecurityHeadersMiddleware
+import json
 
 app = FastAPI(
     title="LMS MVP API",
@@ -21,17 +22,27 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# CORS origins 파싱 - 환경변수에서 JSON 배열로 읽어오기
+cors_origins_str = os.getenv(
+    "BACKEND_CORS_ORIGINS",
+    '["http://localhost:5173","http://localhost:3000","http://127.0.0.1:5173"]'
+)
+try:
+    cors_origins = json.loads(cors_origins_str)
+except json.JSONDecodeError:
+    # 파싱 실패 시 기본값 사용
+    cors_origins = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173"
+    ]
+
+print(f"✅ CORS Origins: {cors_origins}")  # 디버그용 로그
+
 # CORS 미들웨어 추가 - 가장 먼저 등록
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174", 
-        "http://localhost:3000", 
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174",
-        "http://127.0.0.1:3000"
-    ],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],  # 모든 메소드 허용
     allow_headers=["*"],  # 모든 헤더 허용

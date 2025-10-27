@@ -50,6 +50,12 @@ class Settings(BaseSettings):
     postgres_password: str = os.getenv("POSTGRES_PASSWORD", "1234")
     postgres_db: str = os.getenv("POSTGRES_DB", "lms_mvp_db")
     
+    # CORS 설정 - 환경변수에서 읽어오기
+    backend_cors_origins: str = os.getenv(
+        "BACKEND_CORS_ORIGINS",
+        '["http://localhost:5173","http://localhost:3000","http://127.0.0.1:5173"]'
+    )
+    
     # LLM/Feedback settings
     llm_provider: str = os.getenv("LLM_PROVIDER", "openrouter")
     openrouter_model: str = os.getenv("OPENROUTER_MODEL", "google/gemma-3-27b")
