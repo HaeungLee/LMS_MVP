@@ -14,7 +14,7 @@ from sqlalchemy import func, desc
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.orm import User, Submission, SubmissionItem, Question, QuizSession
+from app.models.orm import User, Submission, SubmissionItem, Question, QuizSession, QuizAnswer
 from app.models.ai_curriculum import AITeachingSession
 from app.models.code_problem import CodeSubmission
 
@@ -256,11 +256,14 @@ async def get_learning_stats(
         
         # === 오늘 통계 (MVP 테이블 기반) ===
         
-        # 1. 오늘 퀴즈 제출
-        today_quiz = db.query(QuizSession).filter(
+        # 1. 오늘 퀴즈 답변 (개별 문제 단위로 집계)
+        today_quiz_answers = db.query(QuizAnswer).join(
+            QuizSession, QuizAnswer.session_id == QuizSession.id
+        ).filter(
             QuizSession.user_id == user_id,
-            QuizSession.completed_at >= today_start,
-            QuizSession.completed_at <= today_end
+            QuizAnswer.answered_at >= today_start,
+            QuizAnswer.answered_at <= today_end,
+            QuizAnswer.is_skipped == False  # 건너뛴 문제는 제외
         ).all()
         
         # 2. 오늘 코드 제출
@@ -270,14 +273,11 @@ async def get_learning_stats(
             CodeSubmission.judged_at <= today_end
         ).all()
         
-        # 문제 수와 정확도 계산
-        daily_problems = len(today_quiz) + len(today_code)
+        # 문제 수와 정확도 계산 (개별 답변 기준)
+        daily_problems = len(today_quiz_answers) + len(today_code)
         
-        # 퀴즈: total_score 기반 정확도 (각 퀴즈의 총점/문항수)
-        quiz_correct = 0
-        for q in today_quiz:
-            if q.total_score is not None and q.total_questions and q.total_questions > 0:
-                quiz_correct += 1 if (q.total_score / q.total_questions) >= 0.6 else 0  # 60% 이상이면 정답
+        # 퀴즈: is_correct 기반으로 정답 개수 집계
+        quiz_correct = sum(1 for ans in today_quiz_answers if ans.is_correct)
         
         # 코드: accepted 상태만 정답
         code_correct = sum(1 for c in today_code if c.status == 'accepted')
@@ -298,18 +298,20 @@ async def get_learning_stats(
                 duration = (session.last_activity_at - session.started_at).total_seconds() / 60
                 daily_minutes += max(1, min(duration, 180))  # 1~180분 제한
         
-        # 퀴즈 시간 추가 (초 단위)
-        quiz_times = sum(q.time_taken or 0 for q in today_quiz)
-        daily_minutes += quiz_times / 60
+        # 퀴즈 시간 추가 (각 문제당 약 2분 추정)
+        daily_minutes += len(today_quiz_answers) * 2
         
         # === 주간 통계 (이번 주 월요일부터) ===
         week_start = today - timedelta(days=today.weekday())  # 이번 주 월요일
         week_start_dt = datetime.combine(week_start, datetime.min.time())
         
-        # 1. 주간 퀴즈 제출
-        weekly_quiz = db.query(QuizSession).filter(
+        # 1. 주간 퀴즈 답변 (개별 문제 단위)
+        weekly_quiz_answers = db.query(QuizAnswer).join(
+            QuizSession, QuizAnswer.session_id == QuizSession.id
+        ).filter(
             QuizSession.user_id == user_id,
-            QuizSession.completed_at >= week_start_dt
+            QuizAnswer.answered_at >= week_start_dt,
+            QuizAnswer.is_skipped == False
         ).all()
         
         # 2. 주간 코드 제출
@@ -318,13 +320,10 @@ async def get_learning_stats(
             CodeSubmission.judged_at >= week_start_dt
         ).all()
         
-        weekly_problems = len(weekly_quiz) + len(weekly_code)
+        weekly_problems = len(weekly_quiz_answers) + len(weekly_code)
         
-        # 퀴즈 정확도
-        weekly_quiz_correct = 0
-        for q in weekly_quiz:
-            if q.total_score is not None and q.total_questions and q.total_questions > 0:
-                weekly_quiz_correct += 1 if (q.total_score / q.total_questions) >= 0.6 else 0
+        # 퀴즈 정확도 (개별 답변 기준)
+        weekly_quiz_correct = sum(1 for ans in weekly_quiz_answers if ans.is_correct)
         
         weekly_code_correct = sum(1 for c in weekly_code if c.status == 'accepted')
         weekly_correct = weekly_quiz_correct + weekly_code_correct
@@ -342,11 +341,8 @@ async def get_learning_stats(
                 duration = (session.last_activity_at - session.started_at).total_seconds() / 60
                 weekly_minutes += max(1, min(duration, 180))
         
-        quiz_times = sum(q.time_taken or 0 for q in weekly_quiz)
-        weekly_minutes += quiz_times / 60
-        
-        if weekly_minutes <= 30:
-                        pass  # 이미 추가됨
+        # 퀴즈 시간 추가 (각 문제당 약 2분)
+        weekly_minutes += len(weekly_quiz_answers) * 2
         
         weekly_hours = round(weekly_minutes / 60, 1)
         
@@ -357,9 +353,9 @@ async def get_learning_stats(
             if session.last_activity_at:
                 weekly_dates.add(session.last_activity_at.date())
         
-        for quiz in weekly_quiz:
-            if quiz.completed_at:
-                weekly_dates.add(quiz.completed_at.date())
+        for ans in weekly_quiz_answers:
+            if ans.answered_at:
+                weekly_dates.add(ans.answered_at.date())
         
         for code in weekly_code:
             if code.judged_at:
@@ -371,10 +367,13 @@ async def get_learning_stats(
         month_start = today.replace(day=1)
         month_start_dt = datetime.combine(month_start, datetime.min.time())
         
-        # 1. 월간 퀴즈 제출
-        monthly_quiz = db.query(QuizSession).filter(
+        # 1. 월간 퀴즈 답변 (개별 문제 단위)
+        monthly_quiz_answers = db.query(QuizAnswer).join(
+            QuizSession, QuizAnswer.session_id == QuizSession.id
+        ).filter(
             QuizSession.user_id == user_id,
-            QuizSession.completed_at >= month_start_dt
+            QuizAnswer.answered_at >= month_start_dt,
+            QuizAnswer.is_skipped == False
         ).all()
         
         # 2. 월간 코드 제출
@@ -383,13 +382,10 @@ async def get_learning_stats(
             CodeSubmission.judged_at >= month_start_dt
         ).all()
         
-        monthly_problems = len(monthly_quiz) + len(monthly_code)
+        monthly_problems = len(monthly_quiz_answers) + len(monthly_code)
         
-        # 퀴즈 정확도
-        monthly_quiz_correct = 0
-        for q in monthly_quiz:
-            if q.total_score is not None and q.total_questions and q.total_questions > 0:
-                monthly_quiz_correct += 1 if (q.total_score / q.total_questions) >= 0.6 else 0
+        # 퀴즈 정확도 (개별 답변 기준)
+        monthly_quiz_correct = sum(1 for ans in monthly_quiz_answers if ans.is_correct)
         
         monthly_code_correct = sum(1 for c in monthly_code if c.status == 'accepted')
         monthly_correct = monthly_quiz_correct + monthly_code_correct
@@ -407,8 +403,8 @@ async def get_learning_stats(
                 duration = (session.last_activity_at - session.started_at).total_seconds() / 60
                 monthly_minutes += max(1, min(duration, 180))
         
-        quiz_times = sum(q.time_taken or 0 for q in monthly_quiz)
-        monthly_minutes += quiz_times / 60
+        # 퀴즈 시간 추가 (각 문제당 약 2분)
+        monthly_minutes += len(monthly_quiz_answers) * 2
         
         monthly_hours = round(monthly_minutes / 60, 1)
         
@@ -419,9 +415,9 @@ async def get_learning_stats(
             if session.last_activity_at:
                 monthly_dates.add(session.last_activity_at.date())
         
-        for quiz in monthly_quiz:
-            if quiz.completed_at:
-                monthly_dates.add(quiz.completed_at.date())
+        for ans in monthly_quiz_answers:
+            if ans.answered_at:
+                monthly_dates.add(ans.answered_at.date())
         
         for code in monthly_code:
             if code.judged_at:
@@ -435,11 +431,14 @@ async def get_learning_stats(
         last_week_start_dt = datetime.combine(last_week_start, datetime.min.time())
         last_week_end_dt = datetime.combine(last_week_end, datetime.min.time())
         
-        # 지난주 퀴즈/코드
-        last_week_quiz = db.query(QuizSession).filter(
+        # 지난주 퀴즈 답변 (개별 문제 단위)
+        last_week_quiz_answers = db.query(QuizAnswer).join(
+            QuizSession, QuizAnswer.session_id == QuizSession.id
+        ).filter(
             QuizSession.user_id == user_id,
-            QuizSession.completed_at >= last_week_start_dt,
-            QuizSession.completed_at < last_week_end_dt
+            QuizAnswer.answered_at >= last_week_start_dt,
+            QuizAnswer.answered_at < last_week_end_dt,
+            QuizAnswer.is_skipped == False
         ).all()
         
         last_week_code = db.query(CodeSubmission).filter(
@@ -448,13 +447,10 @@ async def get_learning_stats(
             CodeSubmission.judged_at < last_week_end_dt
         ).all()
         
-        last_week_problems = len(last_week_quiz) + len(last_week_code)
+        last_week_problems = len(last_week_quiz_answers) + len(last_week_code)
         
-        # 퀴즈 정확도
-        last_week_quiz_correct = 0
-        for q in last_week_quiz:
-            if q.total_score is not None and q.total_questions and q.total_questions > 0:
-                last_week_quiz_correct += 1 if (q.total_score / q.total_questions) >= 0.6 else 0
+        # 퀴즈 정확도 (개별 답변 기준)
+        last_week_quiz_correct = sum(1 for ans in last_week_quiz_answers if ans.is_correct)
         
         last_week_code_correct = sum(1 for c in last_week_code if c.status == 'accepted')
         last_week_correct = last_week_quiz_correct + last_week_code_correct
