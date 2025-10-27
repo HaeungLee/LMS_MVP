@@ -1,0 +1,41 @@
+방법 1. Render의 Build Command에 Python 버전 고정
+
+Render는 runtime.txt보다 Build Command / Start Command에서의 환경 설정을 더 신뢰해.
+따라서 .render.yaml 또는 Render Dashboard에서 build command를 이렇게 바꿔줘.
+
+buildCommand: |
+  pyenv install 3.11.9
+  pyenv global 3.11.9
+  python -m venv .venv
+  source .venv/bin/activate
+  pip install -r requirements.txt
+
+
+이렇게 하면 psycopg2가 Python 3.11 환경에서 다시 빌드되어 .so 심볼 불일치가 해결돼.
+
+방법 2. psycopg2 대신 psycopg2-binary 사용
+
+psycopg2는 빌드시 Python 버전에 맞게 C 확장을 컴파일하기 때문에 버전 mismatch가 잘 일어나.
+반면 psycopg2-binary는 미리 빌드된 wheel을 가져오므로 버전 문제를 덜 겪어.
+
+pip uninstall psycopg2
+pip install psycopg2-binary
+
+
+그런 다음 requirements.txt에서 psycopg2 → psycopg2-binary로 변경.
+
+이게 Render 배포 환경에서는 가장 간단하고 빠른 해결책이야.
+
+방법 3. 빌드 환경 캐시 초기화
+
+Render가 이전 빌드 캐시를 보관 중이라면,
+이전 Python 3.13에서 빌드된 .venv를 그대로 재사용하는 중일 수도 있어.
+
+👉 Render Dashboard → “Settings” → “Clear build cache” 클릭
+다시 배포해보면 psycopg2가 현재 Python 버전에 맞게 재빌드됨.
+
+🔧 요약하면
+원인	해결 방법
+Python 버전 mismatch	psycopg2-binary로 변경
+runtime.txt가 무시됨	buildCommand에서 pyenv 사용
+캐시된 venv 사용	Render “Clear build cache” 실행
