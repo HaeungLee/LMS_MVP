@@ -129,10 +129,45 @@ export default function PracticeSection({ problems, curriculumId, onComplete, on
   const defaultProblem = {
     title: "실습 문제 준비 중",
     description: "커리큘럼에서 실습 문제를 불러오고 있습니다. 잠시만 기다려주세요.",
-    starter_code: `# 실습 문제를 불러오는 중입니다...\n`
+    starter_code: `# 실습 문제를 불러오는 중입니다...\n`,
+    requirements: [],
+    hints: [],
+    examples: []
   };
 
-  const problem = problems?.[0] || defaultProblem;
+  // 문제 데이터 파싱 (description이 JSON 문자열인 경우 처리)
+  const parseProblem = (rawProblem: any) => {
+    if (!rawProblem) return defaultProblem;
+    
+    // description이 JSON 문자열인지 확인
+    if (typeof rawProblem.description === 'string' && rawProblem.description.trim().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(rawProblem.description);
+        // 파싱된 JSON을 rawProblem과 병합
+        return {
+          ...rawProblem,
+          ...parsed,
+          // 기존 필드 우선 (이미 파싱되어 있을 수 있음)
+          title: rawProblem.title || parsed.title || "💻 실습",
+          description: parsed.description || rawProblem.description,
+          requirements: rawProblem.requirements || parsed.requirements || [],
+          starter_code: rawProblem.starter_code || parsed.starter_code || `# TODO: 코드를 작성하세요\n`,
+          hints: rawProblem.hints || parsed.hints || [],
+          examples: rawProblem.examples || parsed.examples || [],
+          test_cases: rawProblem.test_cases || parsed.test_cases || [],
+          difficulty: rawProblem.difficulty || parsed.difficulty || 'easy',
+          estimated_time_minutes: rawProblem.estimated_time_minutes || parsed.estimated_time_minutes || 30
+        };
+      } catch (e) {
+        console.warn('JSON 파싱 실패, 원본 사용:', e);
+        return rawProblem;
+      }
+    }
+    
+    return rawProblem;
+  };
+
+  const problem = parseProblem(problems?.[0]) || defaultProblem;
 
   // 에디터 초기값 설정
   if (!code && problem.starter_code) {
@@ -183,6 +218,45 @@ export default function PracticeSection({ problems, curriculumId, onComplete, on
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* 힌트 */}
+        {problem.hints && problem.hints.length > 0 && (
+          <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <h4 className="font-semibold text-yellow-900 mb-2">💡 힌트</h4>
+            <ul className="space-y-1 text-sm text-yellow-800">
+              {problem.hints.map((hint: string, idx: number) => (
+                <li key={idx} className="flex items-start gap-2">
+                  <span className="text-yellow-600">•</span>
+                  <span>{hint}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* 예시 */}
+        {problem.examples && problem.examples.length > 0 && (
+          <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+            <h4 className="font-semibold text-green-900 mb-2">📝 예시</h4>
+            <div className="space-y-3">
+              {problem.examples.map((example: any, idx: number) => (
+                <div key={idx} className="text-sm">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-green-800">입력:</span>
+                    <code className="px-2 py-1 bg-white rounded text-green-900">{example.input || 'None'}</code>
+                  </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-green-800">출력:</span>
+                    <code className="px-2 py-1 bg-white rounded text-green-900">{JSON.stringify(example.output)}</code>
+                  </div>
+                  {example.explanation && (
+                    <p className="text-green-700 mt-1 ml-2 text-xs italic">{example.explanation}</p>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
