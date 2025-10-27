@@ -44,7 +44,7 @@ export default function LoginPage() {
       }
     } catch (err) {
       // 에러는 useAuthStore에서 처리됨
-      console.error('로그인 실패:', err);
+      console.error('로그인 실패:', err instanceof Error ? err.message : '알 수 없는 오류');
     }
   };
 
@@ -83,6 +83,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  autoComplete="email"
                   className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="your@email.com"
                 />
@@ -104,6 +105,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  autoComplete="current-password"
                   className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="••••••••"
                 />

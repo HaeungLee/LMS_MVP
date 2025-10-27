@@ -58,7 +58,7 @@ export default function RegisterPage() {
       navigate('/onboarding'); // 회원가입 성공 시 온보딩으로 이동
     } catch (err) {
       // 추가적인 에러 처리는 useAuthStore에서 이미 처리됨
-      console.error('회원가입 실패:', err);
+      console.error('회원가입 실패:', err instanceof Error ? err.message : '알 수 없는 오류');
     }
   };
 
@@ -156,6 +156,7 @@ export default function RegisterPage() {
                   value={formData.password}
                   onChange={handleChange}
                   required
+                  autoComplete="new-password"
                   className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="••••••••"
                 />
@@ -181,6 +182,7 @@ export default function RegisterPage() {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
+                  autoComplete="new-password"
                   className={`w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
                     isPasswordMismatch ? 'border-red-300' : 
                     isPasswordMatch ? 'border-green-300' : 'border-gray-300'

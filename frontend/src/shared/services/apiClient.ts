@@ -34,28 +34,32 @@ async function fetchWithTimeout(resource: string, options: RequestInit & { timeo
   const { timeoutMs = 30000, ...rest } = options; // 기본 타임아웃 30초 (LLM 호출 고려)
   
   // 요청 식별자 생성 (메소드 + URL)
-  const requestKey = `${rest.method || 'GET'}:${resource}`;
-  
-  // 기존 동일한 GET 요청만 취소 (POST/PUT/DELETE는 보존)
-  const existingController = activeRequests.get(requestKey);
   const method = (rest.method || 'GET').toUpperCase();
+  const requestKey = `${method}:${resource}`;
   
-  if (existingController && method === 'GET') {
-    console.log(`🔄 중복 GET 요청 취소: ${requestKey}`);
-    existingController.abort();
-    activeRequests.delete(requestKey);
-  } else if (existingController) {
-    console.log(`⏳ POST/PUT/DELETE 요청 진행 중: ${requestKey}`);
-    // POST/PUT/DELETE는 중복 방지 - 즉시 반환하지 않고 단순 로그만
+  // GET 요청만 중복 취소 처리 (POST/PUT/DELETE는 추적하지 않음)
+  if (method === 'GET') {
+    const existingController = activeRequests.get(requestKey);
+    if (existingController) {
+      console.log(`🔄 중복 GET 요청 취소: ${requestKey}`);
+      existingController.abort();
+      activeRequests.delete(requestKey);
+    }
   }
   
   const controller = new AbortController();
-  activeRequests.set(requestKey, controller);
+  
+  // GET 요청만 activeRequests에 추가
+  if (method === 'GET') {
+    activeRequests.set(requestKey, controller);
+  }
   
   const timeoutId = setTimeout(() => {
     console.log(`⏰ 타임아웃 발생: ${requestKey}`);
     controller.abort();
-    activeRequests.delete(requestKey);
+    if (method === 'GET') {
+      activeRequests.delete(requestKey);
+    }
   }, timeoutMs);
   
   try {
@@ -98,13 +102,17 @@ async function fetchWithTimeout(resource: string, options: RequestInit & { timeo
     
     // 성공 시 정리
     clearTimeout(timeoutId);
-    activeRequests.delete(requestKey);
+    if (method === 'GET') {
+      activeRequests.delete(requestKey);
+    }
     console.log(`✅ API 응답: ${response.status} ${response.statusText} (${(endTime - startTime).toFixed(2)}ms)`); // 디버그 로그 추가
     return response;
   } catch (error) {
     // 실패 시 정리
     clearTimeout(timeoutId);
-    activeRequests.delete(requestKey);
+    if (method === 'GET') {
+      activeRequests.delete(requestKey);
+    }
     
     // 에러 타입별 로깅
     if (error instanceof Error) {
