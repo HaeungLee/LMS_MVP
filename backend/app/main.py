@@ -147,10 +147,17 @@ def api_root():
         ]
     }
 
+# Health check 엔드포인트 - GET과 HEAD 모두 지원
+@app.get("/", tags=["health"])
+@app.head("/", tags=["health"])
+@app.get("/health", tags=["health"])
+@app.head("/health", tags=["health"])
+@app.get("/api/v1/health", tags=["health"])
+@app.head("/api/v1/health", tags=["health"])
 @app.get("/api/status", tags=["health"])
 @app.get("/status", tags=["health"])
 def health_check():
-    return {"status": "healthy", "service": "LMS MVP Backend"}
+    return {"status": "ok", "service": "LMS MVP Backend"}
 
 # OPTIONS 요청 처리를 위한 글로벌 핸들러
 from fastapi import Request, Response
