@@ -385,7 +385,47 @@ class DailyLearningService:
         
         # 주차 테마 추가
         task["theme"] = week_data["theme"]
+        task["week"] = week
+        task["day"] = day
         return task
+    
+    def _get_previous_topics(
+        self,
+        curriculum: Dict[str, Any],
+        current_week: int,
+        current_day: int
+    ) -> list[tuple[int, int, str]]:
+        """
+        이전 Day들의 주제 추출 (중복 방지용)
+        
+        Returns:
+            list of (week, day, theme/task) tuples
+        """
+        previous_topics = []
+        syllabus = curriculum["syllabus"]
+        weekly_themes = syllabus.get("weekly_themes", [])
+        
+        for week_data in weekly_themes:
+            week_num = week_data["week"]
+            
+            # 현재 주차 이후는 무시
+            if week_num > current_week:
+                break
+            
+            daily_tasks = week_data.get("daily_tasks", [])
+            for task in daily_tasks:
+                day_num = task["day"]
+                
+                # 현재 Day 이전까지만
+                if week_num == current_week and day_num >= current_day:
+                    break
+                
+                # 주제 추출
+                topic = f"{task.get('task', 'N/A')}"
+                previous_topics.append((week_num, day_num, topic))
+        
+        # 최근 7개만 반환 (프롬프트 길이 제한)
+        return previous_topics[-7:]
     
     async def _generate_textbook_section(
         self,
@@ -398,6 +438,7 @@ class DailyLearningService:
         교재 섹션 생성 (개념 설명)
         
         실제 LLM으로 풍부한 교재 생성
+        **전체 커리큘럼 맥락을 고려하여 중복 방지**
         """
         try:
             logger.info(f"교재 생성 시작: {daily_task['task']}")
@@ -410,13 +451,30 @@ class DailyLearningService:
             theme = daily_task.get("theme", "")
             task = daily_task.get("task", "")
             objectives = daily_task.get("learning_objectives", [])
+            current_week = daily_task.get("week", 1)
+            current_day = daily_task.get("day", 1)
             
-            # 교재 생성 프롬프트
+            # 🔥 전체 커리큘럼에서 이전 Day들의 주제 추출 (중복 방지)
+            previous_topics = self._get_previous_topics(curriculum, current_week, current_day)
+            
+            # 교재 생성 프롬프트 (맥락 포함)
+            context_info = ""
+            if previous_topics:
+                context_info = f"""
+📖 **이전에 학습한 주제들** (중복 금지):
+{chr(10).join([f"Week {w} Day {d}: {t}" for w, d, t in previous_topics])}
+
+⚠️ **중요**: 위 주제들과 중복되지 않는 새로운 내용을 다뤄야 합니다!
+"""
+            
             textbook_prompt = f"""당신은 {goal} 분야의 전문 교육자입니다.
 
-오늘의 학습 주제: {theme}
-학습 과제: {task}
-학습 목표:
+🎯 **현재 위치**: Week {current_week} Day {current_day}
+{context_info}
+
+📚 **오늘의 학습 주제**: {theme}
+📝 **학습 과제**: {task}
+🎓 **학습 목표**:
 {chr(10).join([f"- {obj}" for obj in objectives])}
 
 다음 형식으로 상세한 교재를 한국어로 작성하세요:
@@ -428,6 +486,7 @@ class DailyLearningService:
 
 ## 🎯 핵심 개념
 (개념을 초보자도 이해할 수 있게 상세히 설명 - 800-1000자)
+**중요**: 이전 Day들과 중복되지 않는 새로운 개념 설명!
 
 ## 💻 실습 예제
 ```language
@@ -447,9 +506,11 @@ class DailyLearningService:
 1. 반드시 한국어로만 작성
 2. {goal} 분야와 100% 관련된 내용만
 3. 초보자 눈높이에 맞춘 설명
-4. 실제 동작하는 코드 예제 필수
-5. 총 2000-3000자 분량
-6. Markdown 형식 준수
+4. **이전 Day들과 중복되지 않는 내용 필수**
+5. Week {current_week} Day {current_day}의 학습 순서에 맞는 난이도
+6. 실제 동작하는 코드 예제 필수
+7. 총 2000-3000자 분량
+8. Markdown 형식 준수
 """
             
             # LLM 호출

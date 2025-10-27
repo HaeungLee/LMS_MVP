@@ -195,7 +195,7 @@ export default function CurriculumSchedulePage() {
                   className={`
                     relative p-4 rounded-xl border-2 transition-all text-left
                     ${day.completed 
-                      ? 'border-green-200 bg-green-50 hover:bg-green-100' 
+                      ? 'border-green-500 bg-green-50 hover:bg-green-100 shadow-md' 
                       : day.in_progress
                         ? 'border-indigo-500 bg-indigo-50 hover:bg-indigo-100 shadow-lg'
                         : 'border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300'
@@ -205,7 +205,12 @@ export default function CurriculumSchedulePage() {
                   {/* 상태 아이콘 */}
                   <div className="absolute top-3 right-3">
                     {day.completed ? (
-                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <div className="flex flex-col items-end gap-1">
+                        <CheckCircle className="w-6 h-6 text-green-600 fill-green-100" />
+                        <span className="text-xs font-bold text-green-700 bg-green-200 px-2 py-0.5 rounded-full">
+                          완료
+                        </span>
+                      </div>
                     ) : day.in_progress ? (
                       <Play className="w-5 h-5 text-indigo-600" />
                     ) : (
@@ -224,10 +229,16 @@ export default function CurriculumSchedulePage() {
                   </div>
 
                   {/* 학습 내용 */}
-                  <h3 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2">
+                  <h3 className={`
+                    text-sm font-semibold mb-2 line-clamp-2
+                    ${day.completed ? 'text-green-900' : 'text-gray-900'}
+                  `}>
                     {day.task}
                   </h3>
-                  <p className="text-xs text-gray-600 mb-3 line-clamp-2">
+                  <p className={`
+                    text-xs mb-3 line-clamp-2
+                    ${day.completed ? 'text-green-700' : 'text-gray-600'}
+                  `}>
                     {day.deliverable}
                   </p>
 
