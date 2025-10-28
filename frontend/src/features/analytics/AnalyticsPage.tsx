@@ -1,8 +1,11 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { BarChart3, TrendingUp, Target, Clock, RefreshCw, AlertCircle } from 'lucide-react';
+import { BarChart3, TrendingUp, Target, Clock } from 'lucide-react';
 import { analyticsApi } from '../../shared/services/apiClient';
 import useAuthStore from '../../shared/hooks/useAuthStore';
+import LoadingSpinner from '../../shared/components/LoadingSpinner';
+import ErrorMessage from '../../shared/components/ErrorMessage';
+import { StatsCardSkeleton } from '../../shared/components/Skeleton';
 
 // 타입 정의
 interface DailyStats {
@@ -53,12 +56,13 @@ export default function AnalyticsPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-            <p className="text-gray-600">학습 분석 데이터를 불러오고 있습니다...</p>
-          </div>
+      <div className="max-w-7xl mx-auto p-6">
+        <LoadingSpinner fullScreen message="학습 분석 데이터를 불러오고 있습니다..." />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+          <StatsCardSkeleton />
+          <StatsCardSkeleton />
+          <StatsCardSkeleton />
+          <StatsCardSkeleton />
         </div>
       </div>
     );
@@ -66,22 +70,12 @@ export default function AnalyticsPage() {
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <div className="flex items-center mb-4">
-            <AlertCircle className="w-6 h-6 text-red-600 mr-3" />
-            <h3 className="text-red-800 font-medium">분석 데이터 로드 실패</h3>
-          </div>
-          <p className="text-red-600 mb-4">
-            {error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'}
-          </p>
-          <button 
-            onClick={() => refetch()}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-          >
-            다시 시도
-          </button>
-        </div>
+      <div className="max-w-7xl mx-auto p-6">
+        <ErrorMessage
+          title="분석 데이터 로드 실패"
+          message={error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'}
+          onRetry={() => refetch()}
+        />
       </div>
     );
   }

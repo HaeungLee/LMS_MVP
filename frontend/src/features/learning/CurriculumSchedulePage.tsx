@@ -15,12 +15,13 @@ import {
   Clock, 
   Play,
   Target,
-  RefreshCw,
   ChevronRight
 } from 'lucide-react';
 import { api } from '../../shared/services/apiClient';
 import useAuthStore from '../../shared/hooks/useAuthStore';
 import MotivationalQuote from '../../shared/components/MotivationalQuote';
+import LoadingSpinner from '../../shared/components/LoadingSpinner';
+import { CurriculumCardSkeleton } from '../../shared/components/Skeleton';
 
 interface DaySchedule {
   day: number;
@@ -95,11 +96,11 @@ export default function CurriculumSchedulePage() {
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-indigo-600" />
-            <p className="text-gray-600">학습 일정을 불러오고 있습니다...</p>
-          </div>
+        <LoadingSpinner fullScreen message="학습 일정을 불러오고 있습니다..." />
+        <div className="space-y-6 mt-6">
+          <CurriculumCardSkeleton />
+          <CurriculumCardSkeleton />
+          <CurriculumCardSkeleton />
         </div>
       </div>
     );
