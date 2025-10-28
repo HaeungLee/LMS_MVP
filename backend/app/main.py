@@ -25,16 +25,18 @@ app = FastAPI(
 # CORS origins 파싱 - 환경변수에서 JSON 배열로 읽어오기
 cors_origins_str = os.getenv(
     "BACKEND_CORS_ORIGINS",
-    '["http://localhost:5173","http://localhost:3000","http://127.0.0.1:5173"]'
+    '["http://localhost:5173","http://localhost:3000","http://127.0.0.1:5173","https://lms-mvp-psi.vercel.app","https://lms-1tddckc3w-eterialwinds-projects.vercel.app"]'
 )
 try:
     cors_origins = json.loads(cors_origins_str)
 except json.JSONDecodeError:
-    # 파싱 실패 시 기본값 사용
+    # 파싱 실패 시 기본값 사용 (Production 도메인 포함)
     cors_origins = [
         "http://localhost:5173",
         "http://localhost:3000",
-        "http://127.0.0.1:5173"
+        "http://127.0.0.1:5173",
+        "https://lms-mvp-psi.vercel.app",
+        "https://lms-1tddckc3w-eterialwinds-projects.vercel.app"
     ]
 
 print(f"✅ CORS Origins: {cors_origins}")  # 디버그용 로그
