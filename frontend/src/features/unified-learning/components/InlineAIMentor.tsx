@@ -4,8 +4,9 @@
  */
 
 import { useState } from 'react';
-import { Send, Sparkles, Loader2 } from 'lucide-react';
+import { Send, Sparkles } from 'lucide-react';
 import useAuthStore from '../../../shared/hooks/useAuthStore';
+import LoadingSpinner from '../../../shared/components/LoadingSpinner';
 
 interface InlineAIMentorProps {
   context: 'textbook' | 'practice' | 'quiz';
@@ -156,7 +157,7 @@ export default function InlineAIMentor({ topic, currentContent }: InlineAIMentor
               className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <LoadingSpinner size="sm" />
               ) : (
                 <Send className="w-4 h-4" />
               )}

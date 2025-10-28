@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Bot, Mail, Lock, RefreshCw, AlertCircle } from 'lucide-react';
+import { Bot, Mail, Lock } from 'lucide-react';
 import useAuthStore from '../shared/hooks/useAuthStore';
 import toast from 'react-hot-toast';
+import LoadingSpinner from '../shared/components/LoadingSpinner';
+import ErrorMessage from '../shared/components/ErrorMessage';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -135,12 +137,10 @@ export default function LoginPage() {
 
             {/* 에러 메시지 */}
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex items-center">
-                  <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
-                  <span className="text-red-800 text-sm">{error}</span>
-                </div>
-              </div>
+              <ErrorMessage 
+                message={error} 
+                onRetry={() => window.location.reload()} 
+              />
             )}
 
             {/* 로그인 버튼 */}
@@ -150,10 +150,7 @@ export default function LoginPage() {
               className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
             >
               {loading ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  로그인 중...
-                </>
+                <LoadingSpinner size="sm" message="로그인 중..." />
               ) : (
                 '로그인'
               )}

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bot, Mail, Lock, User, RefreshCw, AlertCircle, CheckCircle, Info } from 'lucide-react';
+import { Bot, Mail, Lock, User, CheckCircle, Info, X } from 'lucide-react';
 import useAuthStore from '../shared/hooks/useAuthStore';
+import LoadingSpinner from '../shared/components/LoadingSpinner';
+import ErrorMessage from '../shared/components/ErrorMessage';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -196,7 +198,7 @@ export default function RegisterPage() {
                 )}
                 {isPasswordMismatch && (
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                    <AlertCircle className="h-5 w-5 text-red-500" />
+                    <X className="h-5 w-5 text-red-500" />
                   </div>
                 )}
               </div>
@@ -222,17 +224,11 @@ export default function RegisterPage() {
 
             {/* 에러 메시지 */}
             {displayError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex items-center">
-                  <AlertCircle className="w-5 h-5 text-red-600 mr-2 flex-shrink-0" />
-                  <div>
-                    <span className="text-red-800 text-sm font-medium">회원가입 실패</span>
-                    <p className="text-red-700 text-sm mt-1">
-                      {getFriendlyErrorMessage(displayError)}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <ErrorMessage 
+                title="회원가입 실패"
+                message={getFriendlyErrorMessage(displayError)} 
+                onRetry={() => window.location.reload()} 
+              />
             )}
 
             {/* 이미 등록된 이메일 안내 */}
@@ -257,10 +253,7 @@ export default function RegisterPage() {
               className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
             >
               {loading ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  계정 생성 중...
-                </>
+                <LoadingSpinner size="sm" message="계정 생성 중..." />
               ) : (
                 '계정 만들기'
               )}
