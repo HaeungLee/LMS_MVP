@@ -221,7 +221,9 @@ export default function LearningPage() {
                   <div className="flex items-start justify-between mb-2">
                     <h4 className="font-medium text-gray-900">{topic.name}</h4>
                     {topic.is_core && (
-                      <Star className="w-4 h-4 text-yellow-500" title="핵심 토픽" />
+                      <div title="핵심 토픽">
+                        <Star className="w-4 h-4 text-yellow-500" />
+                      </div>
                     )}
                   </div>
                   

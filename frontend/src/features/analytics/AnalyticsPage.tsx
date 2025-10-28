@@ -4,6 +4,23 @@ import { BarChart3, TrendingUp, Target, Clock, RefreshCw, AlertCircle } from 'lu
 import { analyticsApi } from '../../shared/services/apiClient';
 import useAuthStore from '../../shared/hooks/useAuthStore';
 
+// 타입 정의
+interface DailyStats {
+  total_questions?: number;
+  accuracy?: number;
+  study_minutes?: number;
+  subjects_studied?: string[];
+}
+
+interface ProgressData {
+  recent_activities?: Array<{
+    id: number;
+    type: string;
+    title: string;
+    timestamp: string;
+  }>;
+}
+
 export default function AnalyticsPage() {
   const { user } = useAuthStore();
   
@@ -16,7 +33,7 @@ export default function AnalyticsPage() {
   });
 
   // 일일 통계 데이터 조회 (실제 존재하는 엔드포인트)
-  const { data: dailyStats } = useQuery({
+  const { data: dailyStats } = useQuery<DailyStats>({
     queryKey: ['dailyStats', user?.id],
     queryFn: () => analyticsApi.getDailyStats(user!.id),
     enabled: !!user,
@@ -24,7 +41,7 @@ export default function AnalyticsPage() {
   });
 
   // 진도 데이터 조회
-  const { data: progressData } = useQuery({
+  const { data: progressData } = useQuery<ProgressData>({
     queryKey: ['progress', user?.id],
     queryFn: () => analyticsApi.getProgress(user!.id),
     enabled: !!user,
@@ -74,10 +91,10 @@ export default function AnalyticsPage() {
   const analytics = hasAnalyticsData ? analyticsData.data : null;
   
   // 일일 통계 데이터 처리
-  const daily = dailyStats || {};
+  const daily: DailyStats = dailyStats || {};
   
   // 진도 데이터 처리
-  const progress = progressData || {};
+  const progress: ProgressData = progressData || {};
 
   return (
     <div className="max-w-7xl mx-auto">
