@@ -91,10 +91,10 @@ export default function AnalyticsPage() {
   const analytics = hasAnalyticsData ? analyticsData.data : null;
   
   // 일일 통계 데이터 처리
-  const daily: DailyStats = dailyStats || {};
+  const daily: DailyStats = dailyStats || {} as DailyStats;
   
   // 진도 데이터 처리
-  const progress: ProgressData = progressData || {};
+  const progress: ProgressData = progressData || {} as ProgressData;
 
   return (
     <div className="max-w-7xl mx-auto">
