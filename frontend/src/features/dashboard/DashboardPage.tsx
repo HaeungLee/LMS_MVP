@@ -25,7 +25,7 @@ import { api } from '../../shared/services/apiClient';
 import DailyAchievementCard from './components/DailyAchievementCard';
 import StatsCard from './components/StatsCard';
 import SubscriptionCard from './components/SubscriptionCard';
-import MotivationalQuote from '../../shared/components/MotivationalQuote';
+import { MotivationalQuote } from '../../shared/components/MotivationalQuote';
 
 interface DailyLearning {
   date: string;

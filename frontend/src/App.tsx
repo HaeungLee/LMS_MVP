@@ -25,12 +25,16 @@ import PaymentSuccessPage from './features/payment/PaymentSuccessPage';
 import PaymentFailPage from './features/payment/PaymentFailPage';
 import SubscriptionSettingsPage from './features/settings/SubscriptionSettingsPage';
 
-// TanStack Query 클라이언트 설정
+// TanStack Query 클라이언트 설정 (Strict Mode 호환)
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5분
-      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5분 - 이 시간 동안 데이터는 fresh로 간주
+      cacheTime: 10 * 60 * 1000, // 10분 - 메모리에 캐시 유지
+      refetchOnWindowFocus: false, // 창 포커스 시 자동 refetch 비활성화 (중복 방지)
+      refetchOnMount: false, // 컴포넌트 마운트 시 자동 refetch 비활성화 (Strict Mode 대응)
+      refetchOnReconnect: false, // 재연결 시 자동 refetch 비활성화
+      retry: 1, // 실패 시 1번만 재시도
     },
   },
 });

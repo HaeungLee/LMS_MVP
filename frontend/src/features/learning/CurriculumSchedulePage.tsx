@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../shared/services/apiClient';
 import useAuthStore from '../../shared/hooks/useAuthStore';
-import MotivationalQuote from '../../shared/components/MotivationalQuote';
+import { MotivationalQuote } from '../../shared/components/MotivationalQuote';
 import LoadingSpinner from '../../shared/components/LoadingSpinner';
 import { CurriculumCardSkeleton } from '../../shared/components/Skeleton';
 
