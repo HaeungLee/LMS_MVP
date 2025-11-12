@@ -847,3 +847,39 @@ class Payment(Base):
         Index('idx_payment_subscription_status', 'subscription_id', 'status'),
         Index('idx_payment_created_at', 'created_at'),
     )
+
+
+class Quote(Base):
+    """
+    명언 시스템
+    
+    166개 명언을 DB로 관리하여:
+    - 동적 수정 가능
+    - 카테고리별 필터링
+    - 랜덤 선택 최적화
+    """
+    __tablename__ = "quotes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # 내용
+    content = Column(Text, nullable=False)
+    author = Column(String(100), nullable=True)
+    source = Column(String(200), nullable=True)
+    
+    # 분류
+    category = Column(String(50), nullable=True, index=True)  # "courage", "failure", "success", "persistence", etc.
+    
+    # 메타데이터
+    order_number = Column(Integer, nullable=False, unique=True, index=True)  # 1-166 (원본 순서)
+    is_active = Column(Boolean, default=True, nullable=False, index=True)
+    
+    # 타임스탬프
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # 인덱스
+    __table_args__ = (
+        Index('idx_quote_category_active', 'category', 'is_active'),
+        Index('idx_quote_active_order', 'is_active', 'order_number'),
+    )
