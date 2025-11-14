@@ -5,6 +5,7 @@
  */
 import { useState, useEffect } from 'react';
 import { Heart, MessageCircle, TrendingUp, Sparkles } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { MoodCheckInModal, MoodCheckInData } from './MoodCheckInModal';
 import { SelfComparisonDashboard } from './SelfComparisonDashboard';
 import apiClient from '../../shared/services/apiClient';
@@ -45,7 +46,7 @@ export function EmotionalSupportPage() {
   const handleMoodCheckIn = async (data: MoodCheckInData) => {
     try {
       await apiClient.post('/api/v1/emotional/mood/check-in', data);
-      alert('기분 체크인이 완료되었습니다! 💙');
+      // toast는 모달에서 표시됨
       
       // 격려 메시지 새로고침
       fetchEncouragingMessages();

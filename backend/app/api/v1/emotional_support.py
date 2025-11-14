@@ -100,6 +100,11 @@ async def start_learning_session(
     # 세션 ID 생성
     session_id = context_data.session_id or str(uuid.uuid4())
     
+    # 마지막 컨텍스트 조회
+    last_context = db.query(LearningContext).filter_by(
+        user_id=user.id
+    ).order_by(LearningContext.created_at.desc()).first()
+    
     # 연속 학습 일수 계산
     yesterday = datetime.utcnow() - timedelta(days=1)
     had_session_yesterday = db.query(LearningContext).filter(
@@ -109,6 +114,12 @@ async def start_learning_session(
             LearningContext.created_at < datetime.utcnow().replace(hour=0, minute=0, second=0)
         )
     ).first() is not None
+    
+    # 연속 일수 결정
+    if had_session_yesterday and last_context:
+        consecutive_days_count = last_context.consecutive_days_count + 1
+    else:
+        consecutive_days_count = 1  # 새 시작 또는 연속 끊김
     
     # 현재 시간대 판단
     current_hour = datetime.utcnow().hour
@@ -133,6 +144,7 @@ async def start_learning_session(
         study_duration_minutes=context_data.study_duration_minutes,
         time_of_day=time_of_day,
         is_consecutive_day=had_session_yesterday,
+        consecutive_days_count=consecutive_days_count,  # ✅ 수정됨!
         daily_goal=context_data.daily_goal,
         motivation_level=context_data.motivation_level,
         why_learning_today=context_data.why_learning_today,
@@ -214,9 +226,24 @@ async def create_mood_check_in(
     학습 전후의 감정 상태를 기록
     """
     
+    # context_id 자동 연결 (없으면 최근 학습 세션 찾기)
+    context_id = mood_data.context_id
+    if not context_id:
+        # 최근 24시간 이내의 학습 세션 찾기
+        recent_time = datetime.utcnow() - timedelta(hours=24)
+        recent_context = db.query(LearningContext).filter(
+            and_(
+                LearningContext.user_id == user.id,
+                LearningContext.created_at >= recent_time
+            )
+        ).order_by(LearningContext.created_at.desc()).first()
+        
+        if recent_context:
+            context_id = recent_context.id
+    
     check_in = MoodCheckIn(
         user_id=user.id,
-        context_id=mood_data.context_id,
+        context_id=context_id,  # ✅ 자동 연결됨
         check_in_type=mood_data.check_in_type,
         mood=mood_data.mood,
         mood_emoji=mood_data.mood_emoji,
@@ -238,7 +265,8 @@ async def create_mood_check_in(
         "id": check_in.id,
         "message": "기분 체크인이 기록되었습니다",
         "mood": check_in.mood,
-        "checked_in_at": check_in.checked_in_at
+        "checked_in_at": check_in.checked_in_at,
+        "linked_to_session": context_id is not None
     }
 
 

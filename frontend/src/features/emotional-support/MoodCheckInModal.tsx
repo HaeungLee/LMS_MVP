@@ -5,6 +5,7 @@
  */
 import { useState } from 'react';
 import { X } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface MoodCheckInModalProps {
   isOpen: boolean;
@@ -59,7 +60,7 @@ export function MoodCheckInModal({
     e.preventDefault();
     
     if (!mood) {
-      alert('기분을 선택해주세요!');
+      toast.error('기분을 선택해주세요!');
       return;
     }
 
@@ -85,9 +86,10 @@ export function MoodCheckInModal({
       // 초기화 및 닫기
       resetForm();
       onClose();
+      toast.success('기분 체크인이 완료되었습니다! 💙');
     } catch (error) {
       console.error('기분 체크인 실패:', error);
-      alert('기분 체크인에 실패했습니다. 다시 시도해주세요.');
+      toast.error('기분 체크인에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsSubmitting(false);
     }
