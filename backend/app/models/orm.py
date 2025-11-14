@@ -928,3 +928,159 @@ class UserNote(Base):
         Index('idx_user_note_module', 'module_id'),
         Index('idx_user_note_important', 'is_important'),
     )
+
+
+# ============================================================
+# Phase C: 감성적 기능 (Emotional Support)
+# ============================================================
+
+class LearningContext(Base):
+    """
+    학습 컨텍스트 추적
+    
+    학습자의 현재 상태, 감정, 환경을 기록하여
+    개인화된 지원 제공
+    """
+    __tablename__ = "learning_contexts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # 학습 세션 정보
+    session_id = Column(String(100), nullable=True, index=True)  # 세션 구분용
+    track_id = Column(Integer, ForeignKey("learning_tracks.id"), nullable=True)
+    module_id = Column(Integer, ForeignKey("learning_modules.id"), nullable=True)
+    
+    # 감정 상태 (기분 체크인)
+    mood = Column(String(20), nullable=True)  # "great", "good", "okay", "struggling", "frustrated"
+    energy_level = Column(Integer, nullable=True)  # 1-10 (1: 매우 피곤, 10: 매우 활기참)
+    confidence_level = Column(Integer, nullable=True)  # 1-10 (1: 자신 없음, 10: 매우 자신 있음)
+    
+    # 학습 환경
+    study_duration_minutes = Column(Integer, nullable=True)  # 계획한 학습 시간
+    actual_duration_minutes = Column(Integer, nullable=True)  # 실제 학습 시간
+    is_first_session_today = Column(Boolean, default=True)
+    interruptions_count = Column(Integer, default=0)  # 중단 횟수
+    
+    # 학습 패턴
+    time_of_day = Column(String(20), nullable=True)  # "morning", "afternoon", "evening", "night"
+    is_consecutive_day = Column(Boolean, default=False)  # 연속 학습 중인가
+    consecutive_days_count = Column(Integer, default=0)  # 연속 학습 일수
+    
+    # 학습 목표 및 동기
+    daily_goal = Column(String(200), nullable=True)  # 오늘의 학습 목표
+    motivation_level = Column(Integer, nullable=True)  # 1-10 동기부여 수준
+    why_learning_today = Column(Text, nullable=True)  # 오늘 왜 학습하는가
+    
+    # 어려움 및 지원
+    current_struggle = Column(Text, nullable=True)  # 현재 겪고 있는 어려움
+    needs_encouragement = Column(Boolean, default=False)  # 격려가 필요한가
+    preferred_support_type = Column(String(50), nullable=True)  # "gentle", "motivational", "technical"
+    
+    # 메타데이터
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # 관계 설정
+    user = relationship("User")
+    track = relationship("LearningTrack")
+    module = relationship("LearningModule")
+    
+    # 인덱스
+    __table_args__ = (
+        Index('idx_learning_context_user_created', 'user_id', 'created_at'),
+        Index('idx_learning_context_session', 'session_id'),
+        Index('idx_learning_context_mood', 'mood'),
+    )
+
+
+class MoodCheckIn(Base):
+    """
+    기분 체크인 기록
+    
+    학습 전후의 감정 상태를 추적하여
+    학습이 감정에 미치는 영향 분석
+    """
+    __tablename__ = "mood_check_ins"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    context_id = Column(Integer, ForeignKey("learning_contexts.id"), nullable=True, index=True)
+    
+    # 체크인 타이밍
+    check_in_type = Column(String(20), nullable=False)  # "before_learning", "after_learning", "during_break"
+    
+    # 감정 상태
+    mood = Column(String(20), nullable=False)  # "great", "good", "okay", "struggling", "frustrated", "exhausted"
+    mood_emoji = Column(String(10), nullable=True)  # "😊", "😐", "😔", "😫"
+    energy_level = Column(Integer, nullable=False)  # 1-10
+    stress_level = Column(Integer, nullable=False)  # 1-10 (1: 편안함, 10: 매우 스트레스)
+    
+    # 감정에 대한 설명 (선택적)
+    feeling_description = Column(Text, nullable=True)
+    what_went_well = Column(Text, nullable=True)  # 잘된 점
+    what_was_hard = Column(Text, nullable=True)  # 어려웠던 점
+    
+    # 신체 상태
+    is_tired = Column(Boolean, default=False)
+    is_hungry = Column(Boolean, default=False)
+    is_distracted = Column(Boolean, default=False)
+    
+    # 타임스탬프
+    checked_in_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    
+    # 관계 설정
+    user = relationship("User")
+    
+    # 인덱스
+    __table_args__ = (
+        Index('idx_mood_checkin_user_time', 'user_id', 'checked_in_at'),
+        Index('idx_mood_checkin_type', 'check_in_type'),
+        Index('idx_mood_checkin_mood', 'mood'),
+    )
+
+
+class EncouragingMessage(Base):
+    """
+    격려 메시지 시스템
+    
+    학습자의 상태에 따라 개인화된 격려 메시지 제공
+    """
+    __tablename__ = "encouraging_messages"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # 메시지 트리거
+    trigger_type = Column(String(50), nullable=False, index=True)
+    # "low_confidence", "consecutive_learning", "after_struggle", 
+    # "first_success", "comeback", "milestone_reached"
+    
+    # 메시지 내용
+    message = Column(Text, nullable=False)
+    message_tone = Column(String(20), nullable=False)  # "gentle", "motivational", "celebratory", "empathetic"
+    
+    # 메시지 타입
+    is_ai_generated = Column(Boolean, default=False)  # AI가 생성한 메시지인가
+    is_personalized = Column(Boolean, default=True)  # 개인화된 메시지인가
+    
+    # 사용자 반응
+    was_helpful = Column(Boolean, nullable=True)  # 도움이 되었는가
+    user_feedback = Column(Text, nullable=True)
+    
+    # 컨텍스트
+    context_data = Column(JSON, nullable=True)  # 메시지 생성 시 사용된 컨텍스트
+    
+    # 타임스탬프
+    sent_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    read_at = Column(DateTime, nullable=True)
+    
+    # 관계 설정
+    user = relationship("User")
+    
+    # 인덱스
+    __table_args__ = (
+        Index('idx_encouraging_message_user_sent', 'user_id', 'sent_at'),
+        Index('idx_encouraging_message_trigger', 'trigger_type'),
+        Index('idx_encouraging_message_helpful', 'was_helpful'),
+    )

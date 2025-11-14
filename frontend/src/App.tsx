@@ -24,6 +24,7 @@ import PricingPage from './features/pricing/PricingPage';
 import PaymentSuccessPage from './features/payment/PaymentSuccessPage';
 import PaymentFailPage from './features/payment/PaymentFailPage';
 import SubscriptionSettingsPage from './features/settings/SubscriptionSettingsPage';
+import EmotionalSupportPage from './features/emotional-support/EmotionalSupportPage';
 
 // TanStack Query 클라이언트 설정 (Strict Mode 호환)
 const queryClient = new QueryClient({
@@ -70,6 +71,9 @@ function App() {
               <Route path="analytics/*" element={<AnalyticsPage />} />
               <Route path="ai-assistant/*" element={<AIAssistantPage />} />
               <Route path="settings/*" element={<SettingsPage />} />
+              
+              {/* Phase C: 감성적 지원 */}
+              <Route path="emotional-support" element={<EmotionalSupportPage />} />
               
               {/* 관리자 전용 라우트 */}
               <Route path="admin" element={<AdminDashboard />} />

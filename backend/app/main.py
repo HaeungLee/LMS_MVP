@@ -7,6 +7,8 @@ from app.api.v1 import hybrid_ai, ai_curriculum, ai_teaching
 from app.api.v1 import mvp_learning, achievement, review_system, review_submit, payment, quotes, notes, pdf_export
 # Phase B: Constitutional AI
 from app.api.v1 import constitutional
+# Phase C: Emotional Support
+from app.api.v1 import emotional_support
 from .core.config import settings
 from sqlalchemy import create_engine
 from .models.orm import Base
@@ -125,6 +127,9 @@ app.include_router(pdf_export.router, tags=["pdf"])  # PDF 내보내기
 
 # Phase B: Constitutional AI
 app.include_router(constitutional.router, tags=["constitutional-ai"])  # Constitutional AI
+
+# Phase C: Emotional Support
+app.include_router(emotional_support.router, tags=["emotional-support"])  # 감성적 지원 시스템
 
 @app.get("/", tags=["root"])
 def read_root():

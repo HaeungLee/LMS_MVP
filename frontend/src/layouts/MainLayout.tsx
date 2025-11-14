@@ -10,7 +10,8 @@ import {
   RefreshCw,
   Shield,
   CreditCard,
-  MessageCircle
+  MessageCircle,
+  Heart
 } from 'lucide-react';
 import useAuthStore from '../shared/hooks/useAuthStore';
 import { api } from '../shared/services/apiClient';
@@ -67,6 +68,13 @@ export default function MainLayout() {
         icon: MessageCircle,
         path: '/dashboard/community',
         description: '피드백 & 소통 공간'
+      },
+      {
+        id: 'emotional-support',
+        title: '감성적 지원 💙',
+        icon: Heart,
+        path: '/dashboard/emotional-support',
+        description: '기분 체크인 & 성장 추적'
       },
       {
         id: 'settings',
