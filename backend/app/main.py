@@ -5,6 +5,8 @@ from .api.v1 import questions, submit, dashboard, student, auth, admin, results_
 from app.api.v1 import hybrid_ai, ai_curriculum, ai_teaching
 # MVP imports
 from app.api.v1 import mvp_learning, achievement, review_system, review_submit, payment, quotes, notes, pdf_export
+# Phase B: Constitutional AI
+from app.api.v1 import constitutional
 from .core.config import settings
 from sqlalchemy import create_engine
 from .models.orm import Base
@@ -120,6 +122,9 @@ app.include_router(payment.router, prefix="/api/v1/payment", tags=["payment"])  
 app.include_router(quotes.router, tags=["quotes"])  # 명언 시스템
 app.include_router(notes.router, tags=["notes"])  # 메모 시스템
 app.include_router(pdf_export.router, tags=["pdf"])  # PDF 내보내기
+
+# Phase B: Constitutional AI
+app.include_router(constitutional.router, tags=["constitutional-ai"])  # Constitutional AI
 
 @app.get("/", tags=["root"])
 def read_root():
