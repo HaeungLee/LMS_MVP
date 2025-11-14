@@ -883,3 +883,48 @@ class Quote(Base):
         Index('idx_quote_category_active', 'category', 'is_active'),
         Index('idx_quote_active_order', 'is_active', 'order_number'),
     )
+
+
+class UserNote(Base):
+    """
+    사용자 메모 시스템
+    
+    학습 중 작성하는 메모를 관리:
+    - 커리큘럼별 메모
+    - 섹션별 메모 (교재/실습/퀴즈)
+    - 검색 및 필터링
+    """
+    __tablename__ = "user_notes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # 연결된 학습 콘텐츠
+    track_id = Column(Integer, ForeignKey("learning_tracks.id"), nullable=True, index=True)
+    module_id = Column(Integer, ForeignKey("learning_modules.id"), nullable=True, index=True)
+    section = Column(String(50), nullable=True)  # "textbook", "practice", "quiz", "general"
+    
+    # 메모 내용
+    title = Column(String(200), nullable=True)  # 메모 제목 (선택적)
+    content = Column(Text, nullable=False)
+    
+    # 태그 및 분류
+    tags = Column(ARRAY(String), default=list, nullable=False)  # ["python", "loops", "debugging"]
+    is_important = Column(Boolean, default=False, nullable=False)  # 중요 메모 표시
+    
+    # 타임스탬프
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # 관계 설정
+    user = relationship("User")
+    track = relationship("LearningTrack")
+    module = relationship("LearningModule")
+    
+    # 인덱스
+    __table_args__ = (
+        Index('idx_user_note_user_created', 'user_id', 'created_at'),
+        Index('idx_user_note_track', 'track_id'),
+        Index('idx_user_note_module', 'module_id'),
+        Index('idx_user_note_important', 'is_important'),
+    )

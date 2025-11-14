@@ -64,11 +64,6 @@ async function fetchWithTimeout(resource: string, options: RequestInit & { timeo
   
   try {
     const headers = new Headers(rest.headers || {});
-
-    const token = localStorage.getItem('token'); // 또는 다른 저장소 (예: sessionStorage)
-    if (token && !headers.has('Authorization')) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
     
     // 기본 Content-Type 설정
     if (!headers.has('Content-Type') && rest.method && ['POST', 'PUT', 'PATCH'].includes(rest.method.toUpperCase())) {
@@ -135,10 +130,9 @@ async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let errorMessage = `HTTP ${response.status}`;
     
-    // 401 Unauthorized - 토큰 만료 처리
+    // 401 Unauthorized - 쿠키 기반 인증 만료 처리
     if (response.status === 401) {
       console.warn('🔒 인증 만료 - 로그인 페이지로 리다이렉트');
-      localStorage.removeItem('token');
       
       // 현재 경로 저장 (로그인 후 돌아오기 위해)
       const currentPath = window.location.pathname + window.location.search;

@@ -76,12 +76,13 @@ def register(body: RegisterDto, response: Response, db: Session = Depends(get_db
             print(f"⚠️ 환영 이메일 전송 실패 (무시됨): {e}")
     
     resp = {"id": user.id, "email": user.email, "role": user.role, "display_name": user.display_name}
-    response.set_cookie("access_token", access, httponly=True, samesite="lax")
+    # Vite 프록시 환경에서는 Same-Origin으로 인식됨
+    response.set_cookie("access_token", access, httponly=True, samesite="lax", secure=False)
     # refresh는 기본 30일로 설정
     max_age = refresh_days * 24 * 60 * 60
-    response.set_cookie("refresh_token", refresh, httponly=True, samesite="lax", max_age=max_age)
+    response.set_cookie("refresh_token", refresh, httponly=True, samesite="lax", max_age=max_age, secure=False)
     # CSRF 토큰 발급 (더블 서브밋 쿠키)
-    response.set_cookie("csrf_token", generate_csrf_token(), httponly=False, samesite="lax")
+    response.set_cookie("csrf_token", generate_csrf_token(), httponly=False, samesite="lax", secure=False)
     return resp
 
 
@@ -117,7 +118,7 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_db))
     new_refresh, new_jti, new_exp = create_refresh_token(user, expires_days=days)
     db.add(RefreshToken(id=new_jti, user_id=user.id, issued_at=now, expires_at=new_exp, revoked=False))
     db.commit()
-    # 쿠키 갱신
+    # 쿠키 갱신 (Vite 프록시 환경)
     response.set_cookie("access_token", access, httponly=True, samesite="lax", secure=False)
     if remaining_seconds > 0:
         response.set_cookie("refresh_token", new_refresh, httponly=True, samesite="lax", max_age=remaining_seconds, secure=False)
@@ -141,6 +142,7 @@ def login(body: LoginDto, response: Response, db: Session = Depends(get_db)) -> 
     db.add(RefreshToken(id=jti, user_id=user.id, issued_at=datetime.utcnow(), expires_at=exp, revoked=False))
     db.commit()
     resp = {"id": user.id, "email": user.email, "role": user.role, "display_name": user.display_name}
+    # Vite 프록시 환경에서는 Same-Origin으로 인식됨
     response.set_cookie("access_token", access, httponly=True, samesite="lax", secure=False)
     # refresh는 remember에 따라 만료일 지정
     max_age = refresh_days * 24 * 60 * 60

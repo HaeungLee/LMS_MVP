@@ -11,12 +11,14 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5174,
+    port: 5173,
     host: true,
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        cookieDomainRewrite: 'localhost', // 쿠키 도메인을 localhost로 재작성
+        secure: false, // HTTPS가 아닌 환경에서도 쿠키 전달
       },
     },
   },
