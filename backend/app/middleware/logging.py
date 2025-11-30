@@ -68,28 +68,31 @@ app_logger = setup_logger()
 # ============================================
 def log_info(message: str, request_id: Optional[str] = None, **kwargs):
     """INFO 레벨 로그"""
-    _log(logging.INFO, message, request_id, **kwargs)
+    _do_log(logging.INFO, message, request_id, False, **kwargs)
 
 
 def log_warning(message: str, request_id: Optional[str] = None, **kwargs):
     """WARNING 레벨 로그"""
-    _log(logging.WARNING, message, request_id, **kwargs)
+    _do_log(logging.WARNING, message, request_id, False, **kwargs)
 
 
 def log_error(message: str, request_id: Optional[str] = None, exc_info: bool = False, **kwargs):
     """ERROR 레벨 로그"""
-    _log(logging.ERROR, message, request_id, exc_info=exc_info, **kwargs)
+    _do_log(logging.ERROR, message, request_id, exc_info, **kwargs)
 
 
-def _log(level: int, message: str, request_id: Optional[str] = None, exc_info: bool = False, **kwargs):
+def _do_log(log_level: int, message: str, request_id: Optional[str] = None, exc_info: bool = False, **kwargs):
     """내부 로그 함수"""
+    # level 키워드 충돌 방지
+    extra_data = {k: v for k, v in kwargs.items() if k not in ("level",)}
+    
     record = app_logger.makeRecord(
-        app_logger.name, level, "", 0, message, (), 
+        app_logger.name, log_level, "", 0, message, (), 
         sys.exc_info() if exc_info else None
     )
     if request_id:
         record.request_id = request_id
-    record.extra_data = kwargs
+    record.extra_data = extra_data
     app_logger.handle(record)
 
 
