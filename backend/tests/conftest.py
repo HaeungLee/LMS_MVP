@@ -1,27 +1,21 @@
 """
 pytest 설정 및 공통 fixtures
-테스트 실행: pytest tests/ -v
+테스트 실행: uv run pytest tests/ -v
 """
 import os
 import sys
 import pytest
-from typing import Generator
-from unittest.mock import MagicMock, patch
+from typing import Generator, Optional
+
+# 프로젝트 루트를 Python 경로에 추가
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 테스트 환경 설정 (다른 import 전에 설정해야 함)
 os.environ["TESTING"] = "true"
-os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 os.environ["JWT_SECRET"] = "test_secret_key_for_testing"
 os.environ["ENVIRONMENT"] = "testing"
 os.environ["LLM_ENABLED"] = "false"
-
-# 선택적 의존성 모킹 (openai, anthropic 등)
-sys.modules['openai'] = MagicMock()
-sys.modules['anthropic'] = MagicMock()
-sys.modules['langchain'] = MagicMock()
-sys.modules['langchain_openai'] = MagicMock()
-sys.modules['langchain_community'] = MagicMock()
-sys.modules['langchain_core'] = MagicMock()
+os.environ["OPENROUTER_API_KEY"] = "test_dummy_key_for_testing"
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -34,19 +28,36 @@ from app.models.orm import Base, User
 from app.core.security import hash_password
 
 
-# 테스트용 SQLite 인메모리 DB
-SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///./test.db"
+# ============================================
+# 테스트 DB 설정
+# PostgreSQL ARRAY 타입 때문에 SQLite 사용 불가
+# 실제 PostgreSQL 또는 기존 DB 사용
+# ============================================
 
-engine = create_engine(
-    SQLALCHEMY_TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
+# 테스트용 PostgreSQL (Docker 실행 중일 때)
+TEST_DATABASE_URL = os.getenv(
+    "TEST_DATABASE_URL",
+    "postgresql://lms_user:1234@localhost:15432/lms_mvp_db"
 )
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+try:
+    engine = create_engine(TEST_DATABASE_URL)
+    # 연결 테스트
+    with engine.connect() as conn:
+        conn.execute("SELECT 1")
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    DB_AVAILABLE = True
+except Exception as e:
+    print(f"⚠️ 테스트 DB 연결 실패: {e}")
+    DB_AVAILABLE = False
+    engine = None
+    TestingSessionLocal = None
 
 
 def override_get_db() -> Generator[Session, None, None]:
     """테스트용 DB 세션"""
+    if not DB_AVAILABLE:
+        pytest.skip("테스트 DB 연결 불가")
     db = TestingSessionLocal()
     try:
         yield db
@@ -56,20 +67,22 @@ def override_get_db() -> Generator[Session, None, None]:
 
 @pytest.fixture(scope="function")
 def db() -> Generator[Session, None, None]:
-    """각 테스트마다 새로운 DB 생성/삭제"""
-    Base.metadata.create_all(bind=engine)
+    """테스트 DB 세션"""
+    if not DB_AVAILABLE:
+        pytest.skip("테스트 DB 연결 불가 - Docker PostgreSQL 실행 필요")
+    
     db = TestingSessionLocal()
     try:
         yield db
     finally:
         db.close()
-        Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture(scope="function")
-def client(db: Session) -> Generator[TestClient, None, None]:
+def client(db: Optional[Session] = None) -> Generator[TestClient, None, None]:
     """FastAPI 테스트 클라이언트"""
-    app.dependency_overrides[get_db] = override_get_db
+    if DB_AVAILABLE:
+        app.dependency_overrides[get_db] = override_get_db
     
     with TestClient(app) as c:
         yield c
@@ -78,8 +91,20 @@ def client(db: Session) -> Generator[TestClient, None, None]:
 
 
 @pytest.fixture
+def client_no_db() -> Generator[TestClient, None, None]:
+    """DB 없이 사용 가능한 테스트 클라이언트 (health check용)"""
+    with TestClient(app) as c:
+        yield c
+
+
+@pytest.fixture
 def test_user(db: Session) -> User:
     """테스트용 일반 사용자 생성"""
+    # 기존 유저 확인
+    existing = db.query(User).filter(User.email == "test@example.com").first()
+    if existing:
+        return existing
+    
     pwd_hash, pwd_salt = hash_password("testpassword123")
     user = User(
         email="test@example.com",
@@ -97,6 +122,10 @@ def test_user(db: Session) -> User:
 @pytest.fixture
 def admin_user(db: Session) -> User:
     """테스트용 관리자 사용자 생성"""
+    existing = db.query(User).filter(User.email == "admin@example.com").first()
+    if existing:
+        return existing
+    
     pwd_hash, pwd_salt = hash_password("adminpassword123")
     user = User(
         email="admin@example.com",
