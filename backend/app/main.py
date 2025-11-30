@@ -10,6 +10,7 @@ from app.api.v1 import constitutional
 # Phase C: Emotional Support
 from app.api.v1 import emotional_support
 from .core.config import settings
+from .core.exceptions import register_exception_handlers  # 전역 예외 핸들러
 from sqlalchemy import create_engine
 from .models.orm import Base
 from .models.code_problem import CodeProblem, CodeTestCase, CodeSubmission, ProblemTag, ProblemTagAssociation  # 새 모델 import
@@ -72,6 +73,9 @@ app.add_middleware(
 # Structured logging
 app.add_middleware(StructuredLoggingMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
+
+# 전역 예외 핸들러 등록
+register_exception_handlers(app)
 
 # 초기 테이블 생성 (개발 편의용; 운영은 Alembic 사용)
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://lms_user:1234@localhost:15432/lms_mvp_db")

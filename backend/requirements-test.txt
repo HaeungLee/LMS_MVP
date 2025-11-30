@@ -1,0 +1,21 @@
+# 테스트 의존성
+# pip install -r requirements-test.txt
+
+# 테스트 프레임워크
+pytest==8.3.5
+pytest-cov==6.1.1
+pytest-asyncio==0.26.0
+
+# HTTP 테스트
+httpx==0.28.1
+
+# 테스트 유틸리티
+faker==33.3.1
+factory-boy==3.3.3
+
+# 목킹
+pytest-mock==3.14.0
+responses==0.25.7
+
+# 병렬 실행 (선택)
+# pytest-xdist==3.6.1
