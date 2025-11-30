@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from .api.v1 import questions, submit, dashboard, student, auth, admin, results_guard, teacher_dashboard, taxonomy, teacher_groups, feedback, ai_learning, curriculum, personalization, monitoring, ai_features, beta_testing, subjects, stats, code_execution, unified_learning, dynamic_subjects_simple
 # Phase 9 imports
 from app.api.v1 import hybrid_ai, ai_curriculum, ai_teaching
@@ -9,6 +10,8 @@ from app.api.v1 import mvp_learning, achievement, review_system, review_submit, 
 from app.api.v1 import constitutional
 # Phase C: Emotional Support
 from app.api.v1 import emotional_support
+# Phase 2: Metrics & Monitoring Enhancement
+from app.api.v1 import metrics as prometheus_metrics
 from .core.config import settings
 from .core.exceptions import register_exception_handlers  # 전역 예외 핸들러
 from sqlalchemy import create_engine
@@ -21,10 +24,67 @@ from .middleware.logging import StructuredLoggingMiddleware
 from .middleware.security_headers import SecurityHeadersMiddleware
 import json
 
+# ============================================
+# FastAPI 앱 설정 - 상세 API 문서화
+# ============================================
 app = FastAPI(
     title="LMS MVP API",
-    description="AI 기반 코딩 학습 플랫폼 API",
-    version="1.0.0"
+    description="""
+## 🎓 AI 기반 코딩 학습 플랫폼 API
+
+### 주요 기능
+- **인증 (Auth)**: 회원가입, 로그인, JWT 토큰 관리
+- **학습 (Learning)**: AI 커리큘럼, 일일 학습, 복습 시스템
+- **문제 (Questions)**: 코딩 문제 조회 및 제출
+- **대시보드 (Dashboard)**: 학습 통계 및 진도 관리
+- **AI 기능**: 맞춤형 커리큘럼 생성, AI 튜터링
+
+### 인증 방식
+- **JWT Bearer Token**: `Authorization: Bearer <token>`
+- **쿠키 인증**: `access_token`, `refresh_token`
+
+### 응답 형식
+모든 API는 JSON 형식으로 응답하며, 에러 시 표준화된 형식을 따릅니다:
+```json
+{
+  "success": false,
+  "error": "ERROR_CODE",
+  "message": "에러 설명",
+  "details": {}
+}
+```
+
+### Rate Limiting
+- 로그인: 10회/분
+- 제출: 30회/분
+- 피드백: 20회/분
+    """,
+    version="1.0.0",
+    terms_of_service="https://lms-mvp.example.com/terms",
+    contact={
+        "name": "LMS MVP Support",
+        "email": "support@lms-mvp.example.com",
+    },
+    license_info={
+        "name": "MIT License",
+        "url": "https://opensource.org/licenses/MIT",
+    },
+    openapi_tags=[
+        {"name": "auth", "description": "🔐 인증 및 사용자 관리"},
+        {"name": "health", "description": "💚 헬스체크 및 상태 확인"},
+        {"name": "dashboard", "description": "📊 대시보드 및 통계"},
+        {"name": "questions", "description": "📝 문제 조회 및 관리"},
+        {"name": "submissions", "description": "✅ 답안 제출 및 채점"},
+        {"name": "mvp", "description": "🚀 MVP 핵심 기능 (온보딩, 일일학습)"},
+        {"name": "review", "description": "🔄 복습 시스템 (망각곡선 기반)"},
+        {"name": "achievement", "description": "🏆 학습 달성 및 스트릭"},
+        {"name": "ai-curriculum", "description": "🤖 AI 커리큘럼 생성"},
+        {"name": "ai-teaching", "description": "👨‍🏫 AI 튜터링 세션"},
+        {"name": "payment", "description": "💳 결제 및 구독 관리"},
+        {"name": "subjects", "description": "📚 과목 및 토픽 관리"},
+        {"name": "admin", "description": "⚙️ 관리자 기능"},
+        {"name": "emotional-support", "description": "💝 감성적 학습 지원"},
+    ],
 )
 
 # CORS origins 파싱 - 환경변수에서 JSON 배열로 읽어오기
@@ -134,6 +194,9 @@ app.include_router(constitutional.router, tags=["constitutional-ai"])  # Constit
 
 # Phase C: Emotional Support
 app.include_router(emotional_support.router, tags=["emotional-support"])  # 감성적 지원 시스템
+
+# Phase 2: Prometheus 메트릭 엔드포인트
+app.include_router(prometheus_metrics.router, prefix="/api/v1/metrics", tags=["monitoring"])
 
 @app.get("/", tags=["root"])
 def read_root():
