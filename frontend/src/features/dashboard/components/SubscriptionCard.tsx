@@ -5,10 +5,13 @@
  * - 7일 무료 체험 상태
  * - 다음 결제일
  * - 구독 관리 버튼
+ * 
+ * 최적화: React.memo, useMemo, useCallback
  */
 
-import { useState, useEffect } from 'react';
+import React, { memo, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { CreditCard, Crown, Calendar, Zap, Settings } from 'lucide-react';
 import { api } from '../../../shared/services/apiClient';
 
@@ -22,47 +25,51 @@ interface SubscriptionData {
   days_remaining: number;
 }
 
-export default function SubscriptionCard() {
+const SubscriptionCard = memo(function SubscriptionCard() {
   const navigate = useNavigate();
-  const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let isMounted = true;
-    
-    const fetchSubscription = async () => {
+  
+  // useQuery로 변경 (더 효율적인 캐싱)
+  const { data: subscription, isLoading } = useQuery<SubscriptionData | null>({
+    queryKey: ['subscription'],
+    queryFn: async () => {
       try {
-        console.log('🔍 구독 정보 조회 시작...');
         const response: any = await api.get('/payment/subscription');
-        console.log('✅ 구독 정보 응답:', response);
-        
-        if (isMounted) {
-          setSubscription(response.data || response);
-          setLoading(false);
-        }
-      } catch (error: any) {
-        console.error('❌ 구독 정보 조회 실패:', error);
-        console.error('에러 타입:', error.name);
-        console.error('에러 메시지:', error.message);
-        
-        if (isMounted) {
-          // AbortError가 아닌 경우에만 에러 처리
-          if (error.name !== 'AbortError') {
-            setSubscription(null);
-          }
-          setLoading(false);
-        }
+        return response.data || response;
+      } catch {
+        return null;
       }
-    };
-    
-    fetchSubscription();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    },
+    staleTime: 5 * 60 * 1000, // 5분
+    retry: 1,
+  });
 
-  if (loading) {
+  // 네비게이션 콜백 메모이제이션
+  const goToPricing = useCallback(() => navigate('/pricing'), [navigate]);
+  const goToSubscriptionSettings = useCallback(() => navigate('/dashboard/settings/subscription'), [navigate]);
+
+  // 상태 설정 메모이제이션
+  const statusConfig = useMemo(() => ({
+    trial: {
+      icon: <Zap className="w-6 h-6 text-yellow-600" />,
+      bgColor: 'bg-yellow-100',
+      title: '무료 체험 중',
+      badge: '🎉 TRIAL'
+    },
+    active: {
+      icon: <Crown className="w-6 h-6 text-purple-600" />,
+      bgColor: 'bg-purple-100',
+      title: '프리미엄 회원',
+      badge: '👑 PREMIUM'
+    },
+    cancelled: {
+      icon: <Calendar className="w-6 h-6 text-gray-600" />,
+      bgColor: 'bg-gray-100',
+      title: '해지 예정',
+      badge: '⏸️ CANCELLED'
+    }
+  }), []);
+
+  if (isLoading) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
         <div className="h-24 bg-gray-200 rounded"></div>
@@ -98,7 +105,7 @@ export default function SubscriptionCard() {
         </div>
 
         <button
-          onClick={() => navigate('/pricing')}
+          onClick={goToPricing}
           className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-lg hover:shadow-xl transform hover:scale-105 transition-all"
         >
           <span className="flex items-center justify-center gap-2">
@@ -112,28 +119,6 @@ export default function SubscriptionCard() {
 
   // 유료 구독자
   const { status, plan, is_trial, days_remaining, next_billing_date, amount } = subscription;
-
-  const statusConfig = {
-    trial: {
-      icon: <Zap className="w-6 h-6 text-yellow-600" />,
-      bgColor: 'bg-yellow-100',
-      title: '무료 체험 중',
-      badge: '🎉 TRIAL'
-    },
-    active: {
-      icon: <Crown className="w-6 h-6 text-purple-600" />,
-      bgColor: 'bg-purple-100',
-      title: '프리미엄 회원',
-      badge: '👑 PREMIUM'
-    },
-    cancelled: {
-      icon: <Calendar className="w-6 h-6 text-gray-600" />,
-      bgColor: 'bg-gray-100',
-      title: '해지 예정',
-      badge: '⏸️ CANCELLED'
-    }
-  };
-
   const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
 
   return (
@@ -153,7 +138,7 @@ export default function SubscriptionCard() {
         </div>
         
         <button
-          onClick={() => navigate('/dashboard/settings/subscription')}
+          onClick={goToSubscriptionSettings}
           className="text-gray-400 hover:text-gray-600"
         >
           <Settings className="w-5 h-5" />
@@ -205,11 +190,13 @@ export default function SubscriptionCard() {
       )}
 
       <button
-        onClick={() => navigate('/dashboard/settings/subscription')}
+        onClick={goToSubscriptionSettings}
         className="w-full py-2.5 bg-white text-gray-700 font-semibold rounded-lg border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all"
       >
         구독 관리
       </button>
     </div>
   );
-}
+});
+
+export default SubscriptionCard;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 
 interface DailyAchievementCardProps {
   streak: number; // 연속 학습일
@@ -7,14 +7,14 @@ interface DailyAchievementCardProps {
   totalDaysLearned: number; // 총 학습일
 }
 
-const DailyAchievementCard: React.FC<DailyAchievementCardProps> = ({
+const DailyAchievementCard: React.FC<DailyAchievementCardProps> = memo(({
   streak,
   todayCompleted,
   weeklyProgress,
   totalDaysLearned
 }) => {
-  // 연속 학습일에 따른 격려 메시지
-  const getEncouragementMessage = (): string => {
+  // useMemo로 계산값 캐싱
+  const encouragementMessage = useMemo((): string => {
     if (streak === 0 && !todayCompleted) {
       return "오늘 학습을 시작해보세요! 🚀";
     }
@@ -37,24 +37,32 @@ const DailyAchievementCard: React.FC<DailyAchievementCardProps> = ({
       return "100일 연속! 불가능을 가능으로! 👑";
     }
     return "오늘도 화이팅! 💪";
-  };
+  }, [streak, todayCompleted]);
 
-  // 연속 학습일에 따른 이모지
-  const getStreakEmoji = (): string => {
+  const streakEmoji = useMemo((): string => {
     if (streak === 0) return "🌱";
     if (streak < 7) return "🔥";
     if (streak < 14) return "🔥🔥";
     if (streak < 30) return "🔥🔥🔥";
     if (streak < 100) return "💎";
     return "👑";
-  };
+  }, [streak]);
 
-  // 주간 목표 달성률에 따른 색상
-  const getProgressColor = (): string => {
+  const progressColor = useMemo((): string => {
     if (weeklyProgress >= 80) return "bg-green-500";
     if (weeklyProgress >= 50) return "bg-yellow-500";
     return "bg-gray-400";
-  };
+  }, [weeklyProgress]);
+
+  const milestoneMessage = useMemo((): string => {
+    if (streak <= 0) return "";
+    if (streak < 7) return `일주일 연속까지 ${7 - streak}일 남았어요!`;
+    if (streak < 30) return `한 달 연속까지 ${30 - streak}일 남았어요!`;
+    if (streak < 100) return `100일 연속까지 ${100 - streak}일 남았어요!`;
+    return "당신은 이미 전설입니다! 🎉";
+  }, [streak]);
+
+  const learningWeeks = useMemo(() => Math.floor(totalDaysLearned / 7), [totalDaysLearned]);
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-indigo-200">
@@ -83,14 +91,14 @@ const DailyAchievementCard: React.FC<DailyAchievementCardProps> = ({
             </div>
           </div>
           <div className="text-6xl">
-            {getStreakEmoji()}
+            {streakEmoji}
           </div>
         </div>
         
         {/* 격려 메시지 */}
         <div className="mt-4 bg-white/80 rounded-lg p-3">
           <p className="text-sm font-medium text-gray-700 text-center">
-            {getEncouragementMessage()}
+            {encouragementMessage}
           </p>
         </div>
       </div>
@@ -103,7 +111,7 @@ const DailyAchievementCard: React.FC<DailyAchievementCardProps> = ({
         </div>
         <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
           <div 
-            className={`h-full ${getProgressColor()} transition-all duration-500 ease-out rounded-full`}
+            className={`h-full ${progressColor} transition-all duration-500 ease-out rounded-full`}
             style={{ width: `${weeklyProgress}%` }}
           />
         </div>
@@ -117,25 +125,24 @@ const DailyAchievementCard: React.FC<DailyAchievementCardProps> = ({
         </div>
         <div className="bg-purple-50 rounded-lg p-3 text-center">
           <p className="text-2xl font-bold text-purple-600">
-            {Math.floor(totalDaysLearned / 7)}
+            {learningWeeks}
           </p>
           <p className="text-xs text-gray-600 mt-1">학습 주차</p>
         </div>
       </div>
 
       {/* 다음 마일스톤 */}
-      {streak > 0 && (
+      {streak > 0 && milestoneMessage && (
         <div className="mt-4 pt-4 border-t border-gray-200">
           <p className="text-xs text-gray-500 text-center">
-            {streak < 7 && `일주일 연속까지 ${7 - streak}일 남았어요!`}
-            {streak >= 7 && streak < 30 && `한 달 연속까지 ${30 - streak}일 남았어요!`}
-            {streak >= 30 && streak < 100 && `100일 연속까지 ${100 - streak}일 남았어요!`}
-            {streak >= 100 && "당신은 이미 전설입니다! 🎉"}
+            {milestoneMessage}
           </p>
         </div>
       )}
     </div>
   );
-};
+});
+
+DailyAchievementCard.displayName = 'DailyAchievementCard';
 
 export default DailyAchievementCard;

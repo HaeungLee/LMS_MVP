@@ -4,8 +4,11 @@
  * - 일일/주간/월간 학습 통계
  * - 정확도 추이 그래프
  * - 학습 시간 분석
+ * 
+ * 최적화: React.memo 적용
  */
 
+import React, { memo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
   TrendingUp, 
@@ -145,7 +148,7 @@ export default function StatsCard() {
   );
 }
 
-// ============= Sub Components =============
+// ============= Sub Components (메모이즈됨) =============
 
 interface MiniStatBoxProps {
   label: string;
@@ -154,7 +157,7 @@ interface MiniStatBoxProps {
   color: string;
 }
 
-function MiniStatBox({ label, value, unit, color }: MiniStatBoxProps) {
+const MiniStatBox = memo(function MiniStatBox({ label, value, unit, color }: MiniStatBoxProps) {
   return (
     <div className="bg-gray-50 rounded-lg p-3">
       <p className="text-xs text-gray-600 mb-1">{label}</p>
@@ -164,4 +167,6 @@ function MiniStatBox({ label, value, unit, color }: MiniStatBoxProps) {
       </div>
     </div>
   );
-}
+});
+
+export default memo(StatsCard);
